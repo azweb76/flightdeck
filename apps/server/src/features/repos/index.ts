@@ -1,4 +1,5 @@
 import type { CreateRepo, PatchRepo, Repo } from "@flightdeck/shared";
+import { setFavorite } from "../catalog/store.ts";
 import { getDb } from "../db/index.ts";
 
 type Row = {
@@ -46,6 +47,7 @@ export function createRepo(input: CreateRepo): Repo {
   const id = Number(result.lastInsertRowid);
   const repo = getRepo(id);
   if (!repo) throw new Error("failed to read created repo");
+  if (input.pinned) setFavorite(repo.owner, repo.name, true);
   return repo;
 }
 

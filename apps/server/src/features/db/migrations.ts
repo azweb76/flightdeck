@@ -1,3 +1,5 @@
+import { MIGRATION_013 } from "./migration-013.ts";
+
 export const MIGRATIONS: { id: string; sql: string }[] = [
   {
     id: "001_init",
@@ -290,4 +292,5 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  MIGRATION_013,
 ];

@@ -1,4 +1,4 @@
-import { Checkbox, FormControlLabel, Stack, TextField, Typography } from "@mui/material";
+import { Checkbox, FormControlLabel, Stack, Typography } from "@mui/material";
 import type { Settings } from "@flightdeck/shared";
 import { SettingsCard } from "./SettingsCard.tsx";
 
@@ -44,13 +44,6 @@ export function BoardSettings({
             />
           }
           label="Linked issues (via PR)"
-        />
-        <TextField
-          fullWidth
-          label="Exclude repos"
-          value={settings.boardPrExcludeRepos}
-          onChange={(e) => void onSave({ boardPrExcludeRepos: e.target.value })}
-          helperText="Comma-separated owner/name. Those PRs never appear."
         />
       </Stack>
     </SettingsCard>

@@ -1,7 +1,7 @@
 import { CircularProgress } from "@mui/material";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import type { Repo, Settings } from "@flightdeck/shared";
+import type { CatalogRepo, Settings } from "@flightdeck/shared";
 import { api, subscribeEvents } from "./features/api/index.ts";
 import { AppShell } from "./features/shell/index.ts";
 import { ThemeRoot, useThemeMode } from "./features/theme/index.ts";
@@ -39,7 +39,7 @@ export function App() {
   const { mode } = useThemeMode();
   const [ready, setReady] = useState(false);
   const [settings, setSettings] = useState<Settings>();
-  const [repos, setRepos] = useState<Repo[]>([]);
+  const [repos, setRepos] = useState<CatalogRepo[]>([]);
 
   const refresh = useCallback(async () => {
     const [next, repoRes] = await Promise.all([api.settings(), api.repos()]);
@@ -85,10 +85,7 @@ export function App() {
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/reviews/:id" element={<ReviewDiff />} />
             <Route path="/stats" element={<StatsPage />} />
-            <Route
-              path="/settings"
-              element={<SettingsPage settings={settings} repos={repos} onReposChange={() => void refresh()} />}
-            />
+            <Route path="/settings" element={<SettingsPage settings={settings} />} />
           </Route>
         </Routes>
       </Suspense>

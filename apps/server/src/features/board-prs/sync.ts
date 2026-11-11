@@ -1,4 +1,4 @@
-import { parseExcludeRepos, type BoardPr, type Issue } from "@flightdeck/shared";
+import type { BoardPr, Issue } from "@flightdeck/shared";
 import type { GithubClient } from "../github/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { loadIssue, loadIssues, pruneIssues, upsertIssue } from "../issues/store.ts";
@@ -29,8 +29,7 @@ export async function syncBoardPrs(
         ? await deps.github.listOpenPrs({ since: incremental ? opts.since : undefined })
         : []
       : await searchOpenPrs(defaultExec, query, opts.projectKeys);
-    const exclude = new Set(parseExcludeRepos(settings.boardPrExcludeRepos));
-    const prs = fetched.filter((p) => !exclude.has(p.repo.toLowerCase()));
+    const prs = fetched;
     for (const pr of prs) {
       pr.linkedIssueIds = settings.boardLinkedIssues ? pr.linkedIssueIds : [];
       upsertBoardPr(pr);

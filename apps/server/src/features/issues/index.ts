@@ -18,6 +18,7 @@ import { applyBoardPrs, syncBoardPrs } from "../board-prs/index.ts";
 import { nestPrs } from "../board-prs/nest.ts";
 import { listBoardPrs } from "../board-prs/store.ts";
 import { seedBoardPrs } from "../demo/seed-prs.ts";
+import { listCatalog } from "../catalog/index.ts";
 import { cacheGet, cacheSet, hourCache } from "../cache/index.ts";
 import { rememberedPicks } from "../discovery/index.ts";
 import { publish } from "../events/index.ts";
@@ -197,6 +198,8 @@ export async function syncAssigned(
 }
 
 async function visibleRepos(deps: IssueDeps): Promise<VisibleRepo[]> {
+  const cached = listCatalog();
+  if (cached.length > 0) return cached.map((r) => ({ owner: r.owner, name: r.name }));
   const client = deps.github ?? createGithubClient();
   return client.listVisibleRepos();
 }

@@ -1,4 +1,5 @@
 import { jiraProjectKey, resolveRepos, type VisibleRepo } from "@flightdeck/shared";
+import { getCatalogRepo } from "../catalog/index.ts";
 import { getDb } from "../db/index.ts";
 import { createRepo, getRepoBySlug } from "../repos/index.ts";
 
@@ -38,9 +39,15 @@ export function rememberPick(projectKey: string, label: string, owner: string, n
 }
 
 export function ensureRepoRow(owner: string, name: string, localPath = "") {
+  const catalog = getCatalogRepo(owner, name);
   return (
     getRepoBySlug(`${owner}/${name}`) ??
-    createRepo({ owner, name, localPath, defaultBranch: "main" })
+    createRepo({
+      owner,
+      name,
+      localPath,
+      defaultBranch: catalog?.defaultBranch ?? "main",
+    })
   );
 }
 

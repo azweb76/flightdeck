@@ -41,7 +41,6 @@ export const SettingsSchema = z.object({
   boardAuthoredPrs: z.boolean().default(DEFAULT_BOARD_AUTHORED_PRS),
   boardReviewPrs: z.boolean().default(DEFAULT_BOARD_REVIEW_PRS),
   boardLinkedIssues: z.boolean().default(DEFAULT_BOARD_LINKED_ISSUES),
-  boardPrExcludeRepos: z.string().default(""),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 

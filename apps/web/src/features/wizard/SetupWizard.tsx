@@ -4,7 +4,6 @@ import type { SetupStatus } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 import { ChecksStep } from "./ChecksStep.tsx";
 import { JiraStep } from "./JiraStep.tsx";
-import { ReposStep } from "./ReposStep.tsx";
 import { Stepper } from "./Stepper.tsx";
 import { WizardActions } from "./WizardActions.tsx";
 
@@ -41,13 +40,12 @@ export function SetupWizard({ onDone }: { onDone: () => void }) {
       <Paper variant="outlined" sx={{ width: "100%", maxWidth: 720, p: 4 }}>
         <Typography variant="h1">Set up</Typography>
         <Typography color="text.secondary" sx={{ mb: 4 }}>
-          Step {step + 1} of 3
+          Step {step + 1} of 2
         </Typography>
         <Stepper step={step} />
         {error ? <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert> : null}
         {step === 0 ? <ChecksStep checks={checks} onImported={() => void refresh()} /> : null}
         {step === 1 ? <JiraStep onConnected={() => void refresh()} /> : null}
-        {step === 2 ? <ReposStep /> : null}
         <WizardActions
           step={step}
           requiredOk={requiredOk}

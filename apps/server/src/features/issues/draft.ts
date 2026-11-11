@@ -3,6 +3,7 @@ import { createGithubClient } from "../github/index.ts";
 import { createJiraClient } from "../jira/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
 import { getSettings } from "../settings/index.ts";
+import { touchRecent } from "../catalog/index.ts";
 import { rememberIssue } from "./index.ts";
 
 export async function draftGithubIssue(repo: Repo, title: string, body: string): Promise<{ id: string }> {
@@ -57,6 +58,7 @@ export async function draftJiraIssue(projectKey: string, title: string, body: st
 }
 
 function rememberGithub(repo: Repo, number: string, title: string, body: string, url: string): { id: string } {
+  touchRecent(repo.owner, repo.name);
   const id = `github:${repo.owner}/${repo.name}#${number}`;
   rememberIssue({
     id,

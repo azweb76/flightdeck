@@ -5,6 +5,7 @@ React UI (MUI v9 + Emotion). Talks to the local server over `/api`. Never import
 - Theme: `src/features/theme/` (`CssVarsProvider`, macOS light/dark via `prefers-color-scheme` / system mode). Use `sx` only; Grid `size`; Stack.
 - Canonical component: `src/features/issues/IssueCard.tsx` (PR Open cards nest `BoardPr` rows)
 - Board PR settings: `src/features/settings/BoardSettings.tsx`
+- Repo picker: `src/ui/components/repo-picker/` (catalog from `GET /api/repos`, not Settings)
 - Shell: `src/features/shell/AppShell.tsx`
 - Markdown editor: `src/ui/components/markdown/` (preview-first, no third-party editor)
 - Wizard: `src/features/wizard/`

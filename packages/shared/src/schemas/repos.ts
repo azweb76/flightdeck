@@ -1,5 +1,21 @@
 import { z } from "zod";
 
+export const RepoPermissionSchema = z.enum(["ADMIN", "MAINTAIN", "WRITE", "TRIAGE", "READ"]);
+export type RepoPermission = z.infer<typeof RepoPermissionSchema>;
+
+export const CatalogRepoSchema = z.object({
+  owner: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().default(""),
+  private: z.boolean(),
+  defaultBranch: z.string().min(1),
+  pushedAt: z.string().default(""),
+  permission: RepoPermissionSchema.default("READ"),
+  favorite: z.boolean().default(false),
+  lastUsedAt: z.string().optional(),
+});
+export type CatalogRepo = z.infer<typeof CatalogRepoSchema>;
+
 export const RepoSchema = z.object({
   id: z.number().int().positive(),
   owner: z.string().min(1),

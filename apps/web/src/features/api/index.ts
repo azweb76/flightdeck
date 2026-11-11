@@ -1,13 +1,11 @@
 import type {
   AppNotification,
-  CreateRepo,
   Goal,
   Improvement,
   Issue,
-  PatchRepo,
   PrReviewSession,
   Question,
-  Repo,
+  CatalogRepo,
   Run,
   Settings,
   SettingsPatch,
@@ -54,12 +52,14 @@ export const api = {
   settings: () => request<Settings>("/api/settings"),
   saveSettings: (patch: SettingsPatch) =>
     request<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(patch) }),
-  repos: () => request<{ repos: Repo[] }>("/api/repos"),
-  addRepo: (body: CreateRepo) => request<Repo>("/api/repos", { method: "POST", body: JSON.stringify(body) }),
-  patchRepo: (id: number, body: PatchRepo) =>
-    request<Repo>(`/api/repos/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  deleteRepo: (id: number) => request<{ ok: boolean }>(`/api/repos/${id}`, { method: "DELETE" }),
-  cloneRepo: (id: number) => request<Repo>(`/api/repos/${id}/clone`, { method: "POST" }),
+  repos: () => request<{ repos: CatalogRepo[]; fetchedAt?: string; stale: boolean }>("/api/repos"),
+  refreshRepos: () =>
+    request<{ repos: CatalogRepo[]; fetchedAt?: string; stale: boolean }>("/api/repos/refresh", { method: "POST" }),
+  favoriteRepo: (owner: string, name: string, favorite: boolean) =>
+    request<{ repos: CatalogRepo[]; fetchedAt?: string; stale: boolean }>("/api/repos/favorite", {
+      method: "POST",
+      body: JSON.stringify({ owner, name, favorite }),
+    }),
   issues: (query: { source?: string; repo?: string; refresh?: string } = {}) => {
     const q = new URLSearchParams();
     if (query.source) q.set("source", query.source);
@@ -82,8 +82,8 @@ export const api = {
       body: JSON.stringify({ owner, name, label }),
     }),
   issue: (id: string) => request<Issue>(`/api/issues/${encodeURIComponent(id)}`),
-  startRun: (issueId: string, repoId?: number) =>
-    request<Run>("/api/runs", { method: "POST", body: JSON.stringify({ issueId, repoId }) }),
+  startRun: (issueId: string, repoSlug?: string) =>
+    request<Run>("/api/runs", { method: "POST", body: JSON.stringify({ issueId, repoSlug }) }),
   fixPr: (prId: string) => request<Run>(`/api/prs/${encodeURIComponent(prId)}/fix`, { method: "POST" }),
   draftPrReview: (prId: string) =>
     request<PrReviewSession>(`/api/prs/${encodeURIComponent(prId)}/draft-review`, { method: "POST" }),
@@ -121,8 +121,8 @@ export const api = {
     request<Goal>(`/api/issues/${encodeURIComponent(issueId)}/goal/approve`, { method: "POST" }),
   splitIssue: (issueId: string) =>
     request<{ created: string[] }>(`/api/issues/${encodeURIComponent(issueId)}/split`, { method: "POST" }),
-  adhoc: (repoId: number, title: string, body: string) =>
-    request<Run>("/api/issues/adhoc", { method: "POST", body: JSON.stringify({ repoId, title, body }) }),
+  adhoc: (owner: string, name: string, title: string, body: string) =>
+    request<Run>("/api/issues/adhoc", { method: "POST", body: JSON.stringify({ owner, name, title, body }) }),
   notifications: () =>
     request<{ notifications: AppNotification[]; unread: number; questions: Question[] }>("/api/notifications"),
   reviews: () => request<{ reviews: PrReviewSession[] }>("/api/reviews"),
@@ -138,7 +138,14 @@ export const api = {
       findings: { title: string; detail: string; excerpt?: string }[];
       improvements: Improvement[];
     }>(`/api/stats/runs/${id}/session-review`),
-  draftIssue: (body: { source?: "github" | "jira"; repoId?: number; projectKey?: string; title: string; body: string }) =>
+  draftIssue: (body: {
+    source?: "github" | "jira";
+    owner?: string;
+    name?: string;
+    projectKey?: string;
+    title: string;
+    body: string;
+  }) =>
     request<{ id: string }>("/api/issues/draft", { method: "POST", body: JSON.stringify(body) }),
   review: (id: number) => request<PrReviewSession>(`/api/reviews/${id}`),
   patchDraft: (reviewId: number, draftId: number, state: string, body?: string) =>

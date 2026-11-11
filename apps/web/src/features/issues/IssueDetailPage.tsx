@@ -24,7 +24,7 @@ export function IssueDetailPage() {
         issue.source === "jira" ? offlineSources.jira : issue.source === "github" ? offlineSources.github : offline;
       if (blocked) return;
       if (e.key.toLowerCase() === "r") void api.refine(issue.id).then(load);
-      if (e.key.toLowerCase() === "s") void api.startRun(issue.id);
+      if (e.key.toLowerCase() === "s" && issue.repos.length === 1) void api.startRun(issue.id);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

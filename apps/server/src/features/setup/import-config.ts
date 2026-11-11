@@ -1,5 +1,6 @@
 import { TeamConfigSchema, type TeamConfig } from "@flightdeck/shared";
-import { createRepo, listRepos } from "../repos/index.ts";
+import { listFavorites, setFavorite } from "../catalog/index.ts";
+import { createRepo, getRepoBySlug, listRepos } from "../repos/index.ts";
 import { getSettings, patchSettings, storeDeferredTeamConfig } from "../settings/index.ts";
 
 export function parseTeamConfig(input: unknown): TeamConfig {
@@ -11,13 +12,14 @@ export function applyTeamConfig(config: TeamConfig): { reposAdded: number } {
   let reposAdded = 0;
   for (const repo of config.repos) {
     const key = `${repo.owner}/${repo.name}`.toLowerCase();
+    if (repo.pinned) setFavorite(repo.owner, repo.name, true);
     if (existing.has(key)) continue;
     createRepo({
       owner: repo.owner,
       name: repo.name,
       defaultBranch: repo.defaultBranch ?? "main",
       localPath: repo.localPath ?? "",
-      pinned: repo.pinned ?? false,
+      pinned: false,
     });
     existing.add(key);
     reposAdded += 1;
@@ -51,13 +53,16 @@ export function exportTeamConfig(): TeamConfig {
   const settings = getSettings();
   return TeamConfigSchema.parse({
     version: 1,
-    repos: listRepos().map((r) => ({
-      owner: r.owner,
-      name: r.name,
-      defaultBranch: r.defaultBranch,
-      localPath: r.localPath,
-      pinned: r.pinned,
-    })),
+    repos: listFavorites().map((f) => {
+      const row = getRepoBySlug(`${f.owner}/${f.name}`);
+      return {
+        owner: f.owner,
+        name: f.name,
+        defaultBranch: row?.defaultBranch ?? "main",
+        localPath: row?.localPath ?? "",
+        pinned: true,
+      };
+    }),
     labelRules: { prefix: settings.labelPrefix },
     prompts: {
       refiner: settings.promptRefiner || undefined,

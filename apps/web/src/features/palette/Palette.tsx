@@ -121,7 +121,7 @@ function PaletteList({
 }
 
 async function loadItems(): Promise<Item[]> {
-  const [iss, runs] = await Promise.all([api.issues(), api.runs()]);
+  const [iss, runs, catalog] = await Promise.all([api.issues(), api.runs(), api.repos()]);
   return [
     ...iss.issues.map((i) => ({
       label: `${i.key} ${i.title}`,
@@ -132,6 +132,11 @@ async function loadItems(): Promise<Item[]> {
       label: `${r.issueKey} ${r.repoSlug}`,
       to: `/runs/${r.id}`,
       group: "Runs",
+    })),
+    ...catalog.repos.map((r) => ({
+      label: `${r.owner}/${r.name}`,
+      to: `/issues?repo=${encodeURIComponent(`${r.owner}/${r.name}`)}`,
+      group: "Go to repo",
     })),
     { label: "Settings", to: "/settings", group: "Go to" },
     { label: "Stats", to: "/stats", group: "Go to" },

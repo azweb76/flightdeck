@@ -38,6 +38,14 @@ export function AgentSettings({
           control={<Checkbox size="small" checked={settings.prDraft} onChange={(e) => void onSave({ prDraft: e.target.checked })} />}
           label="Open PRs as drafts"
         />
+        <TextField
+          fullWidth
+          label="Clone folder"
+          value={settings.workspaceFolder}
+          onChange={(e) => void onSave({ workspaceFolder: e.target.value })}
+          placeholder="~/.flightdeck/repos"
+          helperText="Local directory for gh repo clone."
+        />
         {(["modelRefiner", "modelPlanner", "modelImplementer", "modelReviewer"] as const).map((k) => (
           <TextField key={k} fullWidth label={k} value={settings[k]} onChange={(e) => void onSave({ [k]: e.target.value })} />
         ))}

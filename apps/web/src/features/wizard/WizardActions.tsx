@@ -28,8 +28,8 @@ export function WizardActions({
       }}
     >
       {step === 0 ? <Button onClick={onRecheck}>Re-check</Button> : <Button onClick={onBack}>Back</Button>}
-      {step < 2 ? (
-        <Button variant="contained" disabled={step === 0 && !requiredOk} onClick={onNext}>
+      {step < 1 ? (
+        <Button variant="contained" disabled={!requiredOk} onClick={onNext}>
           Next
         </Button>
       ) : (

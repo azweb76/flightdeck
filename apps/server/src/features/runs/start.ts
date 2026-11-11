@@ -4,6 +4,7 @@ import { getRepo } from "../repos/index.ts";
 import { getIssue, isOffline, OfflineError } from "../issues/index.ts";
 import { latestGoal } from "../goals/store.ts";
 import { ensureNamedWorktree, ensureWorktree } from "../worktree/index.ts";
+import { touchRecent } from "../catalog/index.ts";
 import { NeedRepoError, ensureRepoRow } from "../discovery/index.ts";
 import { ensureClone } from "../clone/index.ts";
 import { publish } from "../events/index.ts";
@@ -21,7 +22,7 @@ export async function startRun(input: StartRun): Promise<Run> {
   const issue = await getIssue(input.issueId);
   if (!issue) throw new Error("Issue not found");
   if (isOffline(issue.source) && process.env.FLIGHTDECK_DEMO !== "1") throw new OfflineError();
-  const repo = pickRepo(issue, input.repoId);
+  const repo = pickRepo(issue, input.repoId, input.repoSlug);
   if (process.env.FLIGHTDECK_DEMO !== "1") await ensureClone(repo.owner, repo.name);
   const settings = getSettings();
   const now = new Date().toISOString();
@@ -46,6 +47,7 @@ export async function startRun(input: StartRun): Promise<Run> {
     updatedAt: now,
   });
   enqueue(run.id);
+  touchRecent(repo.owner, repo.name);
   return run;
 }
 
@@ -144,7 +146,11 @@ function promptFor(run: Run): string {
   ].join("\n\n");
 }
 
-function pickRepo(issue: Issue, repoId?: number) {
+function pickRepo(issue: Issue, repoId?: number, repoSlug?: string) {
+  if (repoSlug) {
+    const [owner, name] = repoSlug.split("/");
+    if (owner && name) return ensureRepoRow(owner, name);
+  }
   if (repoId) {
     const r = getRepo(repoId);
     if (!r) throw new Error("Repo not found");

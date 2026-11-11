@@ -1,5 +1,5 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
-import { APP_NAME, type Repo } from "@flightdeck/shared";
+import { APP_NAME, slugOf, type CatalogRepo } from "@flightdeck/shared";
 import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { hideAskingFooter } from "./askingFooter.ts";
 
@@ -8,11 +8,11 @@ export function SideNav({
   counts,
   asking,
 }: {
-  repos: Repo[];
+  repos: CatalogRepo[];
   counts: { issues: number; runs: number; reviews: number };
   asking?: { prompt: string; href: string };
 }) {
-  const pinned = repos.filter((r) => r.pinned);
+  const favorites = repos.filter((r) => r.favorite);
   const [params] = useSearchParams();
   const activeRepo = params.get("repo");
   const nav = useNavigate();
@@ -46,14 +46,14 @@ export function SideNav({
         ))}
       </Stack>
       <Typography sx={{ mt: 4, px: 3, fontSize: 11, fontWeight: 600, color: "text.secondary", letterSpacing: "0.04em" }}>
-        PINNED REPOS
+        FAVORITES
       </Typography>
       <Stack sx={{ px: 1, gap: 0.5, mt: 1 }}>
-        {pinned.map((r) => {
-          const slug = `${r.owner}/${r.name}`;
+        {favorites.map((r) => {
+          const slug = slugOf(r);
           return (
             <Button
-              key={r.id}
+              key={slug}
               component={NavLink}
               to={`/issues?repo=${encodeURIComponent(slug)}`}
               fullWidth
@@ -63,14 +63,16 @@ export function SideNav({
                 py: 0,
                 color: activeRepo === slug ? "primary.main" : "text.primary",
                 fontWeight: activeRepo === slug ? 600 : 400,
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                fontSize: 12,
               }}
             >
               {slug}
             </Button>
           );
         })}
-        {pinned.length === 0 ? (
-          <Typography sx={{ px: 2, color: "text.secondary" }}>Pin a repo in Settings</Typography>
+        {favorites.length === 0 ? (
+          <Typography sx={{ px: 2, color: "text.secondary" }}>Star a repo in the picker</Typography>
         ) : null}
       </Stack>
       <Box sx={{ flex: 1 }} />

@@ -1,9 +1,10 @@
-import { Alert, Box, Button, Chip, CircularProgress, IconButton, Menu, MenuItem, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, IconButton, Menu, MenuItem, Stack, Typography } from "@mui/material";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { IssueStage } from "@flightdeck/shared";
 import { PlusIcon, RefreshIcon } from "../ui/icons.tsx";
 import { BoardColumn } from "./BoardColumn.tsx";
+import { BoardFilters } from "./BoardFilters.tsx";
 import { useAssignedIssues } from "./useAssignedIssues.ts";
 
 const STAGES: IssueStage[] = ["new", "refined", "running", "pr_open"];
@@ -46,19 +47,7 @@ export function IssuesPage() {
           <RefreshIcon />
         </IconButton>
       </Stack>
-      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap", alignItems: "center" }}>
-        {(["all", "jira", "github"] as const).map((s) => (
-          <Chip
-            key={s}
-            clickable
-            variant="outlined"
-            color={source === s ? "primary" : "default"}
-            label={s === "all" ? "All sources" : s === "jira" ? "Jira" : "GitHub"}
-            onClick={() => setSource(s)}
-          />
-        ))}
-        <Chip variant="outlined" label={`Repo: ${repo ?? "all"}`} />
-      </Stack>
+      <BoardFilters source={source} repo={repo} params={params} setSource={setSource} setParams={setParams} />
       {offline ? <Alert severity="warning" sx={{ mb: 2 }}>Offline — showing cached issues. Start and write-backs are disabled.</Alert> : null}
       {!offline && offlineSources.jira ? <Alert severity="warning" sx={{ mb: 2 }}>Jira sync failed. GitHub issues can still start.</Alert> : null}
       {!offline && offlineSources.github ? <Alert severity="warning" sx={{ mb: 2 }}>GitHub sync failed. Jira issues can still start.</Alert> : null}

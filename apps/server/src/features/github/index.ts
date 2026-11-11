@@ -1,4 +1,4 @@
-import type { BoardPr, GithubStatus } from "@flightdeck/shared";
+import type { BoardPr, CatalogRepo, GithubStatus } from "@flightdeck/shared";
 import { hourCache } from "../cache/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 import {
@@ -7,6 +7,7 @@ import {
   listVisibleRepos,
   type AssignedIssue,
 } from "./assigned.ts";
+import { listAccessibleRepos } from "./accessible.ts";
 
 export type GithubClient = {
   status(): Promise<GithubStatus>;
@@ -29,6 +30,7 @@ export type GithubClient = {
   writeIssue(owner: string, name: string, number: number, body: string): Promise<void>;
   listAssignedIssues(since?: string): Promise<AssignedIssue[]>;
   listVisibleRepos(): Promise<{ owner: string; name: string }[]>;
+  listAccessibleRepos(): Promise<Omit<CatalogRepo, "favorite" | "lastUsedAt">[]>;
   getJson(path: string, etag?: string): Promise<{ status: number; etag?: string; body: string }>;
   listOpenPrs(opts?: { since?: string }): Promise<BoardPr[]>;
 };
@@ -72,6 +74,7 @@ export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
       ghJson(exec, ["issue", "edit", String(number), "--repo", `${owner}/${name}`, "--body", body]),
     listAssignedIssues: (since) => listAssignedIssues(exec, since),
     listVisibleRepos: () => cachedVisibleRepos(exec),
+    listAccessibleRepos: () => listAccessibleRepos(exec),
     getJson: (path, etag) => ghApiJson(exec, path, etag),
     listOpenPrs: (opts) => listOpenPrs(exec, opts?.since),
   };

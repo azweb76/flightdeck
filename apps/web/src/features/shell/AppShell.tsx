@@ -1,5 +1,5 @@
 import { Box, CircularProgress } from "@mui/material";
-import type { Repo } from "@flightdeck/shared";
+import type { CatalogRepo } from "@flightdeck/shared";
 import { Suspense, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { api, subscribeEvents } from "../api/index.ts";
@@ -10,7 +10,7 @@ import { syncFromIssues } from "./syncStatus.ts";
 
 const INITIAL: SyncState = { label: "Synced", tone: "success", detail: "Jira: ok · GitHub: ok" };
 
-export function AppShell({ repos }: { repos: Repo[] }) {
+export function AppShell({ repos }: { repos: CatalogRepo[] }) {
   const [counts, setCounts] = useState({ issues: 0, runs: 0, reviews: 0 });
   const [asking, setAsking] = useState<{ prompt: string; href: string }>();
   const [sync, setSync] = useState<SyncState>(INITIAL);

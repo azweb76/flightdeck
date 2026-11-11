@@ -54,7 +54,7 @@ export function ChecksStep({
         Import team config…
       </Button>
       <Typography sx={{ display: "block", mt: 2, fontSize: 11, color: "text.secondary" }}>
-        Fills in repos, label rules, prompts and models.
+        Fills in label rules, prompts and models. Pinned team repos become favorites.
       </Typography>
     </Box>
   );

@@ -23,13 +23,21 @@ export function issueRoutes(): Hono {
   });
   app.post("/sync", async (c) => c.json(await listIssues({ refresh: "1" })));
   app.post("/adhoc", async (c) => {
-    const body = (await c.req.json()) as { repoId: number; title: string; body: string };
-    return c.json(await startAdhoc(body.repoId, body.title, body.body), 201);
+    const body = (await c.req.json()) as {
+      repoId?: number;
+      owner?: string;
+      name?: string;
+      title: string;
+      body: string;
+    };
+    return c.json(await startAdhoc(body.title, body.body, body), 201);
   });
   app.post("/draft", async (c) => {
     const body = (await c.req.json()) as {
       source?: "github" | "jira";
       repoId?: number;
+      owner?: string;
+      name?: string;
       projectKey?: string;
       title: string;
       body: string;
@@ -38,7 +46,9 @@ export function issueRoutes(): Hono {
       if (!body.projectKey) throw apiError(400, "missing_project", "Jira project key required");
       return c.json(await draftJiraIssue(body.projectKey, body.title, body.body), 201);
     }
-    const repo = getRepo(body.repoId ?? 0);
+    const { ensureRepoRow } = await import("../../features/discovery/index.ts");
+    const repo =
+      body.owner && body.name ? ensureRepoRow(body.owner, body.name) : getRepo(body.repoId ?? 0);
     if (!repo) throw apiError(404, "not_found", "Repo not found");
     return c.json(await draftGithubIssue(repo, body.title, body.body), 201);
   });
@@ -52,6 +62,8 @@ export function issueRoutes(): Hono {
     const label = body.label ?? `${body.owner}/${body.name}`;
     rememberPick(jiraProjectKey(issue.key), label, body.owner, body.name);
     rememberIssuePick(issue.id, body.owner, body.name);
+    const { touchRecent } = await import("../../features/catalog/index.ts");
+    touchRecent(body.owner, body.name);
     rememberIssue({
       ...issue,
       repos: [{ owner: body.owner, name: body.name, registered: true }],

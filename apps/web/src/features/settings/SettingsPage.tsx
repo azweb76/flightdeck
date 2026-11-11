@@ -1,24 +1,15 @@
 import { useEffect, useState } from "react";
 import { Alert, Box, MenuItem, TextField, Typography } from "@mui/material";
-import type { Repo, Settings, ThemeMode } from "@flightdeck/shared";
+import type { Settings, ThemeMode } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 import { useThemeMode } from "../theme/index.ts";
 import { AgentSettings } from "./AgentSettings.tsx";
 import { SettingsCard } from "./SettingsCard.tsx";
 import { TeamConfigButtons } from "./TeamConfigButtons.tsx";
 import { JiraSettings } from "./JiraSettings.tsx";
-import { RepoSettings } from "./RepoSettings.tsx";
 import { BoardSettings } from "./BoardSettings.tsx";
 
-export function SettingsPage({
-  settings: initial,
-  repos,
-  onReposChange,
-}: {
-  settings: Settings;
-  repos: Repo[];
-  onReposChange: () => void;
-}) {
+export function SettingsPage({ settings: initial }: { settings: Settings }) {
   const [settings, setSettings] = useState<Settings>(initial);
   const [error, setError] = useState<string>();
   const { mode, setMode } = useThemeMode();
@@ -65,13 +56,6 @@ export function SettingsPage({
       <BoardSettings settings={settings} onSave={save} />
       <TeamConfigButtons />
       <AgentSettings settings={settings} onSave={save} />
-      <RepoSettings
-        repos={repos}
-        workspaceFolder={settings.workspaceFolder}
-        onWorkspace={(workspaceFolder) => void save({ workspaceFolder })}
-        onChange={onReposChange}
-        setError={setError}
-      />
     </Box>
   );
 }

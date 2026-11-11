@@ -5,7 +5,6 @@ import { detectClaudeConfig, type ClaudeDeps } from "../claude/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 import { githubStatus } from "../github/index.ts";
 import { createJiraClient } from "../jira/index.ts";
-import { listRepos } from "../repos/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
 import { getSettings } from "../settings/index.ts";
 
@@ -46,7 +45,6 @@ export async function runSetupChecks(deps: SetupDeps = {}): Promise<SetupStatus>
     detectClaudeConfig(deps.claude ?? { exec }),
     jiraCheck(probeJira),
   ]);
-  const repos = repoCheck();
   const checks: SetupCheck[] = [
     git,
     {
@@ -70,7 +68,6 @@ export async function runSetupChecks(deps: SetupDeps = {}): Promise<SetupStatus>
         : "Fix: configure Claude Code (apiKeyHelper or ANTHROPIC_API_KEY, plus ANTHROPIC_BASE_URL if you use a gateway)",
     },
     jira,
-    repos,
   ];
   const settings = getSettings();
   const requiredOk = git.ok && checks[1]!.ok && checks[2]!.ok;
@@ -138,21 +135,3 @@ async function jiraCheck(probe: boolean): Promise<SetupCheck> {
   };
 }
 
-function repoCheck(): SetupCheck {
-  const repos = listRepos();
-  if (repos.length === 0) {
-    return {
-      id: "repos",
-      ok: false,
-      title: "Repositories",
-      detail: "No repos registered",
-      hint: "Add at least one GitHub repo (owner/name) and optionally clone it",
-    };
-  }
-  return {
-    id: "repos",
-    ok: true,
-    title: "Repositories",
-    detail: `${repos.length} repo${repos.length === 1 ? "" : "s"} registered`,
-  };
-}

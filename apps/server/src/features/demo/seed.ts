@@ -1,3 +1,4 @@
+import { seedCatalog } from "./seed-catalog.ts";
 import { createRepo, listRepos } from "../repos/index.ts";
 import { startDemoReview } from "../pr-review/index.ts";
 import { insertRun, listRuns, updateRun } from "../runs/store.ts";
@@ -16,10 +17,11 @@ import { loadIssues } from "../issues/store.ts";
 export async function seedDemo(): Promise<void> {
   if (process.env.FLIGHTDECK_DEMO !== "1") return;
   patchSettings({ setupComplete: true });
-  if (listRepos().length === 0) {
-    createRepo({ owner: "acme", name: "web", pinned: true, defaultBranch: "main" });
-    createRepo({ owner: "acme", name: "api", pinned: true, defaultBranch: "main" });
-    createRepo({ owner: "acme", name: "docs", pinned: false, defaultBranch: "main" });
+  seedCatalog();
+  if (!listRepos().length) {
+    createRepo({ owner: "acme", name: "web", defaultBranch: "main" });
+    createRepo({ owner: "acme", name: "api", defaultBranch: "main" });
+    createRepo({ owner: "acme", name: "docs", defaultBranch: "main" });
   }
   for (const issue of demoIssues()) upsertIssue(issue);
   seedBoardPrs();

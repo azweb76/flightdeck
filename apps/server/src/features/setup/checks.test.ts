@@ -46,7 +46,7 @@ describe("runSetupChecks", () => {
     expect(status.github.loggedIn).toBe(true);
     expect(status.checks.find((c) => c.id === "claude")?.ok).toBe(true);
     expect(status.checks.find((c) => c.id === "jira")?.ok).toBe(false);
-    expect(status.checks.find((c) => c.id === "repos")?.ok).toBe(false);
+    expect(status.checks.find((c) => c.id === "repos")).toBeUndefined();
   });
 
   it("hints how to fix gh when installed but logged out", async () => {

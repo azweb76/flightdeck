@@ -1,6 +1,6 @@
 import { Box, Stack, Typography } from "@mui/material";
 
-const STEPS = ["Checks", "Connect Jira", "Add repos"];
+const STEPS = ["Checks", "Connect Jira"];
 
 export function Stepper({ step }: { step: number }) {
   return (

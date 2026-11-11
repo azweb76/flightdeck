@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseExcludeRepos, parseJiraKeys } from "./jira-keys.ts";
+import { parseJiraKeys } from "./jira-keys.ts";
 
 describe("parseJiraKeys", () => {
   it("keeps keys for visible projects from title, branch, and body", () => {
@@ -12,8 +12,3 @@ describe("parseJiraKeys", () => {
   });
 });
 
-describe("parseExcludeRepos", () => {
-  it("normalizes a comma list", () => {
-    expect(parseExcludeRepos("Acme/Old, other/secret\n")).toEqual(["acme/old", "other/secret"]);
-  });
-});

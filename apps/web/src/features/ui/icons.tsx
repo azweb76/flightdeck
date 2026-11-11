@@ -51,3 +51,17 @@ export function PlusIcon() {
     </Svg>
   );
 }
+
+export function StarIcon({ filled }: { filled?: boolean }) {
+  return (
+    <Svg>
+      <path
+        d="M8 1.8 9.9 5.6l4.2.6-3 3 0.7 4.2L8 11.7l-3.8 1.7 0.7-4.2-3-3 4.2-.6L8 1.8Z"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}

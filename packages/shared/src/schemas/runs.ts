@@ -80,5 +80,6 @@ export type Run = z.infer<typeof RunSchema>;
 export const StartRunSchema = z.object({
   issueId: z.string().min(1),
   repoId: z.number().int().positive().optional(),
+  repoSlug: z.string().min(3).optional(),
 });
 export type StartRun = z.infer<typeof StartRunSchema>;

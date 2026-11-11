@@ -15,10 +15,3 @@ export function parseJiraKeys(text: string, projectKeys: readonly string[]): str
   }
   return found;
 }
-
-export function parseExcludeRepos(raw: string): string[] {
-  return raw
-    .split(/[,\n]/)
-    .map((s) => s.trim().toLowerCase())
-    .filter((s) => s.includes("/"));
-}

@@ -1,4 +1,5 @@
 import type { ExecFn } from "../exec/index.ts";
+import { parseRestRepos } from "./accessible.ts";
 
 export type AssignedIssue = {
   number: number;
@@ -34,32 +35,7 @@ export async function listVisibleRepos(exec: ExecFn): Promise<{ owner: string; n
     "user/repos?affiliation=owner,collaborator,organization_member&per_page=100",
   ]);
   if (r.code !== 0) throw new Error(r.stderr || "gh user/repos failed");
-  return parseRepoList(r.stdout);
-}
-
-export function parseRepoList(stdout: string): { owner: string; name: string }[] {
-  const rows = parseJsonRows(stdout);
-  return rows
-    .map((row) => {
-      const slug = String(row.full_name ?? row.nameWithOwner ?? "");
-      const [owner, name] = slug.includes("/")
-        ? slug.split("/")
-        : [String((row.owner as { login?: string } | undefined)?.login ?? ""), String(row.name ?? "")];
-      return owner && name ? { owner, name } : undefined;
-    })
-    .filter((x): x is { owner: string; name: string } => Boolean(x));
-}
-
-function parseJsonRows(stdout: string): Record<string, unknown>[] {
-  const text = stdout.trim() || "[]";
-  try {
-    const parsed = JSON.parse(text) as unknown;
-    return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : [];
-  } catch {
-    const joined = text.replace(/\]\s*\[/g, ",");
-    const parsed = JSON.parse(joined) as unknown;
-    return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : [];
-  }
+  return parseRestRepos(r.stdout).map((r) => ({ owner: r.owner, name: r.name }));
 }
 
 export async function ghApiJson(
