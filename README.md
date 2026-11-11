@@ -23,6 +23,8 @@ The app owns the loop: refine → approve goal → plan → implement → review
 
 ## Run
 
+Requires pnpm 12.18.0 (`packageManager` in the root `package.json`; Corepack will select it).
+
 ```bash
 pnpm install
 pnpm check
