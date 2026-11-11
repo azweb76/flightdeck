@@ -2,7 +2,6 @@ import { Autocomplete, Box, Chip, IconButton, Stack, TextField, Typography } fro
 import { useMemo, useState, type HTMLAttributes } from "react";
 import { isPushable, rankRepos, slugOf, type CatalogRepo, type RankedGroup, type RankedRepo } from "@flightdeck/shared";
 import { RefreshIcon, StarIcon } from "../../../features/ui/icons.tsx";
-import { VirtualListbox } from "./listbox.tsx";
 
 const GROUP_LABEL: Record<RankedGroup, string> = {
   favorites: "Favorites",
@@ -46,7 +45,7 @@ export function RepoPicker(props: RepoPickerProps) {
             if (reason !== "reset") setQuery(next);
           }}
           onChange={(_, next) => emitChange(props, next)}
-          slotProps={{ listbox: { component: VirtualListbox, sx: { p: 0 } } }}
+          slotProps={{ listbox: { sx: { maxHeight: 320, overflow: "auto", py: 0 } } }}
           renderInput={(params) => (
             <TextField {...params} autoFocus={props.autoFocus} placeholder={props.placeholder ?? "Search repos"} />
           )}
