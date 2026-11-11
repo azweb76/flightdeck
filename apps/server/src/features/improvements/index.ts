@@ -1,7 +1,6 @@
 import {
   SessionReviewResultSchema,
   parseAgentJson,
-  replayEvalCases,
   type Improvement,
   type SessionFinding,
   type SessionReviewResult,
@@ -16,6 +15,7 @@ import { savePromptVersion } from "../agent/prompt-versions.ts";
 import { roleModel } from "../runs/execute.ts";
 import { listEvents, getRun } from "../runs/store.ts";
 import { patchSettings } from "../settings/index.ts";
+import { evalPromptPatch } from "./eval-prompt.ts";
 
 export function listImprovements(): Improvement[] {
   const rows = getDb().prepare("SELECT * FROM improvements ORDER BY id DESC").all() as Row[];
@@ -55,6 +55,7 @@ export async function reviewSession(runId: number): Promise<{
     model: roleModel("session_reviewer", run),
     permissionMode: "auto",
   });
+  if (collected.status !== "ok") throw new Error(collected.error ?? "session review failed");
   const parsed = parseAgentJson(collected.text, (v) => SessionReviewResultSchema.parse(v));
   getDb()
     .prepare("INSERT INTO session_reviews (run_id, score_json, created_at) VALUES (?,?,?)")
@@ -70,21 +71,19 @@ export async function reviewSession(runId: number): Promise<{
       status: "proposed",
     }),
   );
-  insertEvalCase(`run-${runId}-handoff`, "handoff", {
-    kind: "plan",
-    summary: "Keep plans valid after prompt edits",
-    steps: ["implement", "test"],
+  insertEvalCase(`run-${runId}-prompt`, "prompt_replay", {
+    input: transcript.slice(0, 4000),
+    baseline: scoreOnly(parsed),
   });
-  insertEvalCase(`run-${runId}-score`, "session_replay", { score: scoreOnly(parsed) });
   publish("improvements.updated");
   return { score: scoreOnly(parsed), findings: parsed.findings, improvements: created };
 }
 
-export function decideImprovement(id: number, status: Improvement["status"]): void {
+export async function decideImprovement(id: number, status: Improvement["status"]): Promise<void> {
   const row = getDb().prepare("SELECT * FROM improvements WHERE id = ?").get(id) as Row | undefined;
   if (!row) return;
   let next = status;
-  if (row.kind === "prompt_edit" && status === "approved") next = applyPrompt(row);
+  if (row.kind === "prompt_edit" && status === "approved") next = await applyPrompt(row);
   if (row.kind === "setting_change" && status === "approved") applySetting(row);
   if (row.kind === "claude_md_note" && status === "approved") next = "queued";
   getDb().prepare("UPDATE improvements SET status = ? WHERE id = ?").run(next, id);
@@ -100,8 +99,8 @@ export function loadEvalCases(): StoredEvalCase[] {
   return rows.map((r) => ({ name: r.name, kind: r.kind, fixture: JSON.parse(r.fixture_json) as unknown }));
 }
 
-function applyPrompt(row: Row): Improvement["status"] {
-  const replay = replayEvalCases(loadEvalCases());
+async function applyPrompt(row: Row): Promise<Improvement["status"]> {
+  const replay = await evalPromptPatch(row.patch, loadEvalCases(), roleModel("session_reviewer"));
   getDb().prepare("UPDATE improvements SET eval_passed = ? WHERE id = ?").run(replay.passed ? 1 : 0, row.id);
   if (!replay.passed) return "proposed";
   savePromptVersion("implementer", row.patch);

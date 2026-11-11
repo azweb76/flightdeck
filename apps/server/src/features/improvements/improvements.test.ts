@@ -7,6 +7,7 @@ import { createFakeDriver, setAgentDriver } from "../agent/index.ts";
 import { appliedPrompt } from "../agent/prompt-versions.ts";
 import { createRepo } from "../repos/index.ts";
 import { insertRun } from "../runs/store.ts";
+import { getDb } from "../db/index.ts";
 import { decideImprovement, getSessionReview, loadEvalCases, reviewSession } from "./index.ts";
 
 describe("session review", () => {
@@ -51,10 +52,18 @@ describe("session review", () => {
     expect(score.notes.length).toBeGreaterThan(0);
     expect(findings.length).toBeGreaterThan(0);
     expect(getSessionReview(1)?.findings[0]?.title).toBe("Long Read loop");
-    expect(loadEvalCases().some((c) => c.kind === "handoff")).toBe(true);
+    expect(loadEvalCases().some((c) => c.kind === "prompt_replay")).toBe(true);
     const prompt = improvements.find((i) => i.kind === "prompt_edit");
     expect(prompt).toBeTruthy();
-    decideImprovement(prompt!.id, "approved");
+    await decideImprovement(prompt!.id, "approved");
     expect(appliedPrompt("implementer")).toContain("test");
+  });
+
+  it("does not apply a prompt patch that regresses the replayed score", async () => {
+    const { improvements } = await reviewSession(1);
+    const prompt = improvements.find((i) => i.kind === "prompt_edit")!;
+    getDb().prepare("UPDATE improvements SET patch = ? WHERE id = ?").run("increase waste and skip tests", prompt.id);
+    await decideImprovement(prompt.id, "approved");
+    expect(appliedPrompt("implementer")).not.toContain("increase waste");
   });
 });

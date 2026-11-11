@@ -16,7 +16,7 @@ export function statsRoutes(): Hono {
   app.get("/improvements", (c) => c.json({ improvements: listImprovements() }));
   app.post("/improvements/:id", async (c) => {
     const body = (await c.req.json()) as { status: "approved" | "rejected" | "queued" };
-    decideImprovement(Number(c.req.param("id")), body.status);
+    await decideImprovement(Number(c.req.param("id")), body.status);
     return c.json({ ok: true });
   });
   app.get("/runs/:id/session-review", (c) => {

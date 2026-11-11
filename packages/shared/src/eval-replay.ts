@@ -1,5 +1,5 @@
 import { HandoffSchema } from "./schemas/handoffs.ts";
-import { SessionScoreSchema } from "./schemas/improvements.ts";
+import { SessionScoreSchema, type SessionScore } from "./schemas/improvements.ts";
 
 export type StoredEvalCase = {
   name: string;
@@ -21,11 +21,25 @@ export function replayEvalCase(c: StoredEvalCase): { passed: boolean; detail: st
     return { passed: ok, detail: ok ? "score ok" : "score invalid" };
   }
   if (c.kind === "prompt_edit") {
-    const patch = (c.fixture as { patch?: string } | undefined)?.patch ?? "";
-    const ok = patch.trim().length > 0;
-    return { passed: ok, detail: ok ? "patch present" : "empty patch" };
+    return { passed: false, detail: "prompt_edit must be replayed through a driver" };
+  }
+  if (c.kind === "prompt_replay") {
+    const fixture = c.fixture as { baseline?: unknown };
+    const ok = SessionScoreSchema.safeParse(fixture.baseline).success;
+    return { passed: ok, detail: ok ? "baseline ok" : "baseline invalid" };
   }
   return { passed: false, detail: `unknown kind ${c.kind}` };
+}
+
+/** True when the candidate is worse than the baseline on any scored dimension. */
+export function scoreRegressed(candidate: SessionScore, baseline: SessionScore): boolean {
+  return (
+    candidate.waste > baseline.waste ||
+    candidate.backtracking > baseline.backtracking ||
+    candidate.stuck > baseline.stuck ||
+    candidate.missingContext > baseline.missingContext ||
+    candidate.prQuality < baseline.prQuality
+  );
 }
 
 export function replayEvalCases(cases: StoredEvalCase[]): ReplayResult {

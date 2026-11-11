@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { replayEvalCase, replayEvalCases } from "./eval-replay.ts";
+import { replayEvalCase, replayEvalCases, scoreRegressed } from "./eval-replay.ts";
 
 describe("replayEvalCase", () => {
   it("accepts a valid plan handoff", () => {
@@ -25,5 +25,11 @@ describe("replayEvalCase", () => {
     ]);
     expect(r.passed).toBe(false);
     expect(r.failed[0]).toContain("bad");
+  });
+
+  it("detects a worse session score", () => {
+    const base = { waste: 3, backtracking: 1, prQuality: 8, stuck: 2, missingContext: 4, notes: "a" };
+    expect(scoreRegressed({ ...base, waste: 7 }, base)).toBe(true);
+    expect(scoreRegressed(base, base)).toBe(false);
   });
 });

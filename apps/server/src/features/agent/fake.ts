@@ -72,9 +72,10 @@ function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean): unkno
     };
   }
   if (req.role === "reviewer") return reviewPayload(reviews, majorFirst);
+  const waste = req.prompt.includes("increase waste") || req.prompt.includes("REGRESS_PROMPT") ? 9 : 3;
   return {
     kind: "session_review",
-    waste: 3,
+    waste,
     backtracking: 1,
     prQuality: 8,
     stuck: 2,
