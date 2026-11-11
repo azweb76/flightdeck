@@ -1,0 +1,27 @@
+{
+  "name": "flightdeck",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @flightdeck/server --filter @flightdeck/web --parallel dev",
+    "dev:desktop": "pnpm --filter @flightdeck/desktop dev",
+    "build": "pnpm -r --if-present build",
+    "check": "node scripts/check.mjs",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "test:e2e": "echo 'e2e reserved for CI; none in Phase 1'"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "eslint": "^9.20.0",
+    "eslint-plugin-flightdeck": "workspace:*",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.0"
+  }
+}
