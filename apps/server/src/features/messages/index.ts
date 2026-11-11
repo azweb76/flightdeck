@@ -1,6 +1,8 @@
 import { getDb } from "../db/index.ts";
 import type { MidRunMessage } from "@flightdeck/shared";
 
+export type InjectMode = "start" | "resume";
+
 export function listMessages(runId: number): (MidRunMessage & { id: number; consumed: boolean })[] {
   const rows = getDb()
     .prepare("SELECT id, target, text, consumed FROM run_messages WHERE run_id = ? ORDER BY id")
@@ -27,10 +29,21 @@ export function pendingFor(runId: number, target: MidRunMessage["target"] | "any
   return rows.map((r) => r.text);
 }
 
-export function takeMessages(runId: number): string[] {
+/** resume = current phase; start = next phase (also drains leftover current so it is not lost). */
+export function takeMessages(runId: number, mode: InjectMode = "start"): string[] {
   const rows = getDb()
     .prepare("SELECT id, target, text FROM run_messages WHERE run_id = ? AND consumed = 0 ORDER BY id")
     .all(runId) as { id: number; target: string; text: string }[];
+  const allow = mode === "resume" ? new Set(["current", "run"]) : new Set(["next", "current", "run"]);
+  const picked = rows.filter((r) => allow.has(r.target));
+  if (mode === "start") {
+    const nextOnly = picked.filter((r) => r.target === "next" || r.target === "run" || r.target === "current");
+    return consume(nextOnly);
+  }
+  return consume(picked.filter((r) => r.target === "current" || r.target === "run"));
+}
+
+function consume(rows: { id: number; target: string; text: string }[]): string[] {
   const texts = rows.map((r) => `[${r.target}] ${r.text}`);
   for (const r of rows) {
     if (r.target === "run") continue;
