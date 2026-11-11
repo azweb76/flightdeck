@@ -2,7 +2,7 @@
 
 macOS app that turns Jira Cloud or GitHub issues into pull requests via the Claude Agent SDK.
 
-Phases 1–7 are in this repo: setup, runs, refine/orchestration, control, extra entry points, polish, session review.
+Phases 1–11 are in this repo: setup through PRs on the board (authored and review-requested GitHub PRs nested on issue cards).
 
 ## How agents work here
 
