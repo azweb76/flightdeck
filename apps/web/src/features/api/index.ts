@@ -85,7 +85,7 @@ export const api = {
   startRun: (issueId: string, repoId?: number) =>
     request<Run>("/api/runs", { method: "POST", body: JSON.stringify({ issueId, repoId }) }),
   runs: () => request<{ runs: Run[]; active: number }>("/api/runs"),
-  run: (id: number) => request<{ run: Run; events: TranscriptEvent[] }>(`/api/runs/${id}`),
+  run: (id: number) => request<{ run: Run; events: TranscriptEvent[]; question?: Question | null }>(`/api/runs/${id}`),
   cancelRun: (id: number) => request<Run>(`/api/runs/${id}/cancel`, { method: "POST" }),
   resumeRun: (id: number) => request<Run>(`/api/runs/${id}/resume`, { method: "POST" }),
   messageRun: (id: number, text: string, target: "current" | "next" | "run") =>

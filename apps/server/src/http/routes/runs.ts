@@ -1,13 +1,13 @@
 import { Hono } from "hono";
-import { MidRunMessageSchema, StartRunSchema } from "@flightdeck/shared";
+import { MidRunMessageSchema, StartRunSchema, type Run } from "@flightdeck/shared";
 import { publish } from "../../features/events/index.ts";
-import { answerQuestion } from "../../features/questions/store.ts";
 import { enqueue } from "../../features/runs/start.ts";
 import { abortRun } from "../../features/runs/abort.ts";
 import { insertMessage } from "../../features/messages/index.ts";
-import { getQuestion } from "../../features/questions/store.ts";
+import { answerQuestion, getQuestion, listQuestions } from "../../features/questions/store.ts";
 import { hasLiveSession, pushLiveInput, resolveLiveAnswer } from "../../features/runs/live.ts";
 import { runDiff } from "../../features/runs/diff.ts";
+import { insertEvent } from "../../features/runs/store.ts";
 import { activeRunCount, getRun, listEvents, listRuns, startRun, updateRun } from "../../features/runs/index.ts";
 import { apiError } from "../errors.ts";
 import { NeedRepoError } from "../../features/discovery/index.ts";
@@ -18,7 +18,8 @@ export function runRoutes(): Hono {
   app.get("/:id", (c) => {
     const run = getRun(Number(c.req.param("id")));
     if (!run) throw apiError(404, "not_found", "Run not found");
-    return c.json({ run, events: listEvents(run.id) });
+    const question = listQuestions(run.id).find((q) => q.status === "open") ?? null;
+    return c.json({ run, events: listEvents(run.id), question });
   });
   app.get("/:id/diff", async (c) => {
     const run = getRun(Number(c.req.param("id")));
@@ -63,6 +64,7 @@ async function message(id: number, body: unknown) {
   const run = getRun(id);
   if (!run) throw apiError(404, "not_found", "Run not found");
   const msg = MidRunMessageSchema.parse(body);
+  recordUserBubble(run, msg.text);
   if (msg.target === "current" && hasLiveSession(run.id) && pushLiveInput(run.id, msg.text)) {
     publish("run.event", { runId: run.id, message: msg });
     return { ok: true, live: true };
@@ -81,10 +83,24 @@ async function answer(id: number, body: unknown) {
     return getRun(run.id);
   }
   answerQuestion(run.questionId, parsed.answer);
+  recordUserBubble(run, parsed.answer);
   insertMessage(run.id, { target: "current", text: `Operator answered: ${parsed.answer}` });
   updateRun(run.id, { status: "queued", questionId: null, pauseReason: null });
   enqueue(run.id);
   return getRun(run.id);
+}
+
+function recordUserBubble(run: Run, text: string): void {
+  const role =
+    run.phase === "plan" ? "planner" : run.phase === "review" || run.phase === "session_review" ? "reviewer" : "implementer";
+  insertEvent({
+    runId: run.id,
+    role,
+    kind: "text",
+    title: "user",
+    detail: text,
+    at: new Date().toISOString(),
+  });
 }
 
 async function fix(id: number) {

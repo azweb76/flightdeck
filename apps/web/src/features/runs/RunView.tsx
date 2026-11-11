@@ -3,13 +3,14 @@ import { Alert, Box, Button, CircularProgress, Grid, MenuItem, Paper, Stack, Tab
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/index.ts";
 import { ColoredDiff } from "./ColoredDiff.tsx";
+import { AskPanel } from "./AskPanel.tsx";
 import { Transcript } from "./Transcript.tsx";
 import { RunActions } from "./RunActions.tsx";
 import { useRun } from "./useRun.ts";
 
 export function RunView() {
   const { id } = useParams();
-  const { run, setRun, error, events, diff, reviewNotes, setReviewNotes, findings } = useRun(id);
+  const { run, setRun, error, events, question, diff, reviewNotes, setReviewNotes, findings } = useRun(id);
   const [tab, setTab] = useState<"transcript" | "diff" | "plan" | "review">("transcript");
   const [msg, setMsg] = useState("");
   const [target, setTarget] = useState<"current" | "next" | "run">("current");
@@ -31,7 +32,8 @@ export function RunView() {
       <Typography variant="h2">
         Run {run.issueKey} on {run.repoSlug}
       </Typography>
-      <RunActions run={run} onRun={setRun} onReview={setReviewNotes} answer={answer} setAnswer={setAnswer} />
+      <RunActions run={run} onRun={setRun} onReview={setReviewNotes} />
+      <AskPanel run={run} question={question} answer={answer} setAnswer={setAnswer} onRun={setRun} />
       <Grid container spacing={3} sx={{ flex: 1, minHeight: 0 }}>
         <Grid size={{ xs: 12, md: 8 }}>
           <Tabs value={tab} onChange={(_, t) => setTab(t)} sx={{ mb: 2 }}>
@@ -40,7 +42,7 @@ export function RunView() {
             <Tab value="plan" label="Plan" />
             <Tab value="review" label="Review" />
           </Tabs>
-          {tab === "transcript" ? <Transcript events={events} /> : null}
+          {tab === "transcript" ? <Transcript events={events} run={run} /> : null}
           {tab === "diff" ? <ColoredDiff diff={diff} /> : null}
           {tab === "plan" ? (
             <Box component="pre" sx={{ whiteSpace: "pre-wrap" }}>

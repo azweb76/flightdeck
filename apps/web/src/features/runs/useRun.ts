@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import type { Run, TranscriptEvent } from "@flightdeck/shared";
+import type { Question, Run, TranscriptEvent } from "@flightdeck/shared";
 import { api, subscribeEvents } from "../api/index.ts";
 
 export function useRun(id: string | undefined) {
   const [run, setRun] = useState<Run>();
   const [error, setError] = useState<string>();
   const [events, setEvents] = useState<TranscriptEvent[]>([]);
+  const [question, setQuestion] = useState<Question | null>(null);
   const [diff, setDiff] = useState("");
   const [reviewNotes, setReviewNotes] = useState("");
   const [findings, setFindings] = useState<{ title: string; detail: string; excerpt?: string }[]>([]);
@@ -17,6 +18,7 @@ export function useRun(id: string | undefined) {
       .then((r) => {
         setRun(r.run);
         setEvents(r.events);
+        setQuestion(r.question ?? null);
         setError(undefined);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Run not found"));
@@ -41,5 +43,5 @@ export function useRun(id: string | undefined) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  return { run, setRun, error, events, diff, reviewNotes, setReviewNotes, findings };
+  return { run, setRun, error, events, question, diff, reviewNotes, setReviewNotes, findings };
 }
