@@ -4,10 +4,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import { createFakeDriver, setAgentDriver } from "../agent/index.ts";
+import { appliedPrompt } from "../agent/prompt-versions.ts";
 import { createRepo } from "../repos/index.ts";
 import { insertRun } from "../runs/store.ts";
-import { decideImprovement, reviewSession } from "./index.ts";
-import { getSettings } from "../settings/index.ts";
+import { decideImprovement, getSessionReview, loadEvalCases, reviewSession } from "./index.ts";
 
 describe("session review", () => {
   beforeEach(() => {
@@ -46,12 +46,15 @@ describe("session review", () => {
     delete process.env.FLIGHTDECK_DATA_DIR;
   });
 
-  it("scores a run and auto-applies an eval-passing prompt edit", async () => {
-    const { score, improvements } = await reviewSession(1);
+  it("stores agent findings and applies a prompt only after eval replay passes", async () => {
+    const { score, findings, improvements } = await reviewSession(1);
     expect(score.notes.length).toBeGreaterThan(0);
+    expect(findings.length).toBeGreaterThan(0);
+    expect(getSessionReview(1)?.findings[0]?.title).toBe("Long Read loop");
+    expect(loadEvalCases().some((c) => c.kind === "handoff")).toBe(true);
     const prompt = improvements.find((i) => i.kind === "prompt_edit");
     expect(prompt).toBeTruthy();
     decideImprovement(prompt!.id, "approved");
-    expect(getSettings().promptImplementer).toContain("test");
+    expect(appliedPrompt("implementer")).toContain("test");
   });
 });

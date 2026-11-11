@@ -1,12 +1,18 @@
 import {
-  SessionScoreSchema,
+  SessionReviewResultSchema,
   parseAgentJson,
+  replayEvalCases,
   type Improvement,
+  type SessionFinding,
+  type SessionReviewResult,
   type SessionScore,
+  type StoredEvalCase,
 } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
 import { publish } from "../events/index.ts";
 import { collectAgentOutput } from "../agent/collect.ts";
+import { sessionReviewPrompt } from "../agent/prompts.ts";
+import { savePromptVersion } from "../agent/prompt-versions.ts";
 import { roleModel } from "../runs/execute.ts";
 import { listEvents, getRun } from "../runs/store.ts";
 import { patchSettings } from "../settings/index.ts";
@@ -16,43 +22,62 @@ export function listImprovements(): Improvement[] {
   return rows.map(toImp);
 }
 
-export function getSessionReview(runId: number): { score: SessionScore; improvements: Improvement[] } | undefined {
+export function getSessionReview(runId: number): {
+  score: SessionScore;
+  findings: SessionFinding[];
+  improvements: Improvement[];
+} | undefined {
   const row = getDb()
     .prepare("SELECT score_json FROM session_reviews WHERE run_id = ? ORDER BY id DESC LIMIT 1")
     .get(runId) as { score_json: string } | undefined;
   if (!row) return undefined;
+  const parsed = SessionReviewResultSchema.parse(JSON.parse(row.score_json));
   return {
-    score: SessionScoreSchema.parse(JSON.parse(row.score_json)),
+    score: scoreOnly(parsed),
+    findings: parsed.findings,
     improvements: listImprovements().filter((i) => i.runId === runId),
   };
 }
 
-export async function reviewSession(runId: number): Promise<{ score: SessionScore; improvements: Improvement[] }> {
+export async function reviewSession(runId: number): Promise<{
+  score: SessionScore;
+  findings: SessionFinding[];
+  improvements: Improvement[];
+}> {
   const run = getRun(runId);
   if (!run) throw new Error("run not found");
   const events = listEvents(runId);
+  const transcript = events.map((e) => `${e.role ?? ""} ${e.title}: ${e.detail}`).join("\n");
   const collected = await collectAgentOutput({
-    prompt: sessionPrompt(run.issueKey, events.length),
+    prompt: sessionReviewPrompt(run.issueKey, transcript),
     cwd: run.worktreePath || process.cwd(),
     role: "session_reviewer",
     model: roleModel("session_reviewer", run),
     permissionMode: "auto",
   });
-  const score = scoreFrom(collected.text, events.length, run.status, Boolean(run.prUrl));
+  const parsed = parseAgentJson(collected.text, (v) => SessionReviewResultSchema.parse(v));
   getDb()
     .prepare("INSERT INTO session_reviews (run_id, score_json, created_at) VALUES (?,?,?)")
-    .run(runId, JSON.stringify(score), new Date().toISOString());
-  const created = seedImprovements(runId, run.repoSlug, score);
-  getDb()
-    .prepare(`INSERT INTO eval_cases (name, kind, fixture_json, created_at) VALUES (?,?,?,?)`)
-    .run(
-      `run-${runId}`,
-      "session_replay",
-      JSON.stringify({ runId, events: events.slice(0, 40), score }),
-      new Date().toISOString(),
-    );
+    .run(runId, JSON.stringify(parsed), new Date().toISOString());
+  const created = parsed.improvements.map((imp) =>
+    insertImp({
+      runId,
+      repoSlug: run.repoSlug,
+      kind: imp.kind,
+      title: imp.title,
+      detail: imp.detail,
+      patch: imp.patch,
+      status: "proposed",
+    }),
+  );
+  insertEvalCase(`run-${runId}-handoff`, "handoff", {
+    kind: "plan",
+    summary: "Keep plans valid after prompt edits",
+    steps: ["implement", "test"],
+  });
+  insertEvalCase(`run-${runId}-score`, "session_replay", { score: scoreOnly(parsed) });
   publish("improvements.updated");
-  return { score, improvements: created };
+  return { score: scoreOnly(parsed), findings: parsed.findings, improvements: created };
 }
 
 export function decideImprovement(id: number, status: Improvement["status"]): void {
@@ -66,13 +91,20 @@ export function decideImprovement(id: number, status: Improvement["status"]): vo
   publish("improvements.updated");
 }
 
+export function loadEvalCases(): StoredEvalCase[] {
+  const rows = getDb().prepare("SELECT name, kind, fixture_json FROM eval_cases").all() as {
+    name: string;
+    kind: string;
+    fixture_json: string;
+  }[];
+  return rows.map((r) => ({ name: r.name, kind: r.kind, fixture: JSON.parse(r.fixture_json) as unknown }));
+}
+
 function applyPrompt(row: Row): Improvement["status"] {
-  const evalOk = typeof row.patch === "string" && row.patch.trim().length > 0;
-  getDb().prepare("UPDATE improvements SET eval_passed = ? WHERE id = ?").run(evalOk ? 1 : 0, row.id);
-  if (!evalOk) return "proposed";
-  getDb()
-    .prepare("INSERT INTO prompt_versions (role, body, version, created_at) VALUES (?,?,?,?)")
-    .run("implementer", row.patch, Date.now(), new Date().toISOString());
+  const replay = replayEvalCases(loadEvalCases());
+  getDb().prepare("UPDATE improvements SET eval_passed = ? WHERE id = ?").run(replay.passed ? 1 : 0, row.id);
+  if (!replay.passed) return "proposed";
+  savePromptVersion("implementer", row.patch);
   patchSettings({ promptImplementer: row.patch });
   return "applied";
 }
@@ -86,60 +118,21 @@ function applySetting(row: Row): void {
   }
 }
 
-function seedImprovements(runId: number, repoSlug: string, score: SessionScore): Improvement[] {
-  return [
-    insertImp({
-      runId,
-      repoSlug,
-      kind: "claude_md_note",
-      title: `Note from run ${runId}`,
-      detail: score.notes,
-      patch: score.notes,
-      evalPassed: true,
-      status: "queued",
-    }),
-    insertImp({
-      runId,
-      repoSlug,
-      kind: "prompt_edit",
-      title: "Tighten implementer prompt",
-      detail: "Run tests before finishing a round.",
-      patch: "After each edit, run the repo test command.",
-      evalPassed: true,
-      status: "proposed",
-    }),
-    insertImp({
-      runId,
-      kind: "setting_change",
-      title: "Dollar cap",
-      detail: "Raise cap if waste is high.",
-      patch: JSON.stringify({ dollarCapUsd: 15 }),
-      status: "proposed",
-    }),
-  ];
+function insertEvalCase(name: string, kind: string, fixture: unknown): void {
+  getDb()
+    .prepare(`INSERT INTO eval_cases (name, kind, fixture_json, created_at) VALUES (?,?,?,?)`)
+    .run(name, kind, JSON.stringify(fixture), new Date().toISOString());
 }
 
-function sessionPrompt(key: string, n: number): string {
-  return [
-    "Score this Flightdeck session 0-10 for waste, backtracking, prQuality, stuck, missingContext.",
-    `Issue ${key}, ${n} transcript events.`,
-    'Reply JSON: {"waste":3,"backtracking":1,"prQuality":8,"stuck":2,"missingContext":4,"notes":"..."}',
-  ].join("\n");
-}
-
-function scoreFrom(text: string, events: number, status: string, hasPr: boolean): SessionScore {
-  try {
-    return parseAgentJson(text, (v) => SessionScoreSchema.parse(v));
-  } catch {
-    return {
-      waste: events > 20 ? 6 : 3,
-      backtracking: 1,
-      prQuality: hasPr ? 8 : 4,
-      stuck: status === "paused" || status === "asking" ? 7 : 2,
-      missingContext: 4,
-      notes: "Fallback score; agent JSON missing.",
-    };
-  }
+function scoreOnly(parsed: SessionReviewResult): SessionScore {
+  return {
+    waste: parsed.waste,
+    backtracking: parsed.backtracking,
+    prQuality: parsed.prQuality,
+    stuck: parsed.stuck,
+    missingContext: parsed.missingContext,
+    notes: parsed.notes,
+  };
 }
 
 type Row = {

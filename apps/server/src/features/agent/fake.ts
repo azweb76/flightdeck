@@ -66,14 +66,35 @@ function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean): unkno
     };
   }
   if (req.role === "reviewer") return reviewPayload(reviews, majorFirst);
+  if (req.prompt.includes("inline review comments") || req.prompt.includes("teammate PR")) {
+    return {
+      kind: "pr_review",
+      comments: [{ path: "src/index.ts", line: 1, body: "Prefer a streaming cursor here." }],
+    };
+  }
   return {
-    kind: "session_score",
+    kind: "session_review",
     waste: 3,
     backtracking: 1,
     prQuality: 8,
     stuck: 2,
     missingContext: 4,
     notes: "Synthetic session review",
+    findings: [{ title: "Long Read loop", detail: "The implementer reread CLAUDE.md twice.", excerpt: "Read CLAUDE.md" }],
+    improvements: [
+      {
+        kind: "prompt_edit",
+        title: "Tighten implementer prompt",
+        detail: "Run tests before finishing a round.",
+        patch: "After each edit, run the repo test command.",
+      },
+      {
+        kind: "claude_md_note",
+        title: "Note from session",
+        detail: "Prefer streaming APIs for exports.",
+        patch: "Prefer streaming APIs for exports.",
+      },
+    ],
   };
 }
 

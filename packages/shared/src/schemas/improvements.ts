@@ -29,3 +29,25 @@ export const SessionScoreSchema = z.object({
   notes: z.string(),
 });
 export type SessionScore = z.infer<typeof SessionScoreSchema>;
+
+export const SessionFindingSchema = z.object({
+  title: z.string(),
+  detail: z.string(),
+  excerpt: z.string().optional(),
+});
+export type SessionFinding = z.infer<typeof SessionFindingSchema>;
+
+export const ProposedImprovementSchema = z.object({
+  kind: ImprovementKindSchema,
+  title: z.string(),
+  detail: z.string(),
+  patch: z.string().default(""),
+});
+export type ProposedImprovement = z.infer<typeof ProposedImprovementSchema>;
+
+export const SessionReviewResultSchema = SessionScoreSchema.extend({
+  kind: z.literal("session_review").optional(),
+  findings: z.array(SessionFindingSchema).default([]),
+  improvements: z.array(ProposedImprovementSchema).default([]),
+});
+export type SessionReviewResult = z.infer<typeof SessionReviewResultSchema>;
