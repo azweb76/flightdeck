@@ -1,0 +1,22 @@
+{
+  "name": "@flightdeck/desktop",
+  "productName": "Flightdeck",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc && FLIGHTDECK_UI_URL=http://127.0.0.1:47322 electron .",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@flightdeck/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "electron": "^33.4.5",
+    "typescript": "^5.7.3"
+  }
+}
