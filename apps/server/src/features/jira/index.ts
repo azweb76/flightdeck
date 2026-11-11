@@ -1,3 +1,5 @@
+import { adfToMarkdown, markdownToAdf } from "@flightdeck/shared";
+
 export type JiraIssue = {
   key: string;
   title: string;
@@ -85,11 +87,7 @@ async function jiraWriteDesc(
     headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
     body: JSON.stringify({
       fields: {
-        description: {
-          type: "doc",
-          version: 1,
-          content: [{ type: "paragraph", content: [{ type: "text", text: opts.description }] }],
-        },
+        description: { ...markdownToAdf(opts.description), version: 1 },
       },
     }),
   });
@@ -116,11 +114,7 @@ async function jiraCreateIssue(
         project: { key: opts.projectKey },
         summary: opts.title,
         issuetype: { name: "Task" },
-        description: {
-          type: "doc",
-          version: 1,
-          content: [{ type: "paragraph", content: [{ type: "text", text: opts.body }] }],
-        },
+        description: { ...markdownToAdf(opts.body), version: 1 },
       },
     }),
   });
@@ -149,11 +143,7 @@ async function jiraSubtask(
         parent: { key: opts.parentKey },
         summary: opts.title,
         labels: opts.labels,
-        description: {
-          type: "doc",
-          version: 1,
-          content: [{ type: "paragraph", content: [{ type: "text", text: opts.body }] }],
-        },
+        description: { ...markdownToAdf(opts.body), version: 1 },
       },
     }),
   });
@@ -176,7 +166,7 @@ async function jiraComments(
   return (data.comments ?? []).map((c) => ({
     id: String(c.id ?? ""),
     author: c.author?.displayName ?? "",
-    body: adfToText(c.body),
+    body: adfToMarkdown(c.body),
     createdAt: c.created ?? "",
   }));
 }
@@ -253,7 +243,7 @@ function toIssue(base: string, issue: JiraApiIssue): JiraIssue {
   return {
     key: issue.key,
     title: issue.fields?.summary ?? issue.key,
-    body: adfToText(issue.fields?.description),
+    body: adfToMarkdown(issue.fields?.description),
     url: `${base}/browse/${issue.key}`,
     labels: issue.fields?.labels ?? [],
     updatedAt: issue.fields?.updated ?? new Date().toISOString(),
@@ -266,14 +256,5 @@ function authHeaders(email: string, token: string): Record<string, string> {
 }
 
 export function adfToText(node: unknown): string {
-  if (node == null) return "";
-  if (typeof node === "string") return node;
-  if (Array.isArray(node)) return node.map(adfToText).join("");
-  if (typeof node !== "object") return "";
-  const n = node as { type?: string; text?: string; content?: unknown[] };
-  if (n.type === "text") return n.text ?? "";
-  const inner = (n.content ?? []).map(adfToText).join("");
-  if (n.type === "paragraph" || n.type === "heading") return `${inner}\n\n`;
-  if (n.type === "listItem") return `- ${inner.trim()}\n`;
-  return inner;
+  return adfToMarkdown(node);
 }
