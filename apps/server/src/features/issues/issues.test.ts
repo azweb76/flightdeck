@@ -1,28 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { mapJira } from "./index.ts";
 
-const repos = [
-  {
-    id: 1,
-    owner: "acme",
-    name: "web",
-    localPath: "",
-    defaultBranch: "main",
-    pinned: false,
-    createdAt: "t",
-    instructions: "",
-    setupCommand: "",
-    testCommand: "",
-    commitConvention: "fix",
-    modelOverride: "",
-  },
-];
+const visible = [{ owner: "acme", name: "web" }];
 
 describe("mapJira", () => {
   it("warns when no repo label is present", () => {
     const issue = mapJira(
       { key: "PROJ-1", title: "x", body: "", url: "", labels: ["bug"], updatedAt: "t" },
-      repos,
+      visible,
       "gh:",
     );
     expect(issue.repoWarning).toBe("missing");
@@ -39,19 +24,17 @@ describe("mapJira", () => {
         labels: ["gh:acme/web", "gh:acme/api"],
         updatedAt: "t",
       },
-      repos,
+      visible,
       "gh:",
     );
     expect(issue.repoWarning).toBe("multiple");
     expect(issue.repos).toHaveLength(2);
-    expect(issue.repos[0]?.registered).toBe(true);
-    expect(issue.repos[1]?.registered).toBe(false);
   });
 
-  it("links a single registered repo", () => {
+  it("links a single visible repo", () => {
     const issue = mapJira(
       { key: "PROJ-3", title: "x", body: "", url: "", labels: ["gh:acme/web"], updatedAt: "t" },
-      repos,
+      visible,
       "gh:",
     );
     expect(issue.repoWarning).toBe("none");

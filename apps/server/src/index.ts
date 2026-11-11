@@ -19,3 +19,7 @@ serve({ fetch: app.fetch, hostname: host, port }, (info) => {
 setInterval(() => {
   void cleanupMerged();
 }, 60_000);
+
+setInterval(() => {
+  void import("./features/issues/index.ts").then((m) => m.syncAssigned()).catch(() => undefined);
+}, 5 * 60_000);

@@ -12,17 +12,22 @@ type Row = {
   repos_json: string;
   repo_warning: string;
   updated_at: string;
+  assigned?: number;
+  closed?: number;
+  comments_json?: string;
 };
 
-export function upsertIssue(issue: Issue): void {
+export function upsertIssue(issue: Issue, flags?: { assigned?: boolean; closed?: boolean }): void {
   getDb()
     .prepare(
-      `INSERT INTO issues (id, source, key, title, body, url, parent_id, repos_json, repo_warning, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?)
+      `INSERT INTO issues (id, source, key, title, body, url, parent_id, repos_json, repo_warning, updated_at, assigned, closed, comments_json)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET
          title=excluded.title, body=excluded.body, url=excluded.url,
          parent_id=excluded.parent_id, repos_json=excluded.repos_json,
-         repo_warning=excluded.repo_warning, updated_at=excluded.updated_at`,
+         repo_warning=excluded.repo_warning, updated_at=excluded.updated_at,
+         assigned=excluded.assigned, closed=excluded.closed,
+         comments_json=COALESCE(excluded.comments_json, issues.comments_json)`,
     )
     .run(
       issue.id,
@@ -35,6 +40,9 @@ export function upsertIssue(issue: Issue): void {
       JSON.stringify(issue.repos),
       issue.repoWarning,
       issue.updatedAt,
+      (flags?.assigned ?? true) ? 1 : 0,
+      flags?.closed ? 1 : 0,
+      JSON.stringify(issue.comments ?? []),
     );
 }
 
@@ -44,11 +52,46 @@ export function loadIssue(id: string): Issue | undefined {
 }
 
 export function loadIssues(): Issue[] {
-  const rows = getDb().prepare("SELECT * FROM issues ORDER BY updated_at DESC").all() as Row[];
+  const rows = getDb()
+    .prepare("SELECT * FROM issues WHERE assigned = 1 AND closed = 0 ORDER BY updated_at DESC")
+    .all() as Row[];
   return rows.map(fromRow);
 }
 
+export function pruneIssues(keepIds: string[]): void {
+  const keep = new Set(keepIds);
+  const rows = getDb().prepare("SELECT id, source FROM issues").all() as { id: string; source: string }[];
+  for (const row of rows) {
+    if (row.source === "adhoc") continue;
+    if (keep.has(row.id)) continue;
+    getDb().prepare("DELETE FROM issues WHERE id = ?").run(row.id);
+    getDb().prepare("DELETE FROM issue_comments WHERE issue_id = ?").run(row.id);
+  }
+}
+
+export function replaceComments(
+  issueId: string,
+  comments: { id: string; author: string; body: string; createdAt: string }[],
+): void {
+  const db = getDb();
+  db.prepare("DELETE FROM issue_comments WHERE issue_id = ?").run(issueId);
+  for (const c of comments) {
+    db.prepare(
+      "INSERT INTO issue_comments (issue_id, comment_id, author, body, created_at) VALUES (?,?,?,?,?)",
+    ).run(issueId, c.id, c.author, c.body, c.createdAt);
+  }
+  db.prepare("UPDATE issues SET comments_json = ? WHERE id = ?").run(JSON.stringify(comments), issueId);
+}
+
+export function loadComments(issueId: string): { id: string; author: string; body: string; createdAt: string }[] {
+  const rows = getDb()
+    .prepare("SELECT comment_id, author, body, created_at FROM issue_comments WHERE issue_id = ?")
+    .all(issueId) as { comment_id: string; author: string; body: string; created_at: string }[];
+  return rows.map((r) => ({ id: r.comment_id, author: r.author, body: r.body, createdAt: r.created_at }));
+}
+
 function fromRow(row: Row): Issue {
+  const comments = row.comments_json ? (JSON.parse(row.comments_json) as Issue["comments"]) : undefined;
   return {
     id: row.id,
     source: row.source as Issue["source"],
@@ -61,5 +104,6 @@ function fromRow(row: Row): Issue {
     repoWarning: row.repo_warning as Issue["repoWarning"],
     updatedAt: row.updated_at,
     parentId: row.parent_id ?? undefined,
+    comments: comments?.length ? comments : undefined,
   };
 }
