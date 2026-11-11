@@ -88,7 +88,7 @@ async function seedRuns(): Promise<void> {
   updateRun(run.id, { questionId: q.id });
   seedPrOpenRun(now);
   seedLiveRuns(now);
-  await notify("Needs you", "PROJ-142 asked whether endpoints go under /v2.", `/runs/${run.id}`);
+  await notify("Needs you", "PROJ-142 asked whether endpoints go under /v2.", `/?item=run:${run.id}`);
   startDemoReview();
   try {
     reviewSession(run.id);

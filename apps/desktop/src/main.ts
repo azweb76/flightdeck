@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { APP_BUNDLE_ID, APP_NAME, DEFAULT_PORT } from "@flightdeck/shared";
+import { APP_BUNDLE_ID, APP_NAME, DEFAULT_PORT, dockBadgeCount } from "@flightdeck/shared";
 import { registerOpenExternalIpc, trapInAppNavigation } from "./external/index.ts";
 import { ensureServer, runnerBusy } from "./runner.ts";
 import type { ChildProcess } from "node:child_process";
@@ -41,7 +41,9 @@ app.whenReady().then(async () => {
   });
   setInterval(() => {
     void maybeQuit();
+    void refreshDockBadge(port);
   }, 15_000);
+  void refreshDockBadge(port);
 });
 
 app.on("window-all-closed", () => {
@@ -52,6 +54,18 @@ app.on("before-quit", () => {
   if (process.platform === "darwin") return;
   server?.kill();
 });
+
+async function refreshDockBadge(apiPort: number): Promise<void> {
+  if (process.platform !== "darwin") return;
+  try {
+    const res = await fetch(`http://127.0.0.1:${apiPort}/api/next/badge`);
+    const body = (await res.json()) as { badge?: number };
+    const count = dockBadgeCount(body.badge, process.platform);
+    if (count !== undefined) app.setBadgeCount(count);
+  } catch {
+    /* server still booting */
+  }
+}
 
 async function maybeQuit(fromClose = false): Promise<void> {
   const busy = await runnerBusy(port);

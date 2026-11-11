@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { prSearchQueries } from "./query.ts";
+import { PR_SEARCH_QUERY, prSearchQueries } from "./query.ts";
+
+describe("PR_SEARCH_QUERY", () => {
+  it("asks GitHub for priority labels", () => {
+    expect(PR_SEARCH_QUERY).toContain("labels(first:20){nodes{name}}");
+  });
+});
 
 describe("prSearchQueries", () => {
   it("uses the viewer login instead of @me", () => {

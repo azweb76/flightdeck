@@ -11,6 +11,7 @@ type JiraApiIssue = {
     description?: unknown;
     labels?: string[];
     updated?: string;
+    priority?: { name?: string };
   };
 };
 
@@ -34,7 +35,7 @@ export async function searchJira(
     const body: Record<string, unknown> = {
       jql: opts.jql,
       maxResults: 50,
-      fields: ["summary", "description", "labels", "updated"],
+      fields: ["summary", "description", "labels", "updated", "priority"],
     };
     if (nextPageToken) body.nextPageToken = nextPageToken;
     const res = await fetchFn(url, { method: "POST", headers, body: JSON.stringify(body) });
@@ -55,5 +56,6 @@ function toIssue(base: string, issue: JiraApiIssue): JiraIssue {
     url: `${base}/browse/${issue.key}`,
     labels: issue.fields?.labels ?? [],
     updatedAt: issue.fields?.updated ?? new Date().toISOString(),
+    jiraPriority: issue.fields?.priority?.name,
   };
 }

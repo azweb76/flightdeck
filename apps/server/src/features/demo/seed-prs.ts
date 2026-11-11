@@ -11,7 +11,7 @@ export function demoPrs(): BoardPr[] {
   const day = (n: number) => new Date(Date.parse(now) - n * 86_400_000).toISOString();
   return [
     mine("acme/docs#91", 91, "Fix broken links in docs", { draft: true, ci: "failing", linked: ["github:acme/docs#88"], age: 2, now, day }),
-    mine("acme/web#401", 401, "Retry flaky invoice test", { ci: "failing", age: 1, now, day }),
+    mine("acme/web#401", 401, "Retry flaky invoice test", { ci: "failing", age: 1, now, day, labels: ["P0"] }),
     mine("acme/web#431", 431, "CSV export of invoices", {
       review: "changes_requested",
       unresolvedThreads: 3,
@@ -24,7 +24,7 @@ export function demoPrs(): BoardPr[] {
     mine("acme/web#450", 450, "Dark mode polish", { review: "approved", age: 5, now, day }),
     mine("acme/docs#100", 100, "Ship changelog", { state: "merged", age: 1, now, day }),
     review("acme/web#460", 460, "Draft: telemetry opt-in", { draft: true, age: 2, now, day }),
-    review("acme/api#90", 90, "CI red on auth tests", { ci: "failing", age: 1, now, day }),
+    review("acme/api#90", 90, "CI red on auth tests", { ci: "failing", age: 1, now, day, labels: ["priority:high"] }),
     review("acme/web#441", 441, "Please revert the cache bust", { review: "changes_requested", unresolvedThreads: 2, age: 3, now, day }),
     review("acme/api#88", 88, "Tighten auth middleware", { ci: "pending", unresolvedThreads: 1, age: 1, now, day }),
     review("acme/web#440", 440, "Fork: locale fallback", { isFork: true, viewerCanPush: false, headRepo: "ada/web", age: 6, now, day }),
@@ -54,6 +54,7 @@ type Extra = {
   age: number;
   now: string;
   day: (n: number) => string;
+  labels?: string[];
 };
 
 function base(id: string, number: number, title: string, role: BoardPr["role"], extra: Extra): BoardPr {
@@ -79,5 +80,6 @@ function base(id: string, number: number, title: string, role: BoardPr["role"], 
     updatedAt: extra.now,
     linkedIssueIds: extra.linked ?? [],
     state: extra.state ?? "open",
+    labels: extra.labels ?? [],
   };
 }

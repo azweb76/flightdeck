@@ -5,4 +5,5 @@ export type JiraIssue = {
   url: string;
   labels: string[];
   updatedAt: string;
+  jiraPriority?: string;
 };

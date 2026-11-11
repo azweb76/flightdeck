@@ -15,7 +15,12 @@ export function Alerts() {
     void api.notifications().then((n) => {
       if (n.unread > unread && typeof Notification !== "undefined" && Notification.permission === "granted") {
         const first = n.notifications.find((x) => !x.read);
-        if (first) new Notification(first.title, { body: first.body });
+        if (first) {
+          const toast = new Notification(first.title, { body: first.body });
+          toast.onclick = () => {
+            if (first.href) nav(first.href);
+          };
+        }
       }
       setUnread(n.unread);
       setItems(n.notifications);

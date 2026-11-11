@@ -54,6 +54,7 @@ export const BoardPrSchema = z.object({
   updatedAt: z.string(),
   linkedIssueIds: z.array(z.string()).default([]),
   state: PrLifecycleSchema.default("open"),
+  labels: z.array(z.string()).default([]),
 });
 export type BoardPr = z.infer<typeof BoardPrSchema>;
 
@@ -68,6 +69,8 @@ export const IssueSchema = z.object({
   repos: z.array(LinkedRepoSchema),
   repoWarning: RepoLinkWarningSchema,
   updatedAt: z.string(),
+  labels: z.array(z.string()).optional(),
+  jiraPriority: z.string().optional(),
   needsYou: z.boolean().optional(),
   statusNote: z.string().optional(),
   latestRunId: z.number().optional(),

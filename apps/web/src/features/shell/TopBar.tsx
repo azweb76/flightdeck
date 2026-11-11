@@ -82,6 +82,7 @@ function SearchField() {
 }
 
 function crumbFor(path: string): string {
+  if (path === "/") return "Next";
   if (path.startsWith("/issues/new")) return "Issues / New";
   if (path.startsWith("/issues/")) return "Issues / Detail";
   if (path.startsWith("/issues")) return "Issues";

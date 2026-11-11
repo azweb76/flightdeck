@@ -11,7 +11,7 @@ import { syncFromIssues } from "./syncStatus.ts";
 const INITIAL: SyncState = { label: "Synced", tone: "success", detail: "Jira: ok · GitHub: ok" };
 
 export function AppShell({ repos }: { repos: CatalogRepo[] }) {
-  const [counts, setCounts] = useState({ issues: 0, runs: 0, reviews: 0, prs: 0 });
+  const [counts, setCounts] = useState({ issues: 0, runs: 0, reviews: 0, prs: 0, next: 0 });
   const [asking, setAsking] = useState<{ prompt: string; href: string }>();
   const [sync, setSync] = useState<SyncState>(INITIAL);
   const [spend, setSpend] = useState<{ todayUsd: number; capUsd: number; blocked?: boolean }>();
@@ -25,7 +25,7 @@ export function AppShell({ repos }: { repos: CatalogRepo[] }) {
           setSync(syncFromIssues(iss));
         })
         .catch(() => undefined);
-      void api.prs().then((r) => setCounts((c) => ({ ...c, prs: r.badge }))).catch(() => undefined);
+      void api.next().then((r) => setCounts((c) => ({ ...c, next: r.badge, prs: r.badge }))).catch(() => undefined);
       void api.runs().then((r) => {
         setCounts((c) => ({ ...c, runs: r.runs.length }));
         if (r.spend) setSpend(r.spend);
@@ -33,7 +33,7 @@ export function AppShell({ repos }: { repos: CatalogRepo[] }) {
       void api.reviews().then((r) => setCounts((c) => ({ ...c, reviews: r.reviews.length }))).catch(() => undefined);
       void api.notifications().then((n) => {
         const q = n.questions[0];
-        setAsking(q ? { prompt: q.prompt, href: `/runs/${q.runId}` } : undefined);
+        setAsking(q ? { prompt: q.prompt, href: `/?item=run:${q.runId}` } : undefined);
       }).catch(() => undefined);
     }
     load();

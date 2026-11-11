@@ -29,6 +29,16 @@ export function rememberedIssuePick(issueId: string): VisibleRepo | undefined {
     .get(issueId) as VisibleRepo | undefined;
 }
 
+export function lastProjectRepo(projectKey: string): VisibleRepo | undefined {
+  if (!projectKey) return undefined;
+  return getDb()
+    .prepare(
+      `SELECT owner, name FROM issue_repo_picks
+       WHERE issue_id LIKE ? ORDER BY updated_at DESC LIMIT 1`,
+    )
+    .get(`jira:${projectKey}-%`) as VisibleRepo | undefined;
+}
+
 export function rememberPick(projectKey: string, label: string, owner: string, name: string): void {
   getDb()
     .prepare(

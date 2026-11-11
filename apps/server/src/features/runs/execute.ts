@@ -89,7 +89,7 @@ async function handleEvent(
     if (ev.sdkSessionId) {
       getDb().prepare("UPDATE sessions SET sdk_session_id = ? WHERE id = ?").run(ev.sdkSessionId, sessionId);
     }
-    await notify("Flightdeck needs you", ev.ask.prompt, `/runs/${run.id}`);
+    await notify("Flightdeck needs you", ev.ask.prompt, `/?item=run:${run.id}`);
     publish("questions.updated", { runId: run.id });
     record(run.id, sessionId, role, ev);
     try {

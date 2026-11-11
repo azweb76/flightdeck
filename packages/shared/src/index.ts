@@ -10,6 +10,7 @@ export * from "./adf.ts";
 export * from "./resolve-repo.ts";
 export * from "./repo-rank.ts";
 export * from "./pr-board.ts";
+export * from "./next-queue.ts";
 export * from "./jira-keys.ts";
 export * from "./schemas/common.ts";
 export * from "./schemas/settings.ts";

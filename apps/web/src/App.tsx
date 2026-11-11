@@ -28,6 +28,7 @@ const SettingsPage = lazy(() =>
 );
 const StatsPage = lazy(() => import("./features/stats/StatsPage.tsx").then((m) => ({ default: m.StatsPage })));
 const PrsPage = lazy(() => import("./features/prs/PrsPage.tsx").then((m) => ({ default: m.PrsPage })));
+const NextPage = lazy(() => import("./features/next/NextPage.tsx").then((m) => ({ default: m.NextPage })));
 const SetupWizard = lazy(() =>
   import("./features/wizard/SetupWizard.tsx").then((m) => ({ default: m.SetupWizard })),
 );
@@ -74,10 +75,10 @@ export function App() {
         <Routes>
           <Route
             path="/setup"
-            element={setupComplete ? <Navigate to="/issues" replace /> : <SetupWizard onDone={() => void refresh()} />}
+            element={setupComplete ? <Navigate to="/" replace /> : <SetupWizard onDone={() => void refresh()} />}
           />
           <Route element={setupComplete ? <AppShell repos={repos} /> : <Navigate to="/setup" replace />}>
-            <Route path="/" element={<Navigate to="/issues" replace />} />
+            <Route path="/" element={<NextPage />} />
             <Route path="/issues" element={<IssuesPage />} />
             <Route path="/issues/new" element={<NewIssuePage />} />
             <Route path="/issues/:id" element={<IssueDetailPage />} />

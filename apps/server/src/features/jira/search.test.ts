@@ -41,7 +41,7 @@ describe("searchJira", () => {
     expect(calls[0]?.body).toMatchObject({
       jql: "assignee = currentUser() ORDER BY updated",
       maxResults: 50,
-      fields: ["summary", "description", "labels", "updated"],
+      fields: ["summary", "description", "labels", "updated", "priority"],
     });
     expect(calls.every((c) => !c.url.includes("/rest/api/3/search?"))).toBe(true);
     expect(calls.every((c) => !c.url.endsWith("/rest/api/3/search"))).toBe(true);

@@ -9,7 +9,7 @@ export function SideNav({
   asking,
 }: {
   repos: CatalogRepo[];
-  counts: { issues: number; runs: number; reviews: number; prs?: number };
+  counts: { issues: number; runs: number; reviews: number; prs?: number; next?: number };
   asking?: { prompt: string; href: string };
 }) {
   const favorites = repos.filter((r) => r.favorite);
@@ -19,6 +19,7 @@ export function SideNav({
   const loc = useLocation();
   const hideFooter = hideAskingFooter(loc.pathname, asking?.href);
   const items = [
+    { to: "/", label: "Next", count: counts.next ?? counts.prs },
     { to: "/issues", label: "Issues", count: counts.issues },
     { to: "/prs", label: "Pull requests", count: counts.prs },
     { to: "/runs", label: "Runs", count: counts.runs },
@@ -43,7 +44,7 @@ export function SideNav({
       <Typography sx={{ fontWeight: 600, px: 3, py: 3, fontSize: 15 }}>{APP_NAME}</Typography>
       <Stack sx={{ px: 1, gap: 0.5 }}>
         {items.map((item) => (
-          <NavRow key={item.to} to={item.to} label={item.label} count={item.count} askingDot={item.to === "/runs" && hideFooter} />
+          <NavRow key={item.to} to={item.to} label={item.label} count={item.count} end={item.to === "/"} askingDot={item.to === "/runs" && hideFooter} />
         ))}
       </Stack>
       <Typography sx={{ mt: 4, px: 3, fontSize: 11, fontWeight: 600, color: "text.secondary", letterSpacing: "0.04em" }}>
@@ -101,11 +102,12 @@ function AskingFooter({
   );
 }
 
-function NavRow({ to, label, count, askingDot }: { to: string; label: string; count?: number; askingDot?: boolean }) {
+function NavRow({ to, label, count, askingDot, end }: { to: string; label: string; count?: number; askingDot?: boolean; end?: boolean }) {
   return (
     <Button
       component={NavLink}
       to={to}
+      end={end}
       fullWidth
       sx={{
         justifyContent: "space-between",

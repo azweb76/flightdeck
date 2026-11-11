@@ -11,6 +11,7 @@ import { commitLogical, pushBranch } from "../worktree/index.ts";
 import { appendFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { updateRun } from "./store.ts";
+import { notify } from "../notify/index.ts";
 
 export async function openPullRequest(run: Run): Promise<Run> {
   const repo = getRepo(run.repoId);
@@ -46,6 +47,7 @@ export async function openPullRequest(run: Run): Promise<Run> {
     }) ?? run;
   await commentIssue(updated, pr.url);
   await commentCost(updated);
+  await notify("PR opened", `${updated.issueKey} ${updated.issueTitle}`, `/?item=run:${updated.id}`);
   return updated;
 }
 

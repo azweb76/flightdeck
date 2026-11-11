@@ -24,6 +24,7 @@ function pr(partial: Partial<BoardPr>): BoardPr {
     updatedAt: "",
     linkedIssueIds: [],
     state: "open",
+    labels: [],
     ...partial,
   };
 }

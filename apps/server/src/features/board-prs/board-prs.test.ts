@@ -24,6 +24,7 @@ function pr(partial: Partial<BoardPr> & Pick<BoardPr, "id" | "linkedIssueIds">):
     createdAt: "2026-11-01T00:00:00Z",
     updatedAt: "2026-11-11T00:00:00Z",
     state: "open",
+    labels: [],
     ...partial,
   };
 }
@@ -95,6 +96,7 @@ describe("parseSearchPayload", () => {
               reviewDecision: "CHANGES_REQUESTED",
               reviewThreads: { nodes: [{ isResolved: false }, { isResolved: true }] },
               closingIssuesReferences: { nodes: [{ number: 8, repository: { nameWithOwner: "acme/web" } }] },
+              labels: { nodes: [{ name: "P0" }, { name: "bug" }] },
               commits: { nodes: [{ commit: { statusCheckRollup: { state: "FAILURE" } } }] },
             },
           ],
@@ -109,6 +111,7 @@ describe("parseSearchPayload", () => {
       unresolvedThreads: 1,
       viewerCanPush: true,
       linkedIssueIds: ["github:acme/web#8", "jira:PROJ-1"],
+      labels: ["P0", "bug"],
     });
   });
 });

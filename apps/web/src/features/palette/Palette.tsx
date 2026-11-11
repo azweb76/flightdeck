@@ -123,6 +123,7 @@ function PaletteList({
 async function loadItems(): Promise<Item[]> {
   const [iss, runs, catalog] = await Promise.all([api.issues(), api.runs(), api.repos()]);
   return [
+    { label: "Next", to: "/", group: "Go to" },
     ...iss.issues.map((i) => ({
       label: `${i.key} ${i.title}`,
       to: `/issues/${encodeURIComponent(i.id)}`,

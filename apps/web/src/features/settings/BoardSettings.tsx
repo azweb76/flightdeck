@@ -39,6 +39,26 @@ export function BoardSettings({
           control={
             <Checkbox
               size="small"
+              checked={settings.autoFixCi}
+              onChange={(e) => void onSave({ autoFixCi: e.target.checked })}
+            />
+          }
+          label="Auto-fix CI on my PRs (respects spend caps)"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
+              checked={settings.autoDraftReviews}
+              onChange={(e) => void onSave({ autoDraftReviews: e.target.checked })}
+            />
+          }
+          label="Auto-draft reviews for new review requests"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              size="small"
               checked={settings.boardLinkedIssues}
               onChange={(e) => void onSave({ boardLinkedIssues: e.target.checked })}
             />

@@ -7,6 +7,8 @@ import { setAgentDriver, createFakeDriver } from "../agent/index.ts";
 import { createRepo } from "../repos/index.ts";
 import { startRun } from "./start.ts";
 import { listEvents, listRuns } from "./store.ts";
+import { upsertIssue } from "../issues/store.ts";
+import { rememberIssuePick } from "../discovery/index.ts";
 
 describe("startRun", () => {
   beforeEach(() => {
@@ -33,5 +35,23 @@ describe("startRun", () => {
     const stored = listRuns()[0];
     expect(stored?.issueKey).toBe("PROJ-150");
     expect(listEvents(stored!.id).length).toBeGreaterThan(0);
+  });
+
+  it("starts an unlabeled Jira issue on the last repo for that project", async () => {
+    rememberIssuePick("jira:PROJ-1", "acme", "web");
+    upsertIssue({
+      id: "jira:PROJ-9",
+      source: "jira",
+      key: "PROJ-9",
+      title: "No labels",
+      body: "",
+      url: "",
+      stage: "new",
+      repos: [],
+      repoWarning: "missing",
+      updatedAt: new Date().toISOString(),
+    });
+    const run = await startRun({ issueId: "jira:PROJ-9" });
+    expect(run.repoSlug).toBe("acme/web");
   });
 });

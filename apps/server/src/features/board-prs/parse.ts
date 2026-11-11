@@ -80,6 +80,7 @@ function toPr(node: Node, viewer: string, projectKeys: string[]): BoardPr | unde
     updatedAt: String(node.updatedAt ?? createdAt),
     linkedIssueIds: linkIds(closing, title, headRef, body, projectKeys),
     state: lifecycleOf(node),
+    labels: labelsOf(node),
   };
   return pr;
 }
@@ -131,6 +132,11 @@ function reviewOf(node: Node, unresolved: number): PrReviewState {
   if (decision === "CHANGES_REQUESTED") return "changes_requested";
   if (unresolved > 0) return "pending";
   return "pending";
+}
+
+function labelsOf(node: Node): string[] {
+  const nodes = (node.labels as { nodes?: { name?: string }[] } | undefined)?.nodes ?? [];
+  return nodes.map((n) => String(n.name ?? "")).filter(Boolean);
 }
 
 function ageDays(createdAt: string): number {

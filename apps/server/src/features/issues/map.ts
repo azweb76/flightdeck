@@ -2,7 +2,7 @@ import { parseRepoLabels, resolveRepos, type Issue, type LinkedRepo, type Visibl
 import { rememberedIssuePick } from "../discovery/index.ts";
 
 export function mapJira(
-  issue: { key: string; title: string; body: string; url: string; labels: string[]; updatedAt: string },
+  issue: { key: string; title: string; body: string; url: string; labels: string[]; updatedAt: string; jiraPriority?: string },
   visible: VisibleRepo[],
   prefix: string,
   rememberedByLabel: Record<string, VisibleRepo> = {},
@@ -27,6 +27,8 @@ export function mapJira(
     repoWarning: resolution.warning,
     repoGuesses: resolution.guesses.map(withLabel),
     updatedAt: issue.updatedAt,
+    labels: issue.labels,
+    jiraPriority: issue.jiraPriority,
   };
 }
 
@@ -38,6 +40,7 @@ export function mapGithub(issue: {
   updatedAt: string;
   owner: string;
   name: string;
+  labels?: string[];
 }): Issue {
   return {
     id: `github:${issue.owner}/${issue.name}#${issue.number}`,
@@ -50,6 +53,7 @@ export function mapGithub(issue: {
     repos: [{ owner: issue.owner, name: issue.name, registered: true }],
     repoWarning: "none",
     updatedAt: issue.updatedAt,
+    labels: issue.labels,
   };
 }
 

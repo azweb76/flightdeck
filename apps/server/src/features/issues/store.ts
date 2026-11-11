@@ -16,20 +16,24 @@ type Row = {
   closed?: number;
   comments_json?: string;
   via_pr?: number;
+  labels_json?: string | null;
+  jira_priority?: string | null;
 };
 
 export function upsertIssue(issue: Issue, flags?: { assigned?: boolean; closed?: boolean; viaPr?: boolean }): void {
   getDb()
     .prepare(
-      `INSERT INTO issues (id, source, key, title, body, url, parent_id, repos_json, repo_warning, updated_at, assigned, closed, comments_json, via_pr)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `INSERT INTO issues (id, source, key, title, body, url, parent_id, repos_json, repo_warning, updated_at, assigned, closed, comments_json, via_pr, labels_json, jira_priority)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET
          title=excluded.title, body=excluded.body, url=excluded.url,
          parent_id=excluded.parent_id, repos_json=excluded.repos_json,
          repo_warning=excluded.repo_warning, updated_at=excluded.updated_at,
          assigned=excluded.assigned, closed=excluded.closed,
          comments_json=COALESCE(excluded.comments_json, issues.comments_json),
-         via_pr=CASE WHEN excluded.via_pr=1 OR issues.via_pr=1 THEN 1 ELSE 0 END`,
+         via_pr=CASE WHEN excluded.via_pr=1 OR issues.via_pr=1 THEN 1 ELSE 0 END,
+         labels_json=excluded.labels_json,
+         jira_priority=excluded.jira_priority`,
     )
     .run(
       issue.id,
@@ -46,6 +50,8 @@ export function upsertIssue(issue: Issue, flags?: { assigned?: boolean; closed?:
       flags?.closed ? 1 : 0,
       JSON.stringify(issue.comments ?? []),
       (flags?.viaPr ?? issue.viaPr) ? 1 : 0,
+      JSON.stringify(issue.labels ?? []),
+      issue.jiraPriority ?? null,
     );
 }
 
@@ -109,5 +115,7 @@ function fromRow(row: Row): Issue {
     parentId: row.parent_id ?? undefined,
     comments: comments?.length ? comments : undefined,
     viaPr: row.via_pr === 1,
+    labels: row.labels_json ? (JSON.parse(row.labels_json) as string[]) : undefined,
+    jiraPriority: row.jira_priority ?? undefined,
   };
 }

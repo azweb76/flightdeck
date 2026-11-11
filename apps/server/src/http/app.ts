@@ -16,6 +16,7 @@ import { settingsRoutes } from "./routes/settings.ts";
 import { setupRoutes } from "./routes/setup.ts";
 import { statsRoutes } from "./routes/stats.ts";
 import { prRoutes } from "./routes/prs.ts";
+import { nextRoutes } from "./routes/next.ts";
 import { activeRunCount } from "../features/runs/index.ts";
 
 export function createApp(): Hono {
@@ -46,6 +47,7 @@ export function createApp(): Hono {
   app.route("/api/notifications", notificationRoutes());
   app.route("/api/reviews", reviewRoutes());
   app.route("/api/prs", prRoutes());
+  app.route("/api/next", nextRoutes());
   app.route("/api/stats", statsRoutes());
 
   const webDist = process.env.FLIGHTDECK_WEB_DIST;

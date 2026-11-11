@@ -4,6 +4,7 @@ import type {
   Improvement,
   BoardPr,
   Issue,
+  NextItem,
   PrReviewSession,
   PrSyncDiag,
   Question,
@@ -80,6 +81,16 @@ export const api = {
     );
   },
   prs: () => request<{ prs: BoardPr[]; badge: number }>("/api/prs"),
+  next: () => request<{ items: NextItem[]; badge: number }>("/api/next"),
+  nextBadge: () => request<{ badge: number }>("/api/next/badge"),
+  snoozeNext: (id: string, body: { until?: string; untilChange?: boolean }) =>
+    request<{ ok: boolean }>(`/api/next/${encodeURIComponent(id)}/snooze`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  doneNext: (id: string) =>
+    request<{ ok: boolean }>(`/api/next/${encodeURIComponent(id)}/done`, { method: "POST" }),
+  startNext: (ids: string[]) => request<{ runs: Run[] }>("/api/next/start", { method: "POST", body: JSON.stringify({ ids }) }),
   prDetail: (id: string) =>
     request<{
       pr: BoardPr;

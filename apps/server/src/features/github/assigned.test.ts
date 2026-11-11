@@ -16,13 +16,14 @@ describe("github assigned search", () => {
             url: "https://github.com/acme/web/issues/12",
             updatedAt: "2026-01-01T00:00:00Z",
             repository: { nameWithOwner: "acme/web" },
+            labels: [{ name: "P1" }],
           },
         ]),
         stderr: "",
       };
     };
     const issues = await listAssignedIssues(exec);
-    expect(issues[0]).toMatchObject({ owner: "acme", name: "web", number: 12 });
+    expect(issues[0]).toMatchObject({ owner: "acme", name: "web", number: 12, labels: ["P1"] });
   });
 
   it("lists visible repos from paginated user/repos across orgs", async () => {

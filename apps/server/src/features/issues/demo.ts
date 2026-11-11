@@ -13,6 +13,8 @@ export function demoIssues(): Issue[] {
       repos: [{ owner: "acme", name: "web", label: "gh:acme/web", registered: true }],
       repoWarning: "none",
       updatedAt: "2026-11-10T12:00:00.000Z",
+      jiraPriority: "Highest",
+      labels: ["priority:high"],
     },
     {
       id: "github:acme/docs#88",

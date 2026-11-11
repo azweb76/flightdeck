@@ -30,6 +30,8 @@ export async function syncBoardPrs(
     const counts = countsFrom(prs);
     record({ viewerLogin: login, query, ...counts });
     console.info(`pr sync ok total=${counts.total} authored=${counts.authored} review=${counts.reviewRequested}`);
+    const { applyAutoRules } = await import("../next/auto.ts");
+    await applyAutoRules(prs);
     return { ok: true, prs, errors: [], complete: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "PR search failed";

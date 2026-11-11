@@ -3,7 +3,7 @@ import { getSettings } from "../settings/index.ts";
 import { getRepo } from "../repos/index.ts";
 import { getIssue, isOffline, OfflineError } from "../issues/index.ts";
 import { touchRecent } from "../catalog/index.ts";
-import { NeedRepoError, ensureRepoRow } from "../discovery/index.ts";
+import { NeedRepoError, ensureRepoRow, lastProjectRepo, rememberIssuePick, rememberedIssuePick } from "../discovery/index.ts";
 import { ensureClone } from "../clone/index.ts";
 import { publish } from "../events/index.ts";
 import { getRun, insertRun, queuedRunIds, updateRun } from "./store.ts";
@@ -17,6 +17,7 @@ export async function startRun(input: StartRun): Promise<Run> {
   if (!issue) throw new Error("Issue not found");
   if (isOffline(issue.source) && process.env.FLIGHTDECK_DEMO !== "1") throw new OfflineError();
   const repo = pickRepo(issue, input.repoId, input.repoSlug);
+  rememberIssuePick(issue.id, repo.owner, repo.name);
   if (process.env.FLIGHTDECK_DEMO !== "1") await ensureClone(repo.owner, repo.name);
   const settings = getSettings();
   const now = new Date().toISOString();
@@ -83,6 +84,8 @@ function pickRepo(issue: Issue, repoId?: number, repoSlug?: string) {
   if (issue.repos.length === 1 && issue.repos[0]) {
     return ensureRepoRow(issue.repos[0].owner, issue.repos[0].name);
   }
+  const remembered = rememberedIssuePick(issue.id) ?? lastProjectRepo(jiraProjectKey(issue.key));
+  if (remembered) return ensureRepoRow(remembered.owner, remembered.name);
   const guesses = (issue.repoGuesses ?? issue.repos).map((r) => ({ owner: r.owner, name: r.name }));
   throw new NeedRepoError(guesses, jiraProjectKey(issue.key));
 }

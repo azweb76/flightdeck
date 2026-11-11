@@ -40,4 +40,9 @@ describe("settings board PR defaults", () => {
     expect("maxConcurrency" in settings).toBe(false);
     expect(settings.dailyDollarCapUsd).toBe(50);
   });
+
+  it("defaults auto-fix and auto-draft review off", () => {
+    expect(getSettings().autoFixCi).toBe(false);
+    expect(getSettings().autoDraftReviews).toBe(false);
+  });
 });

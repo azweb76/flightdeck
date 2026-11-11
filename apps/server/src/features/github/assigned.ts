@@ -9,6 +9,7 @@ export type AssignedIssue = {
   updatedAt: string;
   owner: string;
   name: string;
+  labels: string[];
 };
 
 export async function listAssignedIssues(exec: ExecFn, since?: string): Promise<AssignedIssue[]> {
@@ -21,7 +22,7 @@ export async function listAssignedIssues(exec: ExecFn, since?: string): Promise<
     "--limit",
     "50",
     "--json",
-    "number,title,body,url,updatedAt,repository",
+    "number,title,body,url,updatedAt,repository,labels",
   ]);
   if (r.code !== 0) throw new Error(r.stderr || "gh search issues failed");
   const parsed = JSON.parse(r.stdout || "[]") as Record<string, unknown>[];
@@ -72,5 +73,14 @@ function toAssigned(row: Record<string, unknown>): AssignedIssue {
     updatedAt: String(row.updatedAt ?? new Date().toISOString()),
     owner: owner ?? "",
     name: name ?? "",
+    labels: labelsOf(row),
   };
+}
+
+function labelsOf(row: Record<string, unknown>): string[] {
+  const raw = row.labels;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((x) => (typeof x === "string" ? x : String((x as { name?: string }).name ?? "")))
+    .filter(Boolean);
 }

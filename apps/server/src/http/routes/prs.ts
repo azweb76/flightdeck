@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { prsNeedingMe } from "@flightdeck/shared";
+import { nextBadge } from "../../features/next/assemble.ts";
 import { startPrFix } from "../../features/board-prs/fix-run.ts";
 import { startReview } from "../../features/pr-review/index.ts";
 import { readPrDiag } from "../../features/board-prs/index.ts";
@@ -11,7 +11,7 @@ export function prRoutes(): Hono {
   const app = new Hono();
   app.get("/", (c) => {
     const prs = listBoardPrs();
-    return c.json({ prs, badge: prsNeedingMe(prs) });
+    return c.json({ prs, badge: nextBadge() });
   });
   app.get("/diagnostics", (c) => c.json(readPrDiag()));
   app.get("/:id", async (c) => {
