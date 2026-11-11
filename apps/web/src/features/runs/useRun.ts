@@ -35,7 +35,9 @@ export function useRun(id: string | undefined) {
 
   useEffect(() => {
     load();
-    return subscribeEvents(load);
+    return subscribeEvents((type) => {
+      if (!type || type === "runs.updated" || type === "run.event" || type === "questions.updated") load();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

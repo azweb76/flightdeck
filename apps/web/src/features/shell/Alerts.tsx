@@ -27,7 +27,9 @@ export function Alerts() {
       void Notification.requestPermission();
     }
     load();
-    return subscribeEvents(load);
+    return subscribeEvents((type) => {
+      if (!type || type === "notifications.updated" || type === "questions.updated") load();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

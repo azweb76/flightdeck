@@ -10,33 +10,25 @@ import { JiraSettings } from "./JiraSettings.tsx";
 import { RepoSettings } from "./RepoSettings.tsx";
 
 export function SettingsPage({
+  settings: initial,
   repos,
   onReposChange,
 }: {
+  settings: Settings;
   repos: Repo[];
   onReposChange: () => void;
 }) {
-  const [settings, setSettings] = useState<Settings>();
+  const [settings, setSettings] = useState<Settings>(initial);
   const [error, setError] = useState<string>();
   const { mode, setMode } = useThemeMode();
 
   useEffect(() => {
-    void api.settings().then(setSettings).catch((e: unknown) => {
-      setError(e instanceof Error ? e.message : "Failed to load settings");
-    });
-  }, []);
+    setSettings(initial);
+  }, [initial]);
 
   async function save(patch: Partial<Settings>) {
     const next = await api.saveSettings(patch);
     setSettings(next);
-  }
-
-  if (!settings) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography>{error ?? "Loading settings…"}</Typography>
-      </Box>
-    );
   }
 
   return (

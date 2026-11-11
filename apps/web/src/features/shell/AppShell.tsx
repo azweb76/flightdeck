@@ -1,6 +1,6 @@
-import { Box } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import type { Repo } from "@flightdeck/shared";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { api, subscribeEvents } from "../api/index.ts";
 import { Palette } from "../palette/index.ts";
@@ -33,7 +33,18 @@ export function AppShell({ repos }: { repos: Repo[] }) {
     }
     load();
     const tick = window.setInterval(load, 15_000);
-    const off = subscribeEvents(load);
+    const off = subscribeEvents((type) => {
+      if (
+        !type ||
+        type === "issues.updated" ||
+        type === "runs.updated" ||
+        type === "reviews.updated" ||
+        type === "questions.updated" ||
+        type === "notifications.updated"
+      ) {
+        load();
+      }
+    });
     return () => {
       window.clearInterval(tick);
       off();
@@ -46,7 +57,9 @@ export function AppShell({ repos }: { repos: Repo[] }) {
       <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", height: "100%" }}>
         <TopBar sync={sync} />
         <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
-          <Outlet />
+          <Suspense fallback={<CircularProgress size={20} sx={{ m: 4 }} />}>
+            <Outlet />
+          </Suspense>
         </Box>
       </Box>
       <Palette />

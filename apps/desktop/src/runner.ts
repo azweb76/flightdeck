@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
 
 export type ServerHandle = { proc?: ChildProcess; port: number };
@@ -5,10 +7,16 @@ export type ServerHandle = { proc?: ChildProcess; port: number };
 export async function ensureServer(port: number, repoRoot: string): Promise<ChildProcess | undefined> {
   if (process.env.FLIGHTDECK_UI_URL) return undefined;
   if (await ping(port)) return undefined;
+  const webDist = process.env.FLIGHTDECK_WEB_DIST ?? join(repoRoot, "apps/web/dist");
   return spawn("pnpm", ["--filter", "@flightdeck/server", "start"], {
     cwd: repoRoot,
     stdio: "inherit",
-    env: { ...process.env, FLIGHTDECK_HOST: "127.0.0.1", FLIGHTDECK_PORT: String(port) },
+    env: {
+      ...process.env,
+      FLIGHTDECK_HOST: "127.0.0.1",
+      FLIGHTDECK_PORT: String(port),
+      ...(existsSync(webDist) ? { FLIGHTDECK_WEB_DIST: webDist } : {}),
+    },
   });
 }
 

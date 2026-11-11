@@ -15,7 +15,24 @@ import type {
   TranscriptEvent,
 } from "@flightdeck/shared";
 
+const inflight = new Map<string, Promise<unknown>>();
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const key = `${method} ${path}`;
+  if (method === "GET") {
+    const hit = inflight.get(key);
+    if (hit) return hit as Promise<T>;
+  }
+  const pending = requestOnce<T>(path, init);
+  if (method === "GET") {
+    inflight.set(key, pending);
+    pending.finally(() => inflight.delete(key));
+  }
+  return pending;
+}
+
+async function requestOnce<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
@@ -143,7 +160,7 @@ export type StatsPayload = {
   outcomes: { merged: number; neededFixes: number; failed: number };
 };
 
-export function subscribeEvents(onEvent: () => void): () => void {
+export function subscribeEvents(onEvent: (type?: string) => void): () => void {
   const src = new EventSource("/api/events");
   src.onmessage = () => onEvent();
   for (const type of [
@@ -159,7 +176,7 @@ export function subscribeEvents(onEvent: () => void): () => void {
     "reviews.updated",
     "improvements.updated",
   ]) {
-    src.addEventListener(type, () => onEvent());
+    src.addEventListener(type, () => onEvent(type));
   }
   return () => src.close();
 }

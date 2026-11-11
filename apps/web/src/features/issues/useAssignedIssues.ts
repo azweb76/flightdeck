@@ -34,7 +34,9 @@ export function useAssignedIssues(source: string, repo?: string) {
     }
     document.addEventListener("visibilitychange", onFocus);
     window.addEventListener("focus", onFocus);
-    const off = subscribeEvents(() => load());
+    const off = subscribeEvents((type) => {
+      if (!type || type === "issues.updated" || type === "runs.updated") load();
+    });
     return () => {
       window.clearInterval(tick);
       document.removeEventListener("visibilitychange", onFocus);

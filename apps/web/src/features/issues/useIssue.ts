@@ -33,7 +33,9 @@ export function useIssue(id: string | undefined) {
 
   useEffect(() => {
     load();
-    return subscribeEvents(() => load());
+    return subscribeEvents((type) => {
+      if (!type || type === "issues.updated" || type === "runs.updated") load();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
