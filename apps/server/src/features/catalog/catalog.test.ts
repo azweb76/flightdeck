@@ -46,7 +46,9 @@ describe("repo catalog persistence", () => {
 
   it("keeps only the last 10 recent repos", () => {
     replaceCatalog(Array.from({ length: 12 }, (_, i) => sample(`r${i}`)));
-    for (let i = 0; i < 12; i++) touchRecent("acme", `r${i}`);
+    for (let i = 0; i < 12; i++) {
+      touchRecent("acme", `r${i}`, `2026-11-11T00:00:${String(i).padStart(2, "0")}.000Z`);
+    }
     const recent = listCatalog().filter((r) => r.lastUsedAt);
     expect(recent).toHaveLength(10);
     expect(recent.some((r) => r.name === "r0")).toBe(false);

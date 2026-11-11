@@ -84,12 +84,12 @@ export function setFavorite(owner: string, name: string, favorite: boolean): voi
   db.prepare("DELETE FROM repo_favorites WHERE owner = ? AND name = ?").run(owner, name);
 }
 
-export function touchRecent(owner: string, name: string): void {
+export function touchRecent(owner: string, name: string, usedAt = new Date().toISOString()): void {
   const db = getDb();
   db.prepare(
     `INSERT INTO repo_recent (owner, name, used_at) VALUES (?, ?, ?)
      ON CONFLICT(owner, name) DO UPDATE SET used_at = excluded.used_at`,
-  ).run(owner, name, new Date().toISOString());
+  ).run(owner, name, usedAt);
   db.prepare(
     `DELETE FROM repo_recent WHERE rowid NOT IN (
        SELECT rowid FROM repo_recent ORDER BY used_at DESC LIMIT 10
