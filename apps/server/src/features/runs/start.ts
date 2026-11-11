@@ -103,7 +103,8 @@ async function executeQueued(id: number): Promise<void> {
 
 async function singleSession(run: Run): Promise<"ok" | "ask" | "error"> {
   updateRun(run.id, { phase: "implement" });
-  return runAgentPhase(getRun(run.id)!, "implementer", promptFor(run));
+  const result = await runAgentPhase(getRun(run.id)!, "implementer", promptFor(run));
+  return result.status;
 }
 
 function promptFor(run: Run): string {

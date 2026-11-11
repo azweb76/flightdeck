@@ -5,14 +5,17 @@ import { publish } from "../events/index.ts";
 import { keepAwakeStart, keepAwakeStop } from "../keep-awake/index.ts";
 import { notify } from "../notify/index.ts";
 import { insertQuestion } from "../questions/store.ts";
+import { getRepo } from "../repos/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { insertEvent, updateRun, activeRunCount, getRun } from "./store.ts";
+
+export type PhaseResult = { status: "ok" | "ask" | "error"; output: string };
 
 export async function runAgentPhase(
   run: Run,
   role: AgentRole,
   prompt: string,
-): Promise<"ok" | "ask" | "error"> {
+): Promise<PhaseResult> {
   const sessionId = insertSession(run.id, role, run.phase, run.round);
   keepAwakeStart();
   try {
@@ -27,21 +30,26 @@ async function consume(
   role: AgentRole,
   prompt: string,
   sessionId: number,
-): Promise<"ok" | "ask" | "error"> {
+): Promise<PhaseResult> {
+  const parts: string[] = [];
   const driver = getAgentDriver();
   for await (const ev of driver.run({
     prompt,
     cwd: run.worktreePath || process.cwd(),
     role,
-    model: roleModel(role),
+    model: roleModel(role, run),
     permissionMode: "auto",
   })) {
     const current = getRun(run.id);
-    if (!current || current.status === "cancelled") return "error";
+    if (!current || current.status === "cancelled") {
+      return { status: "error", output: parts.join("\n") };
+    }
+    if (ev.kind === "text" && ev.detail) parts.push(ev.detail);
+    if (ev.kind === "done" && ev.detail) parts.push(ev.detail);
     const hit = await handleEvent(run, current, role, sessionId, ev);
-    if (hit) return hit;
+    if (hit) return { status: hit, output: parts.join("\n") };
   }
-  return "ok";
+  return { status: "ok", output: parts.join("\n") };
 }
 
 async function handleEvent(
@@ -56,6 +64,7 @@ async function handleEvent(
     updateRun(run.id, { status: "asking", questionId: q.id, pauseReason: ev.ask.prompt });
     await notify("Flightdeck needs you", ev.ask.prompt, `/runs/${run.id}`);
     publish("questions.updated", { runId: run.id });
+    record(run.id, sessionId, role, ev);
     return "ask";
   }
   if (ev.kind === "error") {
@@ -64,6 +73,16 @@ async function handleEvent(
     await notify("Run paused", ev.detail ?? ev.title, `/runs/${run.id}`);
     return "error";
   }
+  return handleUsage(run, current, role, sessionId, ev);
+}
+
+async function handleUsage(
+  run: Run,
+  current: Run,
+  role: AgentRole,
+  sessionId: number,
+  ev: AgentEvent,
+): Promise<"error" | undefined> {
   let extraUsd = 0;
   if (ev.kind === "usage") {
     extraUsd = roundUsd(usageUsd(ev.tokensIn ?? 0, ev.tokensOut ?? 0));
@@ -108,7 +127,9 @@ function insertSession(runId: number, role: AgentRole, phase: string, round: num
   return Number(r.lastInsertRowid);
 }
 
-function roleModel(role: AgentRole): string {
+export function roleModel(role: AgentRole, run?: Run): string {
+  const repo = run ? getRepo(run.repoId) : undefined;
+  if (repo?.modelOverride) return repo.modelOverride;
   const s = getSettings();
   if (role === "refiner") return s.modelRefiner;
   if (role === "planner") return s.modelPlanner;

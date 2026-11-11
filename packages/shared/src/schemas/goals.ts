@@ -43,3 +43,15 @@ export const RefineAnswerSchema = z.object({
 export const GoalPatchSchema = z.object({
   markdown: z.string().min(1),
 });
+
+export const RefineQuestionsHandoffSchema = z.object({
+  kind: z.literal("refine_questions"),
+  questions: z.array(ClarifyQuestionSchema).min(1),
+});
+export type RefineQuestionsHandoff = z.infer<typeof RefineQuestionsHandoffSchema>;
+
+export const RefineGoalHandoffSchema = z.object({
+  kind: z.literal("refine_goal"),
+  markdown: z.string().min(1),
+});
+export type RefineGoalHandoff = z.infer<typeof RefineGoalHandoffSchema>;

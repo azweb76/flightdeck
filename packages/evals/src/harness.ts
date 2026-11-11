@@ -27,3 +27,13 @@ export const handoffEval = defineEval({
   input: { kind: "plan", summary: "Ship CSV", steps: ["write", "test"] },
   check: (input) => HandoffSchema.safeParse(input).success,
 });
+
+export const reviewHandoffEval = defineEval({
+  name: "review-handoff-valid",
+  input: {
+    kind: "review",
+    passed: false,
+    findings: [{ severity: "major", title: "tests", detail: "missing" }],
+  },
+  check: (input) => HandoffSchema.safeParse(input).success,
+});

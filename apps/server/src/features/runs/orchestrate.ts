@@ -1,86 +1,67 @@
-import { HandoffSchema, type Run } from "@flightdeck/shared";
+import {
+  ImplementHandoffSchema,
+  PlanHandoffSchema,
+  ReviewHandoffSchema,
+  parseAgentJson,
+  routeAfterReview,
+  type ReviewHandoff,
+  type Run,
+} from "@flightdeck/shared";
 import { saveHandoff } from "../handoffs/store.ts";
-import { latestGoal } from "../goals/store.ts";
+import { implementPrompt, planPrompt, reviewPrompt } from "../agent/prompts.ts";
 import { getRun, updateRun } from "./store.ts";
-import { runAgentPhase } from "./execute.ts";
+import { runAgentPhase, type PhaseResult } from "./execute.ts";
 
 export async function orchestrate(run: Run): Promise<"ok" | "ask" | "error"> {
-  const live = () => getRun(run.id)!;
-  const plan = await phase(live(), "plan", 0, "planner", planPrompt(run));
-  if (plan !== "ok") return plan;
-  saveHandoff(
-    run.id,
-    "plan",
-    0,
-    HandoffSchema.parse({
-      kind: "plan",
-      summary: `Plan for ${run.issueKey}`,
-      steps: ["Implement the goal", "Add tests", "Open a PR"],
-    }),
-    live().worktreePath,
-  );
+  const planned = await runPlan(run, 0);
+  if (planned !== "ok") return planned;
   for (let round = 1; round <= run.maxRounds; round += 1) {
-    updateRun(run.id, { round, phase: "implement" });
-    const impl = await phase(live(), "implement", round, "implementer", implementPrompt(run, round));
+    const impl = await runImplement(live(run.id), round);
     if (impl !== "ok") return impl;
-    saveHandoff(
-      run.id,
-      "implement",
-      round,
-      HandoffSchema.parse({
-        kind: "implement",
-        summary: `Implement round ${round}`,
-        filesChanged: [],
-        testsRun: [],
-      }),
-      live().worktreePath,
-    );
-    updateRun(run.id, { phase: "review" });
-    const rev = await phase(live(), "review", round, "reviewer", reviewPrompt(run, round));
-    if (rev !== "ok") return rev;
-    saveHandoff(
-      run.id,
-      "review",
-      round,
-      HandoffSchema.parse({
-        kind: "review",
-        passed: round === run.maxRounds,
-        findings:
-          round === run.maxRounds
-            ? []
-            : [{ severity: "minor", title: "Follow-up", detail: "Address remaining polish." }],
-        notes: "",
-      }),
-      live().worktreePath,
-    );
+    const reviewed = await runReview(live(run.id), round);
+    if (reviewed.status !== "ok" || !reviewed.review) return reviewed.status;
+    const next = routeAfterReview(reviewed.review, round, live(run.id).maxRounds);
+    if (next === "pr") return "ok";
+    if (next === "plan") {
+      const again = await runPlan(live(run.id), round);
+      if (again !== "ok") return again;
+    }
   }
   return "ok";
 }
 
-async function phase(
+async function runPlan(run: Run, round: number): Promise<"ok" | "ask" | "error"> {
+  updateRun(run.id, { phase: "plan", round, status: "running" });
+  const res = await runAgentPhase(live(run.id), "planner", planPrompt(live(run.id)));
+  if (res.status !== "ok") return res.status;
+  const handoff = parseAgentJson(res.output, (v) => PlanHandoffSchema.parse(v));
+  saveHandoff(run.id, "plan", round, handoff, live(run.id).worktreePath);
+  return "ok";
+}
+
+async function runImplement(run: Run, round: number): Promise<"ok" | "ask" | "error"> {
+  updateRun(run.id, { phase: "implement", round, status: "running" });
+  const res = await runAgentPhase(live(run.id), "implementer", implementPrompt(live(run.id), round));
+  if (res.status !== "ok") return res.status;
+  const handoff = parseAgentJson(res.output, (v) => ImplementHandoffSchema.parse(v));
+  saveHandoff(run.id, "implement", round, handoff, live(run.id).worktreePath);
+  return "ok";
+}
+
+async function runReview(
   run: Run,
-  name: Run["phase"],
   round: number,
-  role: "planner" | "implementer" | "reviewer",
-  prompt: string,
-): Promise<"ok" | "ask" | "error"> {
-  updateRun(run.id, { phase: name, round, status: "running" });
-  return runAgentPhase(getRun(run.id)!, role, prompt);
+): Promise<{ status: "ok" | "ask" | "error"; review?: ReviewHandoff }> {
+  updateRun(run.id, { phase: "review", round, status: "running" });
+  const res: PhaseResult = await runAgentPhase(live(run.id), "reviewer", reviewPrompt(live(run.id), round));
+  if (res.status !== "ok") return { status: res.status };
+  const review = parseAgentJson(res.output, (v) => ReviewHandoffSchema.parse(v));
+  saveHandoff(run.id, "review", round, review, live(run.id).worktreePath);
+  return { status: "ok", review };
 }
 
-function planPrompt(run: Run): string {
-  const goal = latestGoal(run.issueId);
-  return `Write a plan (not code) for ${run.issueKey}.\n\n${goal?.markdown ?? run.issueTitle}`;
-}
-
-function implementPrompt(run: Run, round: number): string {
-  return `Implement round ${round}/${run.maxRounds} for ${run.issueKey}. Read .flightdeck/*.md handoffs.`;
-}
-
-function reviewPrompt(run: Run, round: number): string {
-  return [
-    `Review round ${round} of ${run.issueKey}.`,
-    "Check acceptance criteria, tests/lint/build, conventions, security, missing tests.",
-    "Tag findings minor (implementer) or major (planner).",
-  ].join("\n");
+function live(id: number): Run {
+  const run = getRun(id);
+  if (!run) throw new Error("run missing");
+  return run;
 }

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { handoffEval, runEvals } from "./harness.ts";
+import { handoffEval, reviewHandoffEval, runEvals } from "./harness.ts";
 
 describe("eval harness", () => {
   it("passes the built-in handoff case", () => {
-    const r = runEvals([handoffEval]);
+    const r = runEvals([handoffEval, reviewHandoffEval]);
     expect(r.failed).toEqual([]);
-    expect(r.passed).toBe(1);
+    expect(r.passed).toBe(2);
   });
 });

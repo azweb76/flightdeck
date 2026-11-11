@@ -1,8 +1,18 @@
-import type { ClarifyQuestion, Goal } from "@flightdeck/shared";
+import {
+  RefineGoalHandoffSchema,
+  RefineQuestionsHandoffSchema,
+  parseAgentJson,
+  type ClarifyQuestion,
+  type Goal,
+} from "@flightdeck/shared";
+import { collectAgentOutput } from "../agent/collect.ts";
+import { roleModel } from "../runs/execute.ts";
+import { refineGoalPrompt, refineQuestionsPrompt } from "../agent/prompts.ts";
 import { getIssue } from "../issues/index.ts";
 import { insertGoal, latestGoal, updateGoal } from "../goals/store.ts";
 import { createGithubClient } from "../github/index.ts";
 import { createJiraClient } from "../jira/index.ts";
+import { getRepoBySlug } from "../repos/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
 import { publish } from "../events/index.ts";
@@ -16,26 +26,14 @@ export function questionsFor(issueId: string): ClarifyQuestion[] {
 export async function startRefine(issueId: string): Promise<ClarifyQuestion[]> {
   const issue = await getIssue(issueId);
   if (!issue) throw new Error("Issue not found");
-  const questions: ClarifyQuestion[] = [
-    {
-      id: "scope",
-      prompt: "What is in scope for this change?",
-      options: [
-        { id: "minimal", label: "Smallest change that meets the issue" },
-        { id: "full", label: "Full production-ready behavior" },
-      ],
-      allowOther: true,
-    },
-    {
-      id: "compat",
-      prompt: "How should we treat existing callers?",
-      options: [
-        { id: "compat", label: "Keep backward compatibility" },
-        { id: "break", label: "A breaking change is OK" },
-      ],
-      allowOther: true,
-    },
-  ];
+  const result = await collectAgentOutput({
+    prompt: refineQuestionsPrompt(issue),
+    cwd: refineCwd(issue),
+    role: "refiner",
+    model: roleModel("refiner"),
+    permissionMode: "auto",
+  });
+  const questions = questionsFrom(result);
   pending.set(issueId, questions);
   publish("goals.updated");
   return questions;
@@ -48,27 +46,20 @@ export async function submitAnswers(
   const issue = await getIssue(issueId);
   if (!issue) throw new Error("Issue not found");
   const qs = pending.get(issueId) ?? [];
-  const lines = qs.map((q) => {
-    const a = answers.find((x) => x.questionId === q.id);
-    const picked = q.options.find((o) => o.id === a?.optionId)?.label;
-    return `- ${q.prompt} **${a?.other || picked || "unanswered"}**`;
+  const result = await collectAgentOutput({
+    prompt: refineGoalPrompt(issue, answers, qs),
+    cwd: refineCwd(issue),
+    role: "refiner",
+    model: roleModel("refiner"),
+    permissionMode: "auto",
   });
-  const markdown = [
-    `## Goal`,
-    issue.title,
-    "",
-    `## Acceptance criteria`,
-    ...lines,
-    "",
-    `## Constraints`,
-    `- Stay inside ${issue.repos.map((r) => `${r.owner}/${r.name}`).join(", ") || "the linked repo"}`,
-    `- Follow the repo CLAUDE.md`,
-  ].join("\n");
+  if (result.status !== "ok") throw new Error(result.error ?? "refiner failed");
+  const parsed = parseAgentJson(result.text, (v) => RefineGoalHandoffSchema.parse(v));
   const now = new Date().toISOString();
   const goal = insertGoal({
     issueId,
     originalBody: issue.body,
-    markdown,
+    markdown: parsed.markdown,
     status: "draft",
     createdAt: now,
     updatedAt: now,
@@ -98,6 +89,28 @@ export async function approveGoal(issueId: string): Promise<Goal> {
   return written;
 }
 
+function questionsFrom(result: Awaited<ReturnType<typeof collectAgentOutput>>): ClarifyQuestion[] {
+  if (result.status === "ask" && result.ask) {
+    return [
+      {
+        id: "ask",
+        prompt: result.ask.prompt,
+        options: result.ask.options,
+        allowOther: true,
+      },
+    ];
+  }
+  if (result.status !== "ok") throw new Error(result.error ?? "refiner failed");
+  return parseAgentJson(result.text, (v) => RefineQuestionsHandoffSchema.parse(v)).questions;
+}
+
+function refineCwd(issue: { repos: { owner: string; name: string; registered: boolean }[] }): string {
+  const linked = issue.repos.find((r) => r.registered);
+  if (!linked) return process.cwd();
+  const repo = getRepoBySlug(`${linked.owner}/${linked.name}`);
+  return repo?.localPath || process.cwd();
+}
+
 async function writeBack(issueId: string, markdown: string): Promise<void> {
   if (process.env.FLIGHTDECK_DEMO === "1") return;
   if (issueId.startsWith("jira:")) {
@@ -113,7 +126,6 @@ async function writeBack(issueId: string, markdown: string): Promise<void> {
     });
     return;
   }
-  // GitHub issues: comment rather than silently replacing when gh isn't available.
   void markdown;
   void createGithubClient;
 }

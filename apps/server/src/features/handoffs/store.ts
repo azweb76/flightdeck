@@ -28,6 +28,13 @@ export function saveHandoff(
   return markdown;
 }
 
+export function listHandoffs(runId: number): { phase: string; round: number; json: Handoff }[] {
+  const rows = getDb()
+    .prepare("SELECT phase, round, json FROM handoffs WHERE run_id = ? ORDER BY id")
+    .all(runId) as { phase: string; round: number; json: string }[];
+  return rows.map((r) => ({ phase: r.phase, round: r.round, json: HandoffSchema.parse(JSON.parse(r.json)) }));
+}
+
 export function latestHandoff(runId: number, phase?: string): Handoff | undefined {
   const row = (
     phase

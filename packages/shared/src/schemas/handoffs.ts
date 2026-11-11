@@ -31,6 +31,9 @@ export const ReviewHandoffSchema = z.object({
   findings: z.array(ReviewFindingSchema),
   notes: z.string().default(""),
 });
+export type PlanHandoff = z.infer<typeof PlanHandoffSchema>;
+export type ImplementHandoff = z.infer<typeof ImplementHandoffSchema>;
+export type ReviewHandoff = z.infer<typeof ReviewHandoffSchema>;
 
 export const HandoffSchema = z.discriminatedUnion("kind", [
   PlanHandoffSchema,
