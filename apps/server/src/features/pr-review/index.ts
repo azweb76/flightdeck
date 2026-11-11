@@ -1,6 +1,6 @@
 import { PrReviewAgentSchema, parseAgentJson, type PrReviewSession, type ReviewDraft } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
-import { createGithubClient } from "../github/index.ts";
+import { createGithubClient, type GithubClient } from "../github/index.ts";
 import { publish } from "../events/index.ts";
 import { collectAgentOutput } from "../agent/collect.ts";
 import { prReviewPrompt } from "../agent/prompts.ts";
@@ -47,13 +47,17 @@ export function startDemoReview(): PrReviewSession {
   );
 }
 
-export async function startReview(repoSlug: string, prNumber: number): Promise<PrReviewSession> {
+export async function startReview(
+  repoSlug: string,
+  prNumber: number,
+  deps: { github?: GithubClient } = {},
+): Promise<PrReviewSession> {
   if (process.env.FLIGHTDECK_DEMO === "1") {
     const session = startDemoReview();
     return attachAgentDrafts(session, "demo.diff", session.title);
   }
   const [owner, name] = repoSlug.split("/");
-  const gh = createGithubClient();
+  const gh = deps.github ?? createGithubClient();
   const view = await gh.prView(owner ?? "", name ?? "", prNumber);
   const diff = await gh.prDiff(owner ?? "", name ?? "", prNumber);
   const files = [{ path: "diff.patch", patch: diff.slice(0, 8000), additions: 0, deletions: 0 }];
@@ -73,6 +77,7 @@ async function attachAgentDrafts(
     model: roleModel("reviewer"),
     permissionMode: "auto",
   });
+  if (collected.status !== "ok") throw new Error(collected.error ?? "pr review agent failed");
   const parsed = parseAgentJson(collected.text, (v) => PrReviewAgentSchema.parse(v));
   for (const c of parsed.comments) {
     getDb()

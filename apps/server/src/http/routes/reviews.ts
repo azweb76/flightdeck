@@ -8,7 +8,8 @@ export function reviewRoutes(): Hono {
   app.post("/", async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { repoSlug?: string; prNumber?: number };
     if (body.repoSlug && body.prNumber) return c.json(await startReview(body.repoSlug, body.prNumber), 201);
-    return c.json(startDemoReview(), 201);
+    if (process.env.FLIGHTDECK_DEMO === "1") return c.json(startDemoReview(), 201);
+    throw apiError(400, "missing_pr", "repoSlug and prNumber required");
   });
   app.get("/:id", (c) => {
     const review = getReview(Number(c.req.param("id")));
