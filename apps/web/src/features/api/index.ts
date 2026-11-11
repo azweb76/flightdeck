@@ -104,8 +104,8 @@ export const api = {
       findings: { title: string; detail: string; excerpt?: string }[];
       improvements: Improvement[];
     }>(`/api/stats/runs/${id}/session-review`),
-  draftIssue: (repoId: number, title: string, body: string) =>
-    request<{ id: string }>("/api/issues/draft", { method: "POST", body: JSON.stringify({ repoId, title, body }) }),
+  draftIssue: (body: { source?: "github" | "jira"; repoId?: number; projectKey?: string; title: string; body: string }) =>
+    request<{ id: string }>("/api/issues/draft", { method: "POST", body: JSON.stringify(body) }),
   review: (id: number) => request<PrReviewSession>(`/api/reviews/${id}`),
   patchDraft: (reviewId: number, draftId: number, state: string, body?: string) =>
     request<PrReviewSession>(`/api/reviews/${reviewId}/drafts/${draftId}`, {

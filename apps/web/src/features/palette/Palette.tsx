@@ -35,7 +35,9 @@ export function Palette() {
         { label: "Settings", to: "/settings" },
         { label: "Stats", to: "/stats" },
         { label: "Reviews", to: "/reviews" },
-        { label: "New issue (draft)", to: "/issues" },
+        { label: "New GitHub issue", to: "/issues/new?kind=github" },
+        { label: "New Jira issue", to: "/issues/new?kind=jira" },
+        { label: "Ad-hoc task", to: "/issues/new?kind=adhoc" },
       ]);
     });
   }, [open]);

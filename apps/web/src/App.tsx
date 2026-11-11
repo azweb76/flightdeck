@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import type { Repo } from "@flightdeck/shared";
 import { api, subscribeEvents } from "./features/api/index.ts";
-import { IssueDetailPage, IssuesPage } from "./features/issues/index.ts";
+import { IssueDetailPage, IssuesPage, NewIssuePage } from "./features/issues/index.ts";
 import { ReviewDiff, ReviewsPage } from "./features/reviews/index.ts";
 import { RunView, RunsPage } from "./features/runs/index.ts";
 import { SettingsPage } from "./features/settings/index.ts";
@@ -45,6 +45,7 @@ export function App() {
         <Route element={setupComplete ? <AppShell repos={repos} /> : <Navigate to="/setup" replace />}>
           <Route path="/" element={<Navigate to="/issues" replace />} />
           <Route path="/issues" element={<IssuesPage />} />
+          <Route path="/issues/new" element={<NewIssuePage />} />
           <Route path="/issues/:id" element={<IssueDetailPage />} />
           <Route path="/runs" element={<RunsPage />} />
           <Route path="/runs/:id" element={<RunView />} />

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Box, Heading, Label, Spinner, Text } from "@primer/react";
+import { Box, Button, Heading, Label, Spinner, Text } from "@primer/react";
+import { Link } from "react-router-dom";
 import type { Issue, IssueStage } from "@flightdeck/shared";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api/index.ts";
@@ -50,6 +51,15 @@ export function IssuesPage() {
           </FilterChip>
         ))}
         <Label variant="secondary">Repo: {repo ?? "all"}</Label>
+        <Button as={Link} to="/issues/new?kind=github" size="small">
+          New GitHub issue
+        </Button>
+        <Button as={Link} to="/issues/new?kind=jira" size="small">
+          New Jira issue
+        </Button>
+        <Button as={Link} to="/issues/new?kind=adhoc" size="small">
+          Ad-hoc task
+        </Button>
       </Box>
       {errors.length ? (
         <Text sx={{ color: "danger.fg", display: "block", mb: 3 }}>{errors.join(" · ")}</Text>
