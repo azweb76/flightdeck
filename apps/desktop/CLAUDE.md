@@ -6,4 +6,5 @@ Electron main + preload. macOS is the product target.
 - Loads the React UI from the Vite dev URL (`FLIGHTDECK_UI_URL`) or the server.
 - Product name `Flightdeck`, bundle id `dev.flightdeck.app`.
 - On macOS the window can close while the server keeps running so in-flight runs continue.
+- External https links (Jira API token page) go through `shell.openExternal` with an allowlist. `setWindowOpenHandler` always denies so they never load in the app window.
 - Do not put business logic here; it belongs on the server.

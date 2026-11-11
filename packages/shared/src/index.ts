@@ -1,4 +1,5 @@
 export * from "./meta.ts";
+export * from "./external-url.ts";
 export * from "./labels.ts";
 export * from "./cost.ts";
 export * from "./pr-body.ts";

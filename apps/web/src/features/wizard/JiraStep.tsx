@@ -1,6 +1,7 @@
 import { Alert, Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { api } from "../api/index.ts";
+import { JiraTokenHint } from "../jira/index.ts";
 
 export function JiraStep({ onConnected }: { onConnected: () => void }) {
   const [siteUrl, setSiteUrl] = useState("");
@@ -33,7 +34,13 @@ export function JiraStep({ onConnected }: { onConnected: () => void }) {
         placeholder="https://your-site.atlassian.net"
       />
       <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <TextField type="password" label="API token" value={apiToken} onChange={(e) => setApiToken(e.target.value)} />
+      <TextField
+        type="password"
+        label="API token"
+        value={apiToken}
+        onChange={(e) => setApiToken(e.target.value)}
+        helperText={<JiraTokenHint />}
+      />
       <Button variant="contained" onClick={() => void connect()} disabled={!siteUrl || !email || !apiToken}>
         Test connection
       </Button>

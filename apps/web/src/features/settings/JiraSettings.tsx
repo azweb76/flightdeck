@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Stack, TextField, Typography } from "@mui/material";
 import type { Settings } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
+import { JiraTokenHint } from "../jira/index.ts";
 import { SettingsCard } from "./SettingsCard.tsx";
 
 export function JiraSettings({
@@ -51,7 +52,7 @@ export function JiraSettings({
           label="API token"
           value={apiToken}
           onChange={(e) => setApiToken(e.target.value)}
-          helperText={settings.jiraConfigured ? "Leave blank to keep the stored token." : "Create a token in Atlassian account settings."}
+          helperText={<JiraTokenHint keepStored={settings.jiraConfigured} />}
         />
         <TextField
           fullWidth

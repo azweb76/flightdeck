@@ -2,6 +2,7 @@ import { app, BrowserWindow } from "electron";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { APP_BUNDLE_ID, APP_NAME, DEFAULT_PORT } from "@flightdeck/shared";
+import { registerOpenExternalIpc, trapInAppNavigation } from "./external/index.ts";
 import { ensureServer, runnerBusy } from "./runner.ts";
 import type { ChildProcess } from "node:child_process";
 
@@ -27,10 +28,12 @@ function createWindow(): void {
       nodeIntegration: false,
     },
   });
+  trapInAppNavigation(win, uiUrl);
   void win.loadURL(uiUrl);
 }
 
 app.whenReady().then(async () => {
+  registerOpenExternalIpc();
   server = await ensureServer(port, join(here, "..", "..", ".."));
   createWindow();
   app.on("activate", () => {
