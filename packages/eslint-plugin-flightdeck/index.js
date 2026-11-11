@@ -1,3 +1,5 @@
+import { noFloatingInputLabel } from "./no-floating-input-label.js";
+
 /** Architecture-boundary rules for this monorepo. */
 const APPS = ["desktop", "server", "web"];
 
@@ -57,5 +59,6 @@ const noCrossPackageImports = {
 export default {
   rules: {
     "no-cross-package-imports": noCrossPackageImports,
+    "no-floating-input-label": noFloatingInputLabel,
   },
 };
