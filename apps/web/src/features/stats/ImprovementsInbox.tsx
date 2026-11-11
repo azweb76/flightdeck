@@ -18,16 +18,26 @@ export function ImprovementsInbox() {
           <Text sx={{ display: "block", fontWeight: 600, mt: 2 }}>{it.title}</Text>
           <Text sx={{ color: "fg.muted", display: "block" }}>{it.detail}</Text>
           {it.status === "proposed" ? (
-            <Button
-              sx={{ mt: 2 }}
-              onClick={() =>
-                void api.decideImprovement(it.id, "approved").then(() =>
-                  api.improvements().then((r) => setItems(r.improvements)),
-                )
-              }
-            >
-              Approve
-            </Button>
+            <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+              <Button
+                onClick={() =>
+                  void api.decideImprovement(it.id, "approved").then(() =>
+                    api.improvements().then((r) => setItems(r.improvements)),
+                  )
+                }
+              >
+                Approve
+              </Button>
+              <Button
+                onClick={() =>
+                  void api.decideImprovement(it.id, "rejected").then(() =>
+                    api.improvements().then((r) => setItems(r.improvements)),
+                  )
+                }
+              >
+                Reject
+              </Button>
+            </Box>
           ) : null}
         </Box>
       ))}

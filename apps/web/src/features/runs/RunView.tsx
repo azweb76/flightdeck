@@ -12,6 +12,7 @@ export function RunView() {
   const [events, setEvents] = useState<TranscriptEvent[]>([]);
   const [diff, setDiff] = useState("");
   const [reviewNotes, setReviewNotes] = useState("");
+  const [findings, setFindings] = useState<{ title: string; detail: string; excerpt?: string }[]>([]);
   const [tab, setTab] = useState<"transcript" | "diff" | "plan" | "review">("transcript");
   const [msg, setMsg] = useState("");
   const [target, setTarget] = useState<"current" | "next" | "run">("current");
@@ -24,7 +25,10 @@ export function RunView() {
       setEvents(r.events);
     });
     void api.runDiff(Number(id)).then((d) => setDiff(d.diff)).catch(() => setDiff(""));
-    void api.sessionReviewGet(Number(id)).then((s) => setReviewNotes(s.score.notes)).catch(() => undefined);
+    void api.sessionReviewGet(Number(id)).then((s) => {
+      setReviewNotes(s.score.notes);
+      setFindings(s.findings ?? []);
+    }).catch(() => undefined);
   }
   useEffect(() => {
     load();
@@ -42,7 +46,7 @@ export function RunView() {
         Run {run.issueKey} on {run.repoSlug}
       </Heading>
       <RunActions run={run} onRun={setRun} onReview={setReviewNotes} answer={answer} setAnswer={setAnswer} />
-      <RunTabs tab={tab} setTab={setTab} events={events} diff={diff} reviewNotes={reviewNotes} />
+      <RunTabs tab={tab} setTab={setTab} events={events} diff={diff} reviewNotes={reviewNotes} findings={findings} />
       <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
         <select value={target} onChange={(e) => setTarget(e.target.value as typeof target)}>
           <option value="current">Current phase</option>
@@ -64,12 +68,14 @@ function RunTabs({
   events,
   diff,
   reviewNotes,
+  findings,
 }: {
   tab: "transcript" | "diff" | "plan" | "review";
   setTab: (t: typeof tab) => void;
   events: TranscriptEvent[];
   diff: string;
   reviewNotes: string;
+  findings: { title: string; detail: string; excerpt?: string }[];
 }) {
   return (
     <>
@@ -84,7 +90,18 @@ function RunTabs({
         {tab === "transcript" ? <Transcript events={events} /> : null}
         {tab === "diff" ? <Text as="pre" sx={{ fontSize: 1, whiteSpace: "pre-wrap" }}>{diff || "No diff yet."}</Text> : null}
         {tab === "plan" ? <Text as="pre">{events.find((e) => e.role === "planner")?.detail ?? "No plan yet."}</Text> : null}
-        {tab === "review" ? <Text as="pre" sx={{ whiteSpace: "pre-wrap" }}>{reviewNotes || "Press Review session to score this run."}</Text> : null}
+        {tab === "review" ? (
+          <Box>
+            {findings.map((f) => (
+              <Box key={f.title} sx={{ mb: 2 }}>
+                <Text sx={{ fontWeight: 600, display: "block" }}>{f.title}</Text>
+                <Text sx={{ display: "block" }}>{f.detail}</Text>
+                {f.excerpt ? <Text as="pre" sx={{ fontSize: 1 }}>{f.excerpt}</Text> : null}
+              </Box>
+            ))}
+            <Text as="pre" sx={{ whiteSpace: "pre-wrap" }}>{reviewNotes || "Press Review session to score this run."}</Text>
+          </Box>
+        ) : null}
       </Box>
     </>
   );

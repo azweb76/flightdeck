@@ -99,9 +99,11 @@ export const api = {
     }),
   runDiff: (id: number) => request<{ diff: string }>(`/api/runs/${id}/diff`),
   sessionReviewGet: (id: number) =>
-    request<{ score: { notes: string; waste: number; backtracking: number; prQuality: number; stuck: number; missingContext: number }; improvements: Improvement[] }>(
-      `/api/stats/runs/${id}/session-review`,
-    ),
+    request<{
+      score: { notes: string; waste: number; backtracking: number; prQuality: number; stuck: number; missingContext: number };
+      findings: { title: string; detail: string; excerpt?: string }[];
+      improvements: Improvement[];
+    }>(`/api/stats/runs/${id}/session-review`),
   draftIssue: (repoId: number, title: string, body: string) =>
     request<{ id: string }>("/api/issues/draft", { method: "POST", body: JSON.stringify({ repoId, title, body }) }),
   review: (id: number) => request<PrReviewSession>(`/api/reviews/${id}`),
