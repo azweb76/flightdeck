@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { IssueListQuerySchema } from "@flightdeck/shared";
 import { startAdhoc } from "../../features/adhoc/index.ts";
-import { getIssue, listIssues } from "../../features/issues/index.ts";
+import { getIssue, listIssues, scheduleAssignedSync } from "../../features/issues/index.ts";
 import { draftGithubIssue, draftJiraIssue } from "../../features/issues/draft.ts";
 import { splitIssue } from "../../features/split/index.ts";
 import { getRepo } from "../../features/repos/index.ts";
@@ -15,7 +15,11 @@ export function issueRoutes(): Hono {
       repo: c.req.query("repo"),
       refresh: c.req.query("refresh"),
     });
-    return c.json(await listIssues(query));
+    const result = await listIssues(query);
+    if (query.refresh !== "1" && query.refresh !== "true") {
+      void scheduleAssignedSync(query);
+    }
+    return c.json(result);
   });
   app.post("/sync", async (c) => c.json(await listIssues({ refresh: "1" })));
   app.post("/adhoc", async (c) => {

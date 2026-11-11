@@ -67,6 +67,22 @@ describe("assigned issue sync", () => {
     expect(second.issues.length).toBe(2);
   });
 
+  it("never waits on live gh/Jira for the first GET", async () => {
+    const hanging = {
+      github: {
+        listAssignedIssues: () => new Promise(() => undefined),
+        listVisibleRepos: () => new Promise(() => undefined),
+        getJson: () => new Promise(() => undefined),
+      },
+      jira: { search: () => new Promise(() => undefined) },
+    } as unknown as IssueDeps;
+    const t0 = Date.now();
+    const result = await listIssues({}, hanging);
+    expect(Date.now() - t0).toBeLessThan(200);
+    expect(result.fromCache).toBe(true);
+    expect(result.issues).toEqual([]);
+  });
+
   it("does not prune stale assigned issues on a since-filtered refresh", async () => {
     const gh = {
       listAssignedIssues: async (since?: string) =>

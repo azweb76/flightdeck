@@ -1,11 +1,4 @@
-import {
-  DEFAULT_JIRA_JQL,
-  parseRepoLabels,
-  resolveRepos,
-  type Issue,
-  type LinkedRepo,
-  type VisibleRepo,
-} from "@flightdeck/shared";
+import { DEFAULT_JIRA_JQL, type Issue, type VisibleRepo } from "@flightdeck/shared";
 import { createGithubClient, type GithubClient } from "../github/index.ts";
 import { createJiraClient, type JiraClient } from "../jira/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
@@ -22,8 +15,11 @@ import {
 } from "./health.ts";
 import { loadComments, loadIssue, loadIssues, pruneIssues, replaceComments, upsertIssue } from "./store.ts";
 import { cacheGet, cacheSet, hourCache } from "../cache/index.ts";
-import { rememberedIssuePick, rememberedPicks } from "../discovery/index.ts";
+import { rememberedPicks } from "../discovery/index.ts";
 import { publish } from "../events/index.ts";
+import { mapGithub, mapJira } from "./map.ts";
+
+export { mapJira } from "./map.ts";
 
 export type { IssueListResult, SourceOffline } from "./health.ts";
 
@@ -43,56 +39,67 @@ export type IssueDeps = {
   jira?: JiraClient;
 };
 
+let syncing: Promise<IssueListResult> | undefined;
+
 export async function listIssues(
   query: { source?: "all" | "jira" | "github"; repo?: string; refresh?: string },
   deps: IssueDeps = {},
 ): Promise<IssueListResult> {
   const refresh = query.refresh === "1" || query.refresh === "true";
-  const cached = loadIssues();
   if (refresh) {
     const { cacheClearPrefix } = await import("../cache/index.ts");
     cacheClearPrefix("meta:");
     cacheClearPrefix("issues:");
+    try {
+      return await syncAssigned(query, deps, true);
+    } catch {
+      return cachedList(query, true);
+    }
   }
-  if (!refresh && cached.length > 0) {
-    const last = readSyncStatus();
-    void syncAssigned(query, deps, false)
-      .then(() => publish("issues.updated"))
-      .catch(() => {
-        writeSyncStatus({
-          offline: true,
-          sources: { jira: true, github: true },
-          errors: ["offline"],
-          syncedAt: last.syncedAt,
-        });
-        publish("issues.updated");
+  return cachedList(query, false);
+}
+
+function cachedList(
+  query: { source?: "all" | "jira" | "github"; repo?: string },
+  failedLive: boolean,
+): IssueListResult {
+  const last = readSyncStatus();
+  const syncedAt = last.syncedAt ?? cacheGet("issues:last_sync")?.fetchedAt;
+  return present(loadIssues(), query, {
+    offline: failedLive || last.offline,
+    offlineSources: failedLive ? { jira: true, github: true } : last.sources,
+    fromCache: true,
+    errors: failedLive ? ["offline"] : last.errors,
+    syncedAt,
+  });
+}
+
+/** Background SWR. Coalesces overlapping live gh/Jira syncs. */
+export function scheduleAssignedSync(
+  query: { source?: "all" | "jira" | "github"; repo?: string } = {},
+  deps: IssueDeps = {},
+): Promise<IssueListResult> {
+  if (syncing) return syncing;
+  syncing = syncAssigned(query, deps, false)
+    .then((result) => {
+      publish("issues.updated");
+      return result;
+    })
+    .catch(() => {
+      const last = readSyncStatus();
+      writeSyncStatus({
+        offline: true,
+        sources: { jira: true, github: true },
+        errors: ["offline"],
+        syncedAt: last.syncedAt,
       });
-    return present(cached, query, {
-      offline: last.offline,
-      offlineSources: last.sources,
-      fromCache: true,
-      errors: last.errors,
-      syncedAt: last.syncedAt ?? cacheGet("issues:last_sync")?.fetchedAt,
+      publish("issues.updated");
+      return cachedList(query, true);
+    })
+    .finally(() => {
+      syncing = undefined;
     });
-  }
-  try {
-    return await syncAssigned(query, deps, refresh);
-  } catch {
-    const syncedAt = cacheGet("issues:last_sync")?.fetchedAt;
-    writeSyncStatus({
-      offline: true,
-      sources: { jira: true, github: true },
-      errors: ["offline"],
-      syncedAt,
-    });
-    return present(cached, query, {
-      offline: true,
-      offlineSources: { jira: true, github: true },
-      fromCache: true,
-      errors: ["offline"],
-      syncedAt,
-    });
-  }
+  return syncing;
 }
 
 export function isOffline(source?: string): boolean {
@@ -108,8 +115,9 @@ export async function getIssue(id: string, deps: IssueDeps = {}): Promise<Issue 
     void refreshIssue(stored, deps).catch(() => undefined);
     return overlayIssue({ ...stored, comments: loadComments(id) });
   }
-  const { issues } = await listIssues({}, deps);
-  return issues.find((i) => i.id === id);
+  await syncAssigned({}, deps, false).catch(() => undefined);
+  const next = loadIssue(id);
+  return next ? overlayIssue({ ...next, comments: loadComments(id) }) : undefined;
 }
 
 export async function syncAssigned(
@@ -217,73 +225,6 @@ function assignedJql(settingsJql: string | undefined, since?: string): string {
   if (!since) return base;
   const stamp = since.slice(0, 19).replace("T", " ");
   return `(${base}) AND updated >= "${stamp}"`;
-}
-
-export function mapJira(
-  issue: { key: string; title: string; body: string; url: string; labels: string[]; updatedAt: string },
-  visible: VisibleRepo[],
-  prefix: string,
-  rememberedByLabel: Record<string, VisibleRepo> = {},
-): Issue {
-  const parsed = parseRepoLabels(issue.labels, prefix);
-  const resolution = withIssuePick(
-    `jira:${issue.key}`,
-    resolveRepos(parsed, visible, rememberedByLabel),
-  );
-  const withLabel = (p: VisibleRepo): LinkedRepo => ({
-    owner: p.owner,
-    name: p.name,
-    registered: true,
-    label: parsed.find((x) => x.name.toLowerCase() === p.name.toLowerCase())?.label ?? `${p.owner}/${p.name}`,
-  });
-  return {
-    id: `jira:${issue.key}`,
-    source: "jira",
-    key: issue.key,
-    title: issue.title,
-    body: issue.body,
-    url: issue.url,
-    stage: "new",
-    repos: resolution.resolved.map(withLabel),
-    repoWarning: resolution.warning,
-    repoGuesses: resolution.guesses.map(withLabel),
-    updatedAt: issue.updatedAt,
-  };
-}
-
-function withIssuePick(
-  issueId: string,
-  resolution: ReturnType<typeof resolveRepos>,
-): ReturnType<typeof resolveRepos> {
-  const pick = rememberedIssuePick(issueId);
-  if (!pick) return resolution;
-  if (resolution.warning === "missing" || resolution.resolved.length === 0) {
-    return { resolved: [pick], warning: "none", guesses: resolution.guesses };
-  }
-  return resolution;
-}
-
-function mapGithub(issue: {
-  number: number;
-  title: string;
-  body: string;
-  url: string;
-  updatedAt: string;
-  owner: string;
-  name: string;
-}): Issue {
-  return {
-    id: `github:${issue.owner}/${issue.name}#${issue.number}`,
-    source: "github",
-    key: `${issue.owner}/${issue.name}#${issue.number}`,
-    title: issue.title,
-    body: issue.body,
-    url: issue.url,
-    stage: "new",
-    repos: [{ owner: issue.owner, name: issue.name, registered: true }],
-    repoWarning: "none",
-    updatedAt: issue.updatedAt,
-  };
 }
 
 async function refreshIssue(issue: Issue, deps: IssueDeps): Promise<void> {
