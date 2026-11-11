@@ -3,9 +3,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import type { Repo } from "@flightdeck/shared";
 import { api, subscribeEvents } from "./features/api/index.ts";
 import { IssueDetailPage, IssuesPage } from "./features/issues/index.ts";
-import { PlaceholderPage } from "./features/placeholders/index.ts";
+import { ReviewDiff, ReviewsPage } from "./features/reviews/index.ts";
+import { RunView, RunsPage } from "./features/runs/index.ts";
 import { SettingsPage } from "./features/settings/index.ts";
 import { AppShell } from "./features/shell/index.ts";
+import { StatsPage } from "./features/stats/index.ts";
 import { ThemeRoot, useThemeMode } from "./features/theme/index.ts";
 import { SetupWizard } from "./features/wizard/index.ts";
 
@@ -44,9 +46,11 @@ export function App() {
           <Route path="/" element={<Navigate to="/issues" replace />} />
           <Route path="/issues" element={<IssuesPage />} />
           <Route path="/issues/:id" element={<IssueDetailPage />} />
-          <Route path="/runs" element={<PlaceholderPage title="Runs" />} />
-          <Route path="/reviews" element={<PlaceholderPage title="Reviews" />} />
-          <Route path="/stats" element={<PlaceholderPage title="Stats" />} />
+          <Route path="/runs" element={<RunsPage />} />
+          <Route path="/runs/:id" element={<RunView />} />
+          <Route path="/reviews" element={<ReviewsPage />} />
+          <Route path="/reviews/:id" element={<ReviewDiff />} />
+          <Route path="/stats" element={<StatsPage />} />
           <Route
             path="/settings"
             element={<SettingsPage repos={repos} onReposChange={() => void refresh()} />}

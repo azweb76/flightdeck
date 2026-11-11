@@ -4,6 +4,8 @@ import { Box, FormControl, Heading, Text, TextInput } from "@primer/react";
 import type { Repo, Settings, ThemeMode } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 import { useThemeMode } from "../theme/index.ts";
+import { AgentSettings } from "./AgentSettings.tsx";
+import { TeamConfigButtons } from "./TeamConfigButtons.tsx";
 import { JiraSettings } from "./JiraSettings.tsx";
 import { RepoSettings } from "./RepoSettings.tsx";
 
@@ -60,6 +62,8 @@ export function SettingsPage({
           <FormControl.Caption>Issues tagged like {settings.labelPrefix}owner/repo map to that GitHub repo.</FormControl.Caption>
         </FormControl>
       </Section>
+      <TeamConfigButtons />
+      <AgentSettings settings={settings} onSave={save} />
       <RepoSettings
         repos={repos}
         workspaceFolder={settings.workspaceFolder}

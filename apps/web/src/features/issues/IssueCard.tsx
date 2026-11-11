@@ -17,7 +17,8 @@ export function IssueCard({ issue }: { issue: Issue }) {
         p: 3,
         bg: "canvas.default",
         border: "1px solid",
-        borderColor: warning ? "attention.emphasis" : "border.default",
+        borderColor: issue.needsYou || warning ? "attention.emphasis" : "border.default",
+        borderWidth: issue.needsYou ? 2 : 1,
         borderRadius: 2,
         textDecoration: "none",
         color: "fg.default",
@@ -36,6 +37,9 @@ export function IssueCard({ issue }: { issue: Issue }) {
           </Label>
         ))}
       </Box>
+      {issue.statusNote ? (
+        <Text sx={{ display: "block", mt: 2, fontSize: 0 }}>{issue.statusNote}</Text>
+      ) : null}
       {warning ? (
         <Text sx={{ display: "block", mt: 2, fontSize: 0, color: "attention.fg" }}>
           {warning}

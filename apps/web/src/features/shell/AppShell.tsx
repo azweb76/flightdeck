@@ -1,6 +1,8 @@
 import { Box, NavList, Text } from "@primer/react";
 import { APP_NAME, type Repo } from "@flightdeck/shared";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
+import { Palette } from "../palette/index.ts";
+import { NeedsYouBanner } from "./NeedsYouBanner.tsx";
 
 const NAV = [
   { to: "/issues", label: "Issues" },
@@ -73,9 +75,11 @@ export function AppShell({ repos }: { repos: Repo[] }) {
           </Text>
         ) : null}
       </Box>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <NeedsYouBanner />
         <Outlet />
       </Box>
+      <Palette />
     </Box>
   );
 }
