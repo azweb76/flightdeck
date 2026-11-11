@@ -51,3 +51,7 @@ Homebrew cask template: `packaging/homebrew/flightdeck.rb`. electron-builder con
 ## Token/cost in CI
 
 `pnpm --filter @flightdeck/evals test` is the prompt eval harness. Session reviews write eval cases into SQLite; a future CI job comments cost from `transcript_events.usd` onto the PR.
+
+## License
+
+MIT, see [LICENSE](./LICENSE).
