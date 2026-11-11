@@ -9,6 +9,9 @@ import { notify } from "../notify/index.ts";
 import { patchSettings } from "../settings/index.ts";
 import { demoIssues } from "../issues/demo.ts";
 import { upsertIssue } from "../issues/store.ts";
+import { seedBoardPrs } from "./seed-prs.ts";
+import { applyBoardPrs, listBoardPrs } from "../board-prs/index.ts";
+import { loadIssues } from "../issues/store.ts";
 
 export async function seedDemo(): Promise<void> {
   if (process.env.FLIGHTDECK_DEMO !== "1") return;
@@ -19,6 +22,8 @@ export async function seedDemo(): Promise<void> {
     createRepo({ owner: "acme", name: "docs", pinned: false, defaultBranch: "main" });
   }
   for (const issue of demoIssues()) upsertIssue(issue);
+  seedBoardPrs();
+  applyBoardPrs(loadIssues(), listBoardPrs(), true, true);
   seedApprovedGoal();
   await seedRuns();
 }
