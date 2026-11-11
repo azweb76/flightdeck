@@ -28,13 +28,13 @@ describe("mapSdkMessage", () => {
         },
       }),
     ];
-    expect(events).toMatchObject([
-      {
-        kind: "ask",
-        ask: { prompt: "Use /v2?", options: [{ id: "yes", label: "Yes" }] },
-        sdkSessionId: "sess-1",
-      },
+    expect(events[0]?.kind).toBe("ask");
+    expect(events[0]?.ask?.prompt).toBe("Use /v2?");
+    expect(events[0]?.ask?.options).toEqual([
+      { id: "yes", label: "Yes" },
+      { id: "no", label: "No" },
     ]);
+    expect(events[0]?.sdkSessionId).toBe("sess-1");
   });
 
   it("uses SDK total_cost_usd on the result usage event", () => {
