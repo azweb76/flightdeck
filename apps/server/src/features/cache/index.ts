@@ -33,12 +33,20 @@ export function cacheClearAll(): void {
   getDb().exec("DELETE FROM api_cache");
 }
 
+const pending = new Map<string, Promise<unknown>>();
+
 export function hourCache<T>(key: string, load: () => Promise<T>, refresh = false): Promise<T> {
   if (!refresh && cacheFresh(key)) {
     return Promise.resolve(JSON.parse(cacheGet(key)!.body) as T);
   }
-  return load().then((value) => {
-    cacheSet(key, JSON.stringify(value));
-    return value;
-  });
+  const existing = pending.get(key);
+  if (existing) return existing as Promise<T>;
+  const next = load()
+    .then((value) => {
+      cacheSet(key, JSON.stringify(value));
+      return value;
+    })
+    .finally(() => pending.delete(key));
+  pending.set(key, next);
+  return next;
 }

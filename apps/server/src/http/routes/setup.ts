@@ -4,7 +4,7 @@ import { publish } from "../../features/events/index.ts";
 import { createJiraClient } from "../../features/jira/index.ts";
 import { createSecretStore } from "../../features/secrets/index.ts";
 import { patchSettings } from "../../features/settings/index.ts";
-import { runSetupChecks } from "../../features/setup/checks.ts";
+import { readSetupStatus, runSetupChecks } from "../../features/setup/checks.ts";
 import { applyTeamConfig, exportTeamConfig, parseTeamConfig } from "../../features/setup/import-config.ts";
 import { apiError } from "../errors.ts";
 
@@ -12,7 +12,7 @@ import { apiError } from "../errors.ts";
 export function setupRoutes(): Hono {
   const app = new Hono();
 
-  app.get("/status", async (c) => c.json(await runSetupChecks()));
+  app.get("/status", (c) => c.json(readSetupStatus()));
 
   app.post("/recheck", async (c) => {
     publish("setup.updated");

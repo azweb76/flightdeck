@@ -1,4 +1,5 @@
 import type { GithubStatus } from "@flightdeck/shared";
+import { hourCache } from "../cache/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 import {
   ghApiJson,
@@ -69,7 +70,7 @@ export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
     writeIssue: (owner, name, number, body) =>
       ghJson(exec, ["issue", "edit", String(number), "--repo", `${owner}/${name}`, "--body", body]),
     listAssignedIssues: (since) => listAssignedIssues(exec, since),
-    listVisibleRepos: () => listVisibleRepos(exec),
+    listVisibleRepos: () => cachedVisibleRepos(exec),
     getJson: (path, etag) => ghApiJson(exec, path, etag),
   };
 }
@@ -145,8 +146,21 @@ async function createPr(exec: ExecFn, opts: CreatePrOpts): Promise<{ url: string
   return { url, number: Number.isFinite(num) ? num : 0 };
 }
 
-export async function githubStatus(exec: ExecFn = defaultExec): Promise<GithubStatus> {
-  const version = await exec("gh", ["--version"], { timeoutMs: 5_000 });
+export async function githubStatus(exec: ExecFn = defaultExec, refresh = false): Promise<GithubStatus> {
+  if (exec !== defaultExec) return githubStatusLive(exec);
+  return hourCache("meta:gh-status", () => githubStatusLive(exec), refresh);
+}
+
+async function cachedVisibleRepos(exec: ExecFn): Promise<{ owner: string; name: string }[]> {
+  if (exec !== defaultExec) return listVisibleRepos(exec);
+  return hourCache("meta:gh-user-repos", () => listVisibleRepos(exec));
+}
+
+async function githubStatusLive(exec: ExecFn): Promise<GithubStatus> {
+  const [version, auth] = await Promise.all([
+    exec("gh", ["--version"], { timeoutMs: 5_000 }),
+    exec("gh", ["auth", "status"], { timeoutMs: 8_000 }),
+  ]);
   if (version.code !== 0) {
     return {
       installed: false,
@@ -154,7 +168,6 @@ export async function githubStatus(exec: ExecFn = defaultExec): Promise<GithubSt
       detail: "gh is not installed",
     };
   }
-  const auth = await exec("gh", ["auth", "status"], { timeoutMs: 8_000 });
   const loggedIn = auth.code === 0;
   const user = loggedIn ? parseUser(auth.stderr + auth.stdout) : undefined;
   return {

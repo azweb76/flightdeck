@@ -1,4 +1,6 @@
 import type { SetupCheck, SetupStatus } from "@flightdeck/shared";
+import { SetupStatusSchema } from "@flightdeck/shared";
+import { cacheGet, cacheSet } from "../cache/index.ts";
 import { detectClaudeConfig, type ClaudeDeps } from "../claude/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 import { githubStatus } from "../github/index.ts";
@@ -10,15 +12,40 @@ import { getSettings } from "../settings/index.ts";
 export type SetupDeps = {
   exec?: ExecFn;
   claude?: ClaudeDeps;
+  probeJira?: boolean;
+  refreshGithub?: boolean;
 };
 
-/** Canonical service: first-run checks with injectable exec. */
+const EMPTY_CLAUDE = { found: false, apiKeyHelper: false, sources: [] as string[], detail: "Not checked yet" };
+const EMPTY_GH = { installed: false, loggedIn: false, detail: "Not checked yet" };
+
+/** SQLite-only snapshot for page load. Never runs gh, Keychain, or Jira. */
+export function readSetupStatus(): SetupStatus {
+  const settings = getSettings();
+  const demo = process.env.FLIGHTDECK_DEMO === "1";
+  const complete = Boolean(settings.setupComplete || demo);
+  const row = cacheGet("setup:last");
+  if (row) {
+    try {
+      const parsed = SetupStatusSchema.safeParse(JSON.parse(row.body) as unknown);
+      if (parsed.success) return { ...parsed.data, complete };
+    } catch {
+      /* ignore corrupt cache */
+    }
+  }
+  return { complete, checks: [], claude: EMPTY_CLAUDE, github: EMPTY_GH };
+}
+
+/** Live checks for Recheck / complete. Probe Jira and refresh gh cache. */
 export async function runSetupChecks(deps: SetupDeps = {}): Promise<SetupStatus> {
   const exec = deps.exec ?? defaultExec;
-  const git = await gitCheck(exec);
-  const github = await githubStatus(exec);
-  const claude = await detectClaudeConfig(deps.claude ?? { exec });
-  const jira = await jiraCheck();
+  const probeJira = deps.probeJira !== false;
+  const [git, github, claude, jira] = await Promise.all([
+    gitCheck(exec),
+    githubStatus(exec, deps.refreshGithub !== false),
+    detectClaudeConfig(deps.claude ?? { exec }),
+    jiraCheck(probeJira),
+  ]);
   const repos = repoCheck();
   const checks: SetupCheck[] = [
     git,
@@ -48,12 +75,14 @@ export async function runSetupChecks(deps: SetupDeps = {}): Promise<SetupStatus>
   const settings = getSettings();
   const requiredOk = git.ok && checks[1]!.ok && checks[2]!.ok;
   const demo = process.env.FLIGHTDECK_DEMO === "1";
-  return {
+  const status: SetupStatus = {
     complete: settings.setupComplete && (requiredOk || demo),
     checks,
     claude,
     github,
   };
+  cacheSet("setup:last", JSON.stringify(status));
+  return status;
 }
 
 async function gitCheck(exec: ExecFn): Promise<SetupCheck> {
@@ -70,7 +99,7 @@ async function gitCheck(exec: ExecFn): Promise<SetupCheck> {
   return { id: "git", ok: true, title: "git", detail: r.stdout.trim() };
 }
 
-async function jiraCheck(): Promise<SetupCheck> {
+async function jiraCheck(probe: boolean): Promise<SetupCheck> {
   const settings = getSettings();
   if (!settings.jiraSiteUrl || !settings.jiraEmail) {
     return {
@@ -79,6 +108,14 @@ async function jiraCheck(): Promise<SetupCheck> {
       title: "Jira Cloud",
       detail: "Not connected",
       hint: "Add your Jira site URL, email, and API token",
+    };
+  }
+  if (!probe) {
+    return {
+      id: "jira",
+      ok: settings.jiraConfigured,
+      title: "Jira Cloud",
+      detail: settings.jiraConfigured ? "Saved (use Test and save to verify)" : "Not connected",
     };
   }
   const token = await createSecretStore().get();

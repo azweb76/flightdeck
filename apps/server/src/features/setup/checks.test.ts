@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import type { ExecFn } from "../exec/index.ts";
-import { runSetupChecks } from "./checks.ts";
+import { patchSettings } from "../settings/index.ts";
+import { readSetupStatus, runSetupChecks } from "./checks.ts";
 
 function execFor(table: Record<string, { code: number; stdout?: string; stderr?: string }>): ExecFn {
   return async (file, args) => {
@@ -61,5 +62,16 @@ describe("runSetupChecks", () => {
     const gh = status.checks.find((c) => c.id === "gh");
     expect(gh?.ok).toBe(false);
     expect(gh?.hint).toMatch(/gh auth login/);
+  });
+
+  it("readSetupStatus is sqlite-only and skips exec", () => {
+    patchSettings({ setupComplete: true });
+    const exec: ExecFn = async () => {
+      throw new Error("exec should not run");
+    };
+    const status = readSetupStatus();
+    expect(status.complete).toBe(true);
+    expect(status.checks).toEqual([]);
+    void exec;
   });
 });
