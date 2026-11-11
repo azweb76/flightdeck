@@ -60,6 +60,11 @@ function* mapSdkMessage(msg: Record<string, unknown>): Generator<AgentEvent> {
       tokensIn: usage?.input_tokens,
       tokensOut: usage?.output_tokens,
     };
-    yield { kind: "done", title: "session finished", detail: String(msg.result ?? "") };
+    yield {
+      kind: "done",
+      title: "session finished",
+      detail: String(msg.result ?? ""),
+      sdkSessionId: typeof msg.session_id === "string" ? msg.session_id : undefined,
+    };
   }
 }

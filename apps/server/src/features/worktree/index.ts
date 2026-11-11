@@ -44,6 +44,28 @@ export async function commitAll(
   }
 }
 
+/** One commit per changed path when the implementer listed files. */
+export async function commitLogical(
+  worktreePath: string,
+  files: string[],
+  messageFor: (file: string) => string,
+  exec: ExecFn = defaultExec,
+): Promise<void> {
+  const unique = [...new Set(files.filter(Boolean))];
+  if (unique.length === 0) {
+    await commitAll(worktreePath, messageFor("all"), exec);
+    return;
+  }
+  for (const file of unique) {
+    await exec("git", ["add", "--", file], { cwd: worktreePath });
+    const commit = await exec("git", ["commit", "-m", messageFor(file)], { cwd: worktreePath });
+    if (commit.code !== 0 && !commit.stdout.includes("nothing to commit")) {
+      throw new Error(commit.stderr || `git commit failed for ${file}`);
+    }
+  }
+  await commitAll(worktreePath, messageFor("remaining"), exec);
+}
+
 export async function pushBranch(
   worktreePath: string,
   branch: string,
