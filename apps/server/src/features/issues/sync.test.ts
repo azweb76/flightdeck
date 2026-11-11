@@ -252,4 +252,14 @@ describe("assigned issue sync", () => {
     ]);
     expect(again.issues[0]?.repoWarning).toBe("none");
   });
+
+  it("filters the board by source after overlay", async () => {
+    await listIssues({ refresh: "1" }, deps());
+    const jira = await listIssues({ source: "jira" }, deps());
+    const github = await listIssues({ source: "github" }, deps());
+    expect(jira.issues.every((i) => i.source === "jira")).toBe(true);
+    expect(github.issues.every((i) => i.source === "github")).toBe(true);
+    expect(jira.issues.length).toBeGreaterThan(0);
+    expect(github.issues.length).toBeGreaterThan(0);
+  });
 });

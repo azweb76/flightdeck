@@ -41,5 +41,17 @@ export function demoIssues(): Issue[] {
       repoWarning: "multiple",
       updatedAt: "2026-11-09T09:00:00.000Z",
     },
+    {
+      id: "jira:PROJ-142",
+      source: "jira",
+      key: "PROJ-142",
+      title: "Version the public API",
+      body: "Should the new endpoints go under /v2?",
+      url: "https://example.atlassian.net/browse/PROJ-142",
+      stage: "running",
+      repos: [{ owner: "acme", name: "api", label: "gh:acme/api", registered: true }],
+      repoWarning: "none",
+      updatedAt: "2026-11-11T10:00:00.000Z",
+    },
   ];
 }

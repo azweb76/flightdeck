@@ -52,7 +52,7 @@ export function wholeOffline(calledJira: boolean, calledGithub: boolean, sources
 
 export function present(
   issues: Issue[],
-  query: { repo?: string },
+  query: { repo?: string; source?: string },
   extra: {
     offline: boolean;
     offlineSources: SourceOffline;
@@ -62,6 +62,9 @@ export function present(
   },
 ): IssueListResult {
   let next = issues.map((i) => overlayIssue({ ...i, comments: i.comments ?? loadComments(i.id) }));
+  if (query.source && query.source !== "all") {
+    next = next.filter((i) => i.source === query.source);
+  }
   if (query.repo) {
     const want = query.repo.toLowerCase();
     next = next.filter((i) => i.repos.some((r) => `${r.owner}/${r.name}`.toLowerCase() === want));
