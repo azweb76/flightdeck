@@ -8,6 +8,8 @@ import { insertQuestion } from "../questions/store.ts";
 import { getRepo } from "../repos/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { insertEvent, updateRun, activeRunCount, getRun } from "./store.ts";
+import { bindAbort, clearAbort } from "./abort.ts";
+import { takeMessages } from "../messages/index.ts";
 
 export type PhaseResult = { status: "ok" | "ask" | "error"; output: string };
 
@@ -17,10 +19,16 @@ export async function runAgentPhase(
   prompt: string,
 ): Promise<PhaseResult> {
   const sessionId = insertSession(run.id, role, run.phase, run.round);
+  const notes = takeMessages(run.id);
+  const full = notes.length
+    ? `${prompt}\n\nOperator messages:\n${notes.map((n) => `- ${n}`).join("\n")}`
+    : prompt;
+  const abort = bindAbort(run.id);
   keepAwakeStart();
   try {
-    return await consume(run, role, prompt, sessionId);
+    return await consume(run, role, full, sessionId, abort);
   } finally {
+    clearAbort(run.id);
     if (activeRunCount() === 0) keepAwakeStop();
   }
 }
@@ -30,6 +38,7 @@ async function consume(
   role: AgentRole,
   prompt: string,
   sessionId: number,
+  abort: AbortSignal,
 ): Promise<PhaseResult> {
   const parts: string[] = [];
   const driver = getAgentDriver();
@@ -39,9 +48,10 @@ async function consume(
     role,
     model: roleModel(role, run),
     permissionMode: "auto",
+    abort,
   })) {
     const current = getRun(run.id);
-    if (!current || current.status === "cancelled") {
+    if (abort.aborted || !current || current.status === "cancelled") {
       return { status: "error", output: parts.join("\n") };
     }
     if (ev.kind === "text" && ev.detail) parts.push(ev.detail);
@@ -96,6 +106,9 @@ async function handleUsage(
     }
   }
   record(run.id, sessionId, role, ev, extraUsd);
+  if (ev.kind === "done" && ev.sdkSessionId) {
+    getDb().prepare("UPDATE sessions SET sdk_session_id = ? WHERE id = ?").run(ev.sdkSessionId, sessionId);
+  }
   return undefined;
 }
 

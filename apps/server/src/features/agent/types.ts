@@ -9,6 +9,7 @@ export type AgentEvent = {
   tokensIn?: number;
   tokensOut?: number;
   ask?: { prompt: string; options: { id: string; label: string }[] };
+  sdkSessionId?: string;
 };
 
 export type AgentRunOpts = {
@@ -18,6 +19,7 @@ export type AgentRunOpts = {
   model: string;
   permissionMode: PermissionMode;
   resumeSessionId?: string;
+  abort?: AbortSignal;
 };
 
 export type AgentDriver = {

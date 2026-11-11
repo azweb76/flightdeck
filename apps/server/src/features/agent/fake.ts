@@ -7,7 +7,15 @@ export function createFakeDriver(opts: FakeOpts = {}): AgentDriver {
   let reviews = 0;
   return {
     async *run(req: AgentRunOpts): AsyncIterable<AgentEvent> {
+      const step = async (): Promise<boolean> => {
+        await Promise.resolve();
+        return Boolean(req.abort?.aborted);
+      };
       yield { kind: "text", title: `${req.role} started`, detail: req.prompt.slice(0, 240) };
+      if (await step()) {
+        yield { kind: "error", title: "aborted", detail: "session aborted" };
+        return;
+      }
       yield { kind: "tool", title: "Read", tool: "Read", path: "CLAUDE.md" };
       if (opts.ask) {
         yield askEvent();
@@ -20,7 +28,7 @@ export function createFakeDriver(opts: FakeOpts = {}): AgentDriver {
       if (req.role === "reviewer") reviews += 1;
       yield jsonEvent(payload(req, reviews, opts.majorFirst === true));
       yield { kind: "usage", title: "usage", tokensIn: 1200, tokensOut: 400 };
-      yield { kind: "done", title: `${req.role} finished` };
+      yield { kind: "done", title: `${req.role} finished`, sdkSessionId: "fake-session" };
     },
   };
 }
