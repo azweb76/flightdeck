@@ -12,11 +12,10 @@ import { createSecretStore } from "../secrets/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { overlayIssue } from "../runs/overlay.ts";
 import { demoIssues } from "./demo.ts";
-
-const extras = new Map<string, Issue>();
+import { loadIssue, loadIssues, upsertIssue } from "./store.ts";
 
 export function rememberIssue(issue: Issue): void {
-  extras.set(issue.id, issue);
+  upsertIssue(issue);
 }
 
 export type IssueDeps = {
@@ -36,8 +35,11 @@ export async function listIssues(
     source === "github" ? Promise.resolve([]) : loadJira(settings, repos, deps, errors),
     source === "jira" ? Promise.resolve([]) : loadGithub(repos, deps, errors),
   ]);
-  let issues = [...jira, ...github, ...extras.values()];
+  const byId = new Map<string, Issue>();
+  for (const issue of [...loadIssues(), ...jira, ...github]) byId.set(issue.id, issue);
+  let issues = [...byId.values()];
   if (issues.length === 0 && process.env.FLIGHTDECK_DEMO === "1") issues = demoIssues();
+  for (const issue of issues) upsertIssue(issue);
   if (query.repo) {
     const want = query.repo.toLowerCase();
     issues = issues.filter((i) => i.repos.some((r) => `${r.owner}/${r.name}`.toLowerCase() === want));
@@ -47,7 +49,8 @@ export async function listIssues(
 }
 
 export async function getIssue(id: string, deps: IssueDeps = {}): Promise<Issue | undefined> {
-  if (extras.has(id)) return overlayIssue(extras.get(id)!);
+  const stored = loadIssue(id);
+  if (stored) return overlayIssue(stored);
   const { issues } = await listIssues({}, deps);
   return issues.find((i) => i.id === id);
 }

@@ -25,6 +25,7 @@ export const IssueSchema = z.object({
   needsYou: z.boolean().optional(),
   statusNote: z.string().optional(),
   latestRunId: z.number().optional(),
+  parentId: z.string().optional(),
 });
 export type Issue = z.infer<typeof IssueSchema>;
 

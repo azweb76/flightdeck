@@ -2,6 +2,7 @@ import { Box, NavList, Text } from "@primer/react";
 import { APP_NAME, type Repo } from "@flightdeck/shared";
 import { NavLink, Outlet, useSearchParams } from "react-router-dom";
 import { Palette } from "../palette/index.ts";
+import { Alerts } from "./Alerts.tsx";
 import { NeedsYouBanner } from "./NeedsYouBanner.tsx";
 
 const NAV = [
@@ -76,6 +77,9 @@ export function AppShell({ repos }: { repos: Repo[] }) {
         ) : null}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <Box sx={{ display: "flex", justifyContent: "flex-end", p: 2 }}>
+          <Alerts />
+        </Box>
         <NeedsYouBanner />
         <Outlet />
       </Box>

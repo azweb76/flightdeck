@@ -207,4 +207,22 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: "008_issues_messages",
+    sql: `
+      ALTER TABLE run_messages ADD COLUMN consumed INTEGER NOT NULL DEFAULT 0;
+      CREATE TABLE IF NOT EXISTS issues (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        key TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL DEFAULT '',
+        url TEXT NOT NULL DEFAULT '',
+        parent_id TEXT,
+        repos_json TEXT NOT NULL DEFAULT '[]',
+        repo_warning TEXT NOT NULL DEFAULT 'none',
+        updated_at TEXT NOT NULL
+      );
+    `,
+  },
 ];

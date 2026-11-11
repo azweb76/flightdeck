@@ -126,6 +126,12 @@ async function writeBack(issueId: string, markdown: string): Promise<void> {
     });
     return;
   }
-  void markdown;
-  void createGithubClient;
+  if (issueId.startsWith("github:")) {
+    const rest = issueId.slice("github:".length);
+    const [owner, tail] = rest.split("/");
+    const num = Number((tail ?? "").split("#")[1]);
+    if (owner && tail && num) {
+      await createGithubClient().writeIssue(owner, tail.split("#")[0] ?? "", num, markdown);
+    }
+  }
 }

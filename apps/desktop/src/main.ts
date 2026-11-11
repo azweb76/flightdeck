@@ -1,28 +1,14 @@
 import { app, BrowserWindow } from "electron";
-import { spawn, type ChildProcess } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { APP_BUNDLE_ID, APP_NAME, DEFAULT_PORT } from "@flightdeck/shared";
+import { ensureServer, runnerBusy } from "./runner.ts";
+import type { ChildProcess } from "node:child_process";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.FLIGHTDECK_PORT ?? DEFAULT_PORT);
 const uiUrl = process.env.FLIGHTDECK_UI_URL ?? `http://127.0.0.1:${port}`;
-
 let server: ChildProcess | undefined;
-
-function startServer(): void {
-  if (process.env.FLIGHTDECK_UI_URL) return;
-  const repoRoot = join(here, "..", "..", "..");
-  server = spawn("pnpm", ["--filter", "@flightdeck/server", "start"], {
-    cwd: repoRoot,
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      FLIGHTDECK_HOST: "127.0.0.1",
-      FLIGHTDECK_PORT: String(port),
-    },
-  });
-}
 
 app.setName(APP_NAME);
 app.setAppUserModelId(APP_BUNDLE_ID);
@@ -44,19 +30,31 @@ function createWindow(): void {
   void win.loadURL(uiUrl);
 }
 
-app.whenReady().then(() => {
-  startServer();
+app.whenReady().then(async () => {
+  server = await ensureServer(port, join(here, "..", "..", ".."));
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+  setInterval(() => {
+    void maybeQuit();
+  }, 15_000);
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+  void maybeQuit(true);
 });
 
 app.on("before-quit", () => {
   if (process.platform === "darwin") return;
   server?.kill();
 });
+
+async function maybeQuit(fromClose = false): Promise<void> {
+  const busy = await runnerBusy(port);
+  if (busy) return;
+  if (BrowserWindow.getAllWindows().length > 0 && !fromClose) return;
+  server?.kill();
+  if (fromClose || process.platform !== "darwin") app.quit();
+  if (fromClose && process.platform === "darwin") app.quit();
+}

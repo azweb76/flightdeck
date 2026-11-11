@@ -19,6 +19,7 @@ export type GithubClient = {
     comments: { path: string; line: number; body: string }[],
   ): Promise<void>;
   createIssue(owner: string, name: string, title: string, body: string): Promise<{ number: number; url: string }>;
+  writeIssue(owner: string, name: string, number: number, body: string): Promise<void>;
 };
 
 export type CreatePrOpts = {
@@ -103,6 +104,17 @@ export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
       ]);
       if (r.code !== 0) throw new Error(r.stderr || "issue create failed");
       return JSON.parse(r.stdout) as { number: number; url: string };
+    },
+    writeIssue: async (owner, name, number, body) => {
+      await ghJson(exec, [
+        "issue",
+        "edit",
+        String(number),
+        "--repo",
+        `${owner}/${name}`,
+        "--body",
+        body,
+      ]);
     },
   };
 }
