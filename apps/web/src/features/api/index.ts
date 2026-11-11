@@ -92,7 +92,18 @@ export const api = {
   notifications: () =>
     request<{ notifications: AppNotification[]; unread: number; questions: Question[] }>("/api/notifications"),
   reviews: () => request<{ reviews: PrReviewSession[] }>("/api/reviews"),
-  createReview: () => request<PrReviewSession>("/api/reviews", { method: "POST" }),
+  createReview: (repoSlug?: string, prNumber?: number) =>
+    request<PrReviewSession>("/api/reviews", {
+      method: "POST",
+      body: JSON.stringify(repoSlug && prNumber ? { repoSlug, prNumber } : {}),
+    }),
+  runDiff: (id: number) => request<{ diff: string }>(`/api/runs/${id}/diff`),
+  sessionReviewGet: (id: number) =>
+    request<{ score: { notes: string; waste: number; backtracking: number; prQuality: number; stuck: number; missingContext: number }; improvements: Improvement[] }>(
+      `/api/stats/runs/${id}/session-review`,
+    ),
+  draftIssue: (repoId: number, title: string, body: string) =>
+    request<{ id: string }>("/api/issues/draft", { method: "POST", body: JSON.stringify({ repoId, title, body }) }),
   review: (id: number) => request<PrReviewSession>(`/api/reviews/${id}`),
   patchDraft: (reviewId: number, draftId: number, state: string, body?: string) =>
     request<PrReviewSession>(`/api/reviews/${reviewId}/drafts/${draftId}`, {
@@ -112,6 +123,7 @@ export type StatsPayload = {
   avgRounds: number;
   avgTimeToPrMs: number;
   costByRepo: { repo: string; usd: number }[];
+  costByDay: { day: string; usd: number }[];
   outcomes: { merged: number; neededFixes: number; failed: number };
 };
 

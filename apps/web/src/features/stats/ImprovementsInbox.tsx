@@ -17,11 +17,16 @@ export function ImprovementsInbox() {
           <Label>{it.kind}</Label> <Label variant="secondary">{it.status}</Label>
           <Text sx={{ display: "block", fontWeight: 600, mt: 2 }}>{it.title}</Text>
           <Text sx={{ color: "fg.muted", display: "block" }}>{it.detail}</Text>
-          {it.kind === "setting_change" ? (
-            <Button sx={{ mt: 2 }} onClick={() => void api.decideImprovement(it.id, "approved").then(() =>
-              api.improvements().then((r) => setItems(r.improvements)),
-            )}>
-              Approve setting
+          {it.status === "proposed" ? (
+            <Button
+              sx={{ mt: 2 }}
+              onClick={() =>
+                void api.decideImprovement(it.id, "approved").then(() =>
+                  api.improvements().then((r) => setItems(r.improvements)),
+                )
+              }
+            >
+              Approve
             </Button>
           ) : null}
         </Box>
