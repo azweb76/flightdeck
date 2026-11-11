@@ -26,8 +26,19 @@ describe("resolveRepos", () => {
     expect(r.guesses.length).toBe(2);
   });
 
-  it("uses a remembered project pick", () => {
-    const r = resolveRepos([], visible, { owner: "acme", name: "api" });
-    expect(r.resolved).toEqual([{ owner: "acme", name: "api" }]);
+  it("uses a remembered pick for that label only", () => {
+    const r = resolveRepos(
+      [
+        { owner: "", name: "web", label: "gh:web" },
+        { owner: "", name: "api", label: "gh:api" },
+      ],
+      visible,
+      { "gh:web": { owner: "other", name: "web" } },
+    );
+    expect(r.resolved).toEqual([
+      { owner: "other", name: "web" },
+      { owner: "acme", name: "api" },
+    ]);
+    expect(r.warning).toBe("multiple");
   });
 });

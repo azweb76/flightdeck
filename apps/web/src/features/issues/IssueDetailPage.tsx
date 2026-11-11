@@ -13,9 +13,11 @@ export function IssueDetailPage() {
   const tab = params.get("tab") ?? "goal";
   const [issue, setIssue] = useState<Issue | undefined>();
   const [error, setError] = useState<string>();
+  const [offline, setOffline] = useState(false);
 
   function load() {
     if (!id) return;
+    void api.issues({}).then((r) => setOffline(r.offline)).catch(() => setOffline(true));
     void api.issue(decodeURIComponent(id)).then(setIssue).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : "Not found");
     });
@@ -29,13 +31,14 @@ export function IssueDetailPage() {
     function onKey(e: KeyboardEvent) {
       if (!issue) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (offline) return;
       if (e.key.toLowerCase() === "r") void api.refine(issue.id).then(load);
       if (e.key.toLowerCase() === "s") void api.startRun(issue.id);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [issue]);
+  }, [issue, offline]);
 
   if (error) return <Box sx={{ p: 4 }}>{error}</Box>;
   if (!issue) return <Box sx={{ p: 4 }}><Spinner /></Box>;
@@ -57,7 +60,7 @@ export function IssueDetailPage() {
         ))}
         {issue.needsYou ? <Label variant="attention">Needs you</Label> : null}
       </Box>
-      <IssueActions issue={issue} onChange={load} offline={!navigator.onLine} />
+      <IssueActions issue={issue} onChange={load} offline={offline} />
       {issue.comments?.length ? (
         <Box sx={{ mb: 3 }}>
           <Text sx={{ fontWeight: 600, display: "block", mb: 2 }}>Comments</Text>
@@ -69,7 +72,7 @@ export function IssueDetailPage() {
         </Box>
       ) : null}
       <TabBar tab={tab} onTab={(t) => setParams({ tab: t })} />
-      {tab === "goal" ? <GoalEditor issueId={issue.id} fallback={issue.body} /> : null}
+      {tab === "goal" ? <GoalEditor issueId={issue.id} fallback={issue.body} offline={offline} /> : null}
       {tab === "runs" ? <IssueRunsTab issueId={issue.id} /> : null}
       {tab === "prs" ? <Text sx={{ color: "fg.muted" }}>Open a run to see the PR link.</Text> : null}
     </Box>

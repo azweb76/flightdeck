@@ -4,7 +4,15 @@ import Markdown from "react-markdown";
 import { api } from "../api/index.ts";
 import { RefineQuestions } from "./RefineQuestions.tsx";
 
-export function GoalEditor({ issueId, fallback }: { issueId: string; fallback: string }) {
+export function GoalEditor({
+  issueId,
+  fallback,
+  offline,
+}: {
+  issueId: string;
+  fallback: string;
+  offline?: boolean;
+}) {
   const [markdown, setMarkdown] = useState(fallback);
   const [status, setStatus] = useState<string>();
   const [questions, setQuestions] = useState<{ id: string; prompt: string; options: { id: string; label: string }[] }[]>(
@@ -41,12 +49,10 @@ export function GoalEditor({ issueId, fallback }: { issueId: string; fallback: s
         </Box>
       </Box>
       <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-        <Button disabled={!navigator.onLine} onClick={() => void api.saveGoal(issueId, markdown)}>
-          Save draft
-        </Button>
+        <Button onClick={() => void api.saveGoal(issueId, markdown)}>Save draft</Button>
         <Button
           variant="primary"
-          disabled={!navigator.onLine}
+          disabled={offline}
           onClick={() => void api.approveGoal(issueId).then((g) => setStatus(g.status))}
         >
           Approve and write back

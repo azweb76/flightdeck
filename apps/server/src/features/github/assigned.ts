@@ -28,15 +28,38 @@ export async function listAssignedIssues(exec: ExecFn, since?: string): Promise<
 }
 
 export async function listVisibleRepos(exec: ExecFn): Promise<{ owner: string; name: string }[]> {
-  const r = await exec("gh", ["repo", "list", "--limit", "200", "--json", "nameWithOwner"]);
-  if (r.code !== 0) throw new Error(r.stderr || "gh repo list failed");
-  const parsed = JSON.parse(r.stdout || "[]") as { nameWithOwner?: string }[];
-  return parsed
+  const r = await exec("gh", [
+    "api",
+    "--paginate",
+    "user/repos?affiliation=owner,collaborator,organization_member&per_page=100",
+  ]);
+  if (r.code !== 0) throw new Error(r.stderr || "gh user/repos failed");
+  return parseRepoList(r.stdout);
+}
+
+export function parseRepoList(stdout: string): { owner: string; name: string }[] {
+  const rows = parseJsonRows(stdout);
+  return rows
     .map((row) => {
-      const [owner, name] = (row.nameWithOwner ?? "").split("/");
+      const slug = String(row.full_name ?? row.nameWithOwner ?? "");
+      const [owner, name] = slug.includes("/")
+        ? slug.split("/")
+        : [String((row.owner as { login?: string } | undefined)?.login ?? ""), String(row.name ?? "")];
       return owner && name ? { owner, name } : undefined;
     })
     .filter((x): x is { owner: string; name: string } => Boolean(x));
+}
+
+function parseJsonRows(stdout: string): Record<string, unknown>[] {
+  const text = stdout.trim() || "[]";
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : [];
+  } catch {
+    const joined = text.replace(/\]\s*\[/g, ",");
+    const parsed = JSON.parse(joined) as unknown;
+    return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : [];
+  }
 }
 
 export async function ghApiJson(

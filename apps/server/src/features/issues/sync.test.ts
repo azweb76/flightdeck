@@ -127,4 +127,66 @@ describe("assigned issue sync", () => {
     await syncAssigned({}, d, false);
     expect(loadIssues().map((i) => i.key).sort()).toEqual(["PROJ-9", "acme/web#1", "acme/web#2"]);
   });
+
+  it("uses Settings JQL and marks offline when APIs fail, including cached lists", async () => {
+    patchSettings({ jiraJql: "assignee = currentUser() AND labels = ship" });
+    let seenJql = "";
+    const ok = {
+      github: {
+        listAssignedIssues: async () => [
+          {
+            number: 1,
+            title: "Assigned GH",
+            body: "",
+            url: "https://github.com/acme/web/issues/1",
+            updatedAt: "2026-11-11T00:00:00Z",
+            owner: "acme",
+            name: "web",
+          },
+        ],
+        listVisibleRepos: async () => [{ owner: "acme", name: "web" }],
+        getJson: async () => ({ status: 200, body: "[]" }),
+      },
+      jira: {
+        search: async (opts: { jql: string }) => {
+          seenJql = opts.jql;
+          return [
+            {
+              key: "PROJ-9",
+              title: "Assigned Jira",
+              body: "",
+              url: "https://ex/browse/PROJ-9",
+              labels: ["gh:acme/web"],
+              updatedAt: "2026-11-11T00:00:00Z",
+            },
+          ];
+        },
+      },
+    } as unknown as IssueDeps;
+    await listIssues({ refresh: "1" }, ok);
+    expect(seenJql).toContain("labels = ship");
+    const failing = {
+      github: {
+        listAssignedIssues: async () => {
+          throw new Error("ENOTFOUND");
+        },
+        listVisibleRepos: async () => {
+          throw new Error("ENOTFOUND");
+        },
+        getJson: async () => ({ status: 500, body: "" }),
+      },
+      jira: {
+        search: async () => {
+          throw new Error("network");
+        },
+      },
+    } as unknown as IssueDeps;
+    const { syncAssigned, isOffline } = await import("./index.ts");
+    const live = await syncAssigned({}, failing, false);
+    expect(live.offline).toBe(true);
+    expect(isOffline()).toBe(true);
+    const cached = await listIssues({}, failing);
+    expect(cached.fromCache).toBe(true);
+    expect(cached.offline).toBe(true);
+  });
 });

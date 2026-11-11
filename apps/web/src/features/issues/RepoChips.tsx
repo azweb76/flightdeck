@@ -14,7 +14,9 @@ export function RepoChips({ issue, onChange }: { issue: Issue; onChange: () => v
         <Box
           as="button"
           key={`${g.owner}/${g.name}`}
-          onClick={() => void api.pickIssueRepo(issue.id, g.owner, g.name).then(onChange)}
+          onClick={() =>
+            void api.pickIssueRepo(issue.id, g.owner, g.name, g.label ?? `${g.owner}/${g.name}`).then(onChange)
+          }
           sx={{
             border: "1px solid",
             borderColor: "border.default",

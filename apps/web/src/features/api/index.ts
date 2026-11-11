@@ -53,10 +53,10 @@ export const api = {
       `/api/issues${s ? `?${s}` : ""}`,
     );
   },
-  pickIssueRepo: (id: string, owner: string, name: string) =>
+  pickIssueRepo: (id: string, owner: string, name: string, label?: string) =>
     request<Issue>(`/api/issues/${encodeURIComponent(id)}/repo`, {
       method: "POST",
-      body: JSON.stringify({ owner, name }),
+      body: JSON.stringify({ owner, name, label }),
     }),
   issue: (id: string) => request<Issue>(`/api/issues/${encodeURIComponent(id)}`),
   startRun: (issueId: string, repoId?: number) =>

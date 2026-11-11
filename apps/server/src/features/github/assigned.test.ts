@@ -25,12 +25,19 @@ describe("github assigned search", () => {
     expect(issues[0]).toMatchObject({ owner: "acme", name: "web", number: 12 });
   });
 
-  it("lists visible repos from gh repo list", async () => {
-    const exec = async () => ({
-      code: 0,
-      stdout: JSON.stringify([{ nameWithOwner: "acme/api" }]),
-      stderr: "",
-    });
-    expect(await listVisibleRepos(exec)).toEqual([{ owner: "acme", name: "api" }]);
+  it("lists visible repos from paginated user/repos across orgs", async () => {
+    const exec = async (_cmd: string, args: string[]) => {
+      expect(args).toContain("--paginate");
+      expect(args.join(" ")).toContain("user/repos?affiliation=owner,collaborator,organization_member");
+      return {
+        code: 0,
+        stdout: JSON.stringify([{ full_name: "acme/api" }, { full_name: "other/web" }]),
+        stderr: "",
+      };
+    };
+    expect(await listVisibleRepos(exec)).toEqual([
+      { owner: "acme", name: "api" },
+      { owner: "other", name: "web" },
+    ]);
   });
 });

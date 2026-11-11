@@ -14,10 +14,18 @@ import { overlayIssue } from "../runs/overlay.ts";
 import { demoIssues } from "./demo.ts";
 import { loadComments, loadIssue, loadIssues, pruneIssues, replaceComments, upsertIssue } from "./store.ts";
 import { cacheGet, cacheSet, hourCache } from "../cache/index.ts";
-import { rememberedPick } from "../discovery/index.ts";
+import { rememberedPicks } from "../discovery/index.ts";
+import { publish } from "../events/index.ts";
 
 export function rememberIssue(issue: Issue): void {
   upsertIssue(issue);
+}
+
+export class OfflineError extends Error {
+  constructor() {
+    super("offline");
+    this.name = "OfflineError";
+  }
 }
 
 export type IssueDeps = {
@@ -45,14 +53,37 @@ export async function listIssues(
     cacheClearPrefix("issues:");
   }
   if (!refresh && cached.length > 0) {
-    void syncAssigned(query, deps, false).catch(() => undefined);
-    return present(cached, query, { offline: false, fromCache: true, errors: [], syncedAt: cacheGet("issues:last_sync")?.fetchedAt });
+    const last = readSyncStatus();
+    void syncAssigned(query, deps, false)
+      .then((next) => {
+        if (next.offline !== last.offline) publish("issues.updated");
+      })
+      .catch(() => {
+        writeSyncStatus({ offline: true, errors: ["offline"], syncedAt: last.syncedAt });
+        publish("issues.updated");
+      });
+    return present(cached, query, {
+      offline: last.offline,
+      fromCache: true,
+      errors: last.errors,
+      syncedAt: last.syncedAt ?? cacheGet("issues:last_sync")?.fetchedAt,
+    });
   }
   try {
     return await syncAssigned(query, deps, refresh);
   } catch {
-    return present(cached, query, { offline: true, fromCache: true, errors: ["offline"], syncedAt: cacheGet("issues:last_sync")?.fetchedAt });
+    writeSyncStatus({ offline: true, errors: ["offline"], syncedAt: cacheGet("issues:last_sync")?.fetchedAt });
+    return present(cached, query, {
+      offline: true,
+      fromCache: true,
+      errors: ["offline"],
+      syncedAt: cacheGet("issues:last_sync")?.fetchedAt,
+    });
   }
+}
+
+export function isOffline(): boolean {
+  return readSyncStatus().offline;
 }
 
 export async function getIssue(id: string, deps: IssueDeps = {}): Promise<Issue | undefined> {
@@ -73,12 +104,12 @@ export async function syncAssigned(
   if (process.env.FLIGHTDECK_DEMO === "1" && !deps.github && !deps.jira) {
     const demo = demoIssues();
     for (const issue of demo) upsertIssue(issue);
+    writeSyncStatus({ offline: false, errors: [], syncedAt: new Date().toISOString() });
     return present(demo, query, { offline: false, fromCache: false, errors: [] });
   }
   const settings = getSettings();
   const errors: string[] = [];
   const source = query.source ?? "all";
-  let offline = false;
   const visible = await hourCache("meta:repos", () => visibleRepos(deps), refreshMeta).catch(() => [] as VisibleRepo[]);
   const since = cacheGet("issues:last_sync")?.fetchedAt;
   const incremental = Boolean(since) && !refreshMeta;
@@ -86,18 +117,36 @@ export async function syncAssigned(
     source === "github" ? Promise.resolve([]) : loadJira(settings, visible, deps, errors, incremental ? since : undefined),
     source === "jira" ? Promise.resolve([]) : loadGithub(deps, errors, incremental ? since : undefined),
   ]);
-  if (errors.length && jira.length === 0 && github.length === 0) offline = true;
+  const offline = errors.length > 0;
   const live = [...jira, ...github];
   if (live.length === 0 && process.env.FLIGHTDECK_DEMO === "1") {
     const demo = demoIssues();
     for (const issue of demo) upsertIssue(issue);
-    return present(demo, query, { offline: false, fromCache: false, errors });
+    writeSyncStatus({ offline, errors, syncedAt: new Date().toISOString() });
+    return present(demo, query, { offline, fromCache: false, errors });
   }
   for (const issue of live) upsertIssue(issue, { assigned: true });
   // Incremental (since-filtered) lists are incomplete — never prune from them.
   if (!incremental) pruneIssues(live.map((i) => i.id));
-  cacheSet("issues:last_sync", new Date().toISOString());
-  return present(loadIssues(), query, { offline, fromCache: false, errors, syncedAt: new Date().toISOString() });
+  const syncedAt = new Date().toISOString();
+  if (!offline) cacheSet("issues:last_sync", syncedAt);
+  writeSyncStatus({ offline, errors, syncedAt: offline ? since : syncedAt });
+  return present(loadIssues(), query, { offline, fromCache: false, errors, syncedAt: offline ? since : syncedAt });
+}
+
+function readSyncStatus(): { offline: boolean; errors: string[]; syncedAt?: string } {
+  const raw = cacheGet("issues:sync_status")?.body;
+  if (!raw) return { offline: false, errors: [] };
+  try {
+    const parsed = JSON.parse(raw) as { offline?: boolean; errors?: string[]; syncedAt?: string };
+    return { offline: Boolean(parsed.offline), errors: parsed.errors ?? [], syncedAt: parsed.syncedAt };
+  } catch {
+    return { offline: false, errors: [] };
+  }
+}
+
+function writeSyncStatus(status: { offline: boolean; errors: string[]; syncedAt?: string }): void {
+  cacheSet("issues:sync_status", JSON.stringify(status));
 }
 
 function present(
@@ -131,15 +180,16 @@ async function loadJira(
   if (!token) return [];
   try {
     const client = deps.jira ?? createJiraClient();
-    let jql = DEFAULT_JIRA_JQL;
-    if (since) jql = `assignee = currentUser() AND statusCategory != Done AND updated >= "${since.slice(0, 19).replace("T", " ")}" ORDER BY updated DESC`;
+    const jql = assignedJql(settings.jiraJql, since);
     const raw = await client.search({
       siteUrl: settings.jiraSiteUrl,
       email: settings.jiraEmail,
       token,
       jql,
     });
-    return raw.map((issue) => mapJira(issue, visible, settings.labelPrefix, rememberedPick(issue.key.split("-")[0] ?? "")));
+    return raw.map((issue) =>
+      mapJira(issue, visible, settings.labelPrefix, rememberedPicks(issue.key.split("-")[0] ?? "")),
+    );
   } catch (err) {
     errors.push(err instanceof Error ? err.message : "Jira fetch failed");
     return [];
@@ -157,19 +207,27 @@ async function loadGithub(deps: IssueDeps, errors: string[], since?: string): Pr
   }
 }
 
+function assignedJql(settingsJql: string | undefined, since?: string): string {
+  const base = settingsJql?.trim() || DEFAULT_JIRA_JQL;
+  if (!since) return base;
+  const stamp = since.slice(0, 19).replace("T", " ");
+  return `(${base}) AND updated >= "${stamp}"`;
+}
+
 export function mapJira(
   issue: { key: string; title: string; body: string; url: string; labels: string[]; updatedAt: string },
   visible: VisibleRepo[],
   prefix: string,
-  remembered?: VisibleRepo,
+  rememberedByLabel: Record<string, VisibleRepo> = {},
 ): Issue {
   const parsed = parseRepoLabels(issue.labels, prefix);
-  const resolution = resolveRepos(parsed, visible, remembered);
-  const linked: LinkedRepo[] = resolution.resolved.map((p) => ({
+  const resolution = resolveRepos(parsed, visible, rememberedByLabel);
+  const withLabel = (p: VisibleRepo): LinkedRepo => ({
     owner: p.owner,
     name: p.name,
     registered: true,
-  }));
+    label: parsed.find((x) => x.name.toLowerCase() === p.name.toLowerCase())?.label ?? `${p.owner}/${p.name}`,
+  });
   return {
     id: `jira:${issue.key}`,
     source: "jira",
@@ -178,9 +236,9 @@ export function mapJira(
     body: issue.body,
     url: issue.url,
     stage: "new",
-    repos: linked,
+    repos: resolution.resolved.map(withLabel),
     repoWarning: resolution.warning,
-    repoGuesses: resolution.guesses.map((g) => ({ ...g, registered: true })),
+    repoGuesses: resolution.guesses.map(withLabel),
     updatedAt: issue.updatedAt,
   };
 }

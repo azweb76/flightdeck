@@ -36,7 +36,10 @@ export function IssueActions({
         Start (S)
       </Button>
       {issue.latestRunId ? (
-        <Button onClick={() => void api.fixRun(issue.latestRunId!).then((run) => nav(`/runs/${run.id}`))}>
+        <Button
+          disabled={offline}
+          onClick={() => void api.fixRun(issue.latestRunId!).then((run) => nav(`/runs/${run.id}`))}
+        >
           Fix
         </Button>
       ) : null}

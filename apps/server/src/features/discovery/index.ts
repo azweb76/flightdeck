@@ -2,20 +2,24 @@ import { jiraProjectKey, resolveRepos, type VisibleRepo } from "@flightdeck/shar
 import { getDb } from "../db/index.ts";
 import { createRepo, getRepoBySlug } from "../repos/index.ts";
 
-export function rememberedPick(projectKey: string): VisibleRepo | undefined {
-  const row = getDb()
-    .prepare("SELECT owner, name FROM project_repo_picks WHERE project_key = ?")
-    .get(projectKey) as { owner: string; name: string } | undefined;
-  return row;
+export function rememberedPicks(projectKey: string): Record<string, VisibleRepo> {
+  const rows = getDb()
+    .prepare("SELECT label, owner, name FROM label_repo_picks WHERE project_key = ?")
+    .all(projectKey) as { label: string; owner: string; name: string }[];
+  return Object.fromEntries(rows.map((r) => [r.label, { owner: r.owner, name: r.name }]));
 }
 
-export function rememberPick(projectKey: string, owner: string, name: string): void {
+export function rememberedPick(projectKey: string, label: string): VisibleRepo | undefined {
+  return rememberedPicks(projectKey)[label];
+}
+
+export function rememberPick(projectKey: string, label: string, owner: string, name: string): void {
   getDb()
     .prepare(
-      `INSERT INTO project_repo_picks (project_key, owner, name, updated_at) VALUES (?,?,?,?)
-       ON CONFLICT(project_key) DO UPDATE SET owner=excluded.owner, name=excluded.name, updated_at=excluded.updated_at`,
+      `INSERT INTO label_repo_picks (project_key, label, owner, name, updated_at) VALUES (?,?,?,?,?)
+       ON CONFLICT(project_key, label) DO UPDATE SET owner=excluded.owner, name=excluded.name, updated_at=excluded.updated_at`,
     )
-    .run(projectKey, owner, name, new Date().toISOString());
+    .run(projectKey, label, owner, name, new Date().toISOString());
 }
 
 export function ensureRepoRow(owner: string, name: string, localPath = "") {
@@ -40,5 +44,5 @@ export function resolveForIssue(
   labels: { owner: string; name: string; label: string }[],
   visible: VisibleRepo[],
 ) {
-  return resolveRepos(labels, visible, rememberedPick(jiraProjectKey(issueKey)));
+  return resolveRepos(labels, visible, rememberedPicks(jiraProjectKey(issueKey)));
 }

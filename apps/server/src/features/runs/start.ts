@@ -1,7 +1,7 @@
 import { jiraProjectKey, type Issue, type Run, type StartRun } from "@flightdeck/shared";
 import { getSettings } from "../settings/index.ts";
 import { getRepo } from "../repos/index.ts";
-import { getIssue } from "../issues/index.ts";
+import { getIssue, isOffline, OfflineError } from "../issues/index.ts";
 import { latestGoal } from "../goals/store.ts";
 import { ensureWorktree } from "../worktree/index.ts";
 import { NeedRepoError, ensureRepoRow } from "../discovery/index.ts";
@@ -18,6 +18,7 @@ const queue: number[] = [];
 let pumping = false;
 
 export async function startRun(input: StartRun): Promise<Run> {
+  if (isOffline() && process.env.FLIGHTDECK_DEMO !== "1") throw new OfflineError();
   const issue = await getIssue(input.issueId);
   if (!issue) throw new Error("Issue not found");
   const repo = pickRepo(issue, input.repoId);

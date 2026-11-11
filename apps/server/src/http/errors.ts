@@ -1,6 +1,7 @@
 import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
 import { NeedRepoError } from "../features/discovery/index.ts";
+import { OfflineError } from "../features/issues/index.ts";
 
 export function apiError(status: number, code: string, message: string): HTTPException {
   return new HTTPException(status as never, { message: JSON.stringify({ error: { code, message } }) });
@@ -13,6 +14,9 @@ export function formatError(err: unknown): { status: number; body: unknown } {
     } catch {
       return { status: err.status, body: { error: { code: "http", message: err.message } } };
     }
+  }
+  if (err instanceof OfflineError) {
+    return { status: 503, body: { error: { code: "offline", message: "offline" } } };
   }
   if (err instanceof NeedRepoError) {
     return {

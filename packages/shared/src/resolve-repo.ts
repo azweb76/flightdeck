@@ -11,15 +11,13 @@ export type RepoResolution = {
 export function resolveRepos(
   labels: readonly ParsedRepoRef[],
   visible: readonly VisibleRepo[],
-  remembered?: VisibleRepo,
+  rememberedByLabel: Record<string, VisibleRepo> = {},
 ): RepoResolution {
-  if (remembered) {
-    return { resolved: [remembered], warning: "none", guesses: guessesFor(labels, visible) };
-  }
   const resolved: VisibleRepo[] = [];
   const seen = new Set<string>();
   for (const label of labels) {
-    const hits = matchLabel(label, visible);
+    const remembered = pickForLabel(label, rememberedByLabel);
+    const hits = remembered ? [remembered] : matchLabel(label, visible);
     for (const hit of hits) {
       const key = `${hit.owner}/${hit.name}`.toLowerCase();
       if (seen.has(key)) continue;
@@ -30,6 +28,17 @@ export function resolveRepos(
   if (resolved.length === 1) return { resolved, warning: "none", guesses: guessesFor(labels, visible) };
   if (resolved.length === 0) return { resolved: [], warning: "missing", guesses: guessesFor(labels, visible) };
   return { resolved, warning: "multiple", guesses: resolved };
+}
+
+function pickForLabel(
+  label: ParsedRepoRef,
+  rememberedByLabel: Record<string, VisibleRepo>,
+): VisibleRepo | undefined {
+  return (
+    rememberedByLabel[label.label] ??
+    rememberedByLabel[label.name] ??
+    rememberedByLabel[`${label.owner}/${label.name}`]
+  );
 }
 
 function matchLabel(label: ParsedRepoRef, visible: readonly VisibleRepo[]): VisibleRepo[] {

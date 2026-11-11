@@ -79,6 +79,8 @@ export function saveGoalMarkdown(issueId: string, markdown: string): Goal {
 }
 
 export async function approveGoal(issueId: string): Promise<Goal> {
+  const { isOffline, OfflineError } = await import("../issues/index.ts");
+  if (isOffline() && process.env.FLIGHTDECK_DEMO !== "1") throw new OfflineError();
   const goal = latestGoal(issueId);
   if (!goal) throw new Error("No goal draft");
   const next = updateGoal(goal.id, { status: "approved" });
