@@ -1,10 +1,12 @@
-import { Box, Button } from "@mui/material";
+import { Button } from "@mui/material";
 import { api } from "../api/index.ts";
+import { SettingsCard } from "./SettingsCard.tsx";
 
 export function TeamConfigButtons() {
   return (
-    <Box sx={{ display: "flex", gap: 2, mt: 4 }}>
+    <SettingsCard title="Team config">
       <Button
+        size="small"
         onClick={() => {
           void api.exportConfig().then((cfg) => {
             const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: "application/json" });
@@ -17,6 +19,6 @@ export function TeamConfigButtons() {
       >
         Export team config
       </Button>
-    </Box>
+    </SettingsCard>
   );
 }

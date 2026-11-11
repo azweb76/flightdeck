@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Button, Stack, TextField, Typography } from "@mui/material";
 import type { Settings } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
+import { SettingsCard } from "./SettingsCard.tsx";
 
 export function JiraSettings({
   settings,
@@ -17,44 +18,53 @@ export function JiraSettings({
   const [apiToken, setApiToken] = useState("");
   const [jql, setJql] = useState(settings.jiraJql);
   const [status, setStatus] = useState<string>();
+  const ready = Boolean(siteUrl.trim() && email.trim() && (apiToken.trim() || settings.jiraConfigured));
 
   async function connect() {
     setError(undefined);
     try {
-      const r = await api.connectJira({ siteUrl, email, apiToken });
-      setStatus(r.detail);
-      await onSave({ jiraJql: jql });
+      if (apiToken.trim()) {
+        const r = await api.connectJira({ siteUrl, email, apiToken });
+        setStatus(r.detail);
+      }
+      await onSave({ jiraJql: jql, jiraSiteUrl: siteUrl, jiraEmail: email });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Jira connect failed");
     }
   }
 
   return (
-    <Box sx={{ mt: 4 }}>
-      <Typography variant="h3" sx={{ mb: 3 }}>
-        Jira Cloud
-      </Typography>
-      <Stack spacing={3}>
+    <SettingsCard title="Jira Cloud">
+      <Stack spacing={2}>
         <TextField
+          fullWidth
           label="Site URL"
           value={siteUrl}
           onChange={(e) => setSiteUrl(e.target.value)}
           placeholder="https://your-site.atlassian.net"
+          helperText="Your Atlassian site, including https://"
         />
-        <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <TextField fullWidth label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <TextField
+          fullWidth
           type="password"
           label="API token"
           value={apiToken}
           onChange={(e) => setApiToken(e.target.value)}
-          placeholder={settings.jiraConfigured ? "Stored in Keychain (or local secrets file)" : ""}
+          helperText={settings.jiraConfigured ? "Leave blank to keep the stored token." : "Create a token in Atlassian account settings."}
         />
-        <TextField label="Board JQL" value={jql} onChange={(e) => setJql(e.target.value)} />
-        <Button variant="contained" onClick={() => void connect()} disabled={!siteUrl || !email || !apiToken}>
+        <TextField
+          fullWidth
+          label="Board JQL"
+          value={jql}
+          onChange={(e) => setJql(e.target.value)}
+          helperText="Assigned issues matching this JQL appear on the board."
+        />
+        <Button variant="contained" color="primary" onClick={() => void connect()} disabled={!ready}>
           Test and save
         </Button>
         {status ? <Typography color="success.main">{status}</Typography> : null}
       </Stack>
-    </Box>
+    </SettingsCard>
   );
 }

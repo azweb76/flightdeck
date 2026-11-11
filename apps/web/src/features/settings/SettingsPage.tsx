@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import { Alert, Box, MenuItem, TextField, Typography } from "@mui/material";
 import type { Repo, Settings, ThemeMode } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 import { useThemeMode } from "../theme/index.ts";
 import { AgentSettings } from "./AgentSettings.tsx";
+import { SettingsCard } from "./SettingsCard.tsx";
 import { TeamConfigButtons } from "./TeamConfigButtons.tsx";
 import { JiraSettings } from "./JiraSettings.tsx";
 import { RepoSettings } from "./RepoSettings.tsx";
@@ -33,19 +33,22 @@ export function SettingsPage({
 
   if (!settings) {
     return (
-      <Box sx={{ p: 4 }}>
+      <Box sx={{ p: 3 }}>
         <Typography>{error ?? "Loading settings…"}</Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 4, maxWidth: 720, minHeight: "100%" }}>
-      <Typography variant="h2">Settings</Typography>
-      {error ? <Alert severity="error">{error}</Alert> : null}
-      <Section title="Theme">
+    <Box sx={{ p: 3, maxWidth: 480, minHeight: "100%" }}>
+      <Typography variant="h2" sx={{ mb: 2 }}>
+        Settings
+      </Typography>
+      {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
+      <SettingsCard title="Theme">
         <TextField
           select
+          fullWidth
           label="Color mode"
           value={mode}
           onChange={(e) => setMode(e.target.value as ThemeMode)}
@@ -55,17 +58,17 @@ export function SettingsPage({
           <MenuItem value="light">Light</MenuItem>
           <MenuItem value="dark">Dark</MenuItem>
         </TextField>
-      </Section>
+      </SettingsCard>
       <JiraSettings settings={settings} onSave={save} setError={setError} />
-      <Section title="Label prefix">
+      <SettingsCard title="Label prefix">
         <TextField
+          fullWidth
           label="Jira repo label prefix"
           value={settings.labelPrefix}
           onChange={(e) => void save({ labelPrefix: e.target.value || "gh:" })}
           helperText={`Issues tagged like ${settings.labelPrefix}owner/repo map to that GitHub repo.`}
-          fullWidth
         />
-      </Section>
+      </SettingsCard>
       <TeamConfigButtons />
       <AgentSettings settings={settings} onSave={save} />
       <RepoSettings
@@ -75,17 +78,6 @@ export function SettingsPage({
         onChange={onReposChange}
         setError={setError}
       />
-    </Box>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <Box sx={{ mt: 4 }}>
-      <Typography variant="h3" sx={{ mb: 3 }}>
-        {title}
-      </Typography>
-      {children}
     </Box>
   );
 }

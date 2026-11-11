@@ -1,5 +1,6 @@
-import { Box, Checkbox, FormControlLabel, Stack, TextField, Typography } from "@mui/material";
+import { Checkbox, FormControlLabel, Stack, TextField } from "@mui/material";
 import type { Settings } from "@flightdeck/shared";
+import { SettingsCard } from "./SettingsCard.tsx";
 
 export function AgentSettings({
   settings,
@@ -9,39 +10,38 @@ export function AgentSettings({
   onSave: (patch: Partial<Settings>) => Promise<void>;
 }) {
   return (
-    <Box sx={{ mt: 4 }}>
-      <Typography variant="h3" sx={{ mb: 3 }}>
-        Agent
-      </Typography>
-      <Stack spacing={3}>
+    <SettingsCard title="Agent">
+      <Stack spacing={2}>
         <TextField
+          fullWidth
           type="number"
           label="Review rounds"
           value={String(settings.reviewRounds)}
           onChange={(e) => void onSave({ reviewRounds: Number(e.target.value) || 2 })}
+          helperText="Implement ↔ review loops per run."
         />
         <TextField
+          fullWidth
           type="number"
           label="Per-run dollar cap"
           value={String(settings.dollarCapUsd)}
           onChange={(e) => void onSave({ dollarCapUsd: Number(e.target.value) || 10 })}
         />
         <TextField
+          fullWidth
           type="number"
           label="Max concurrent agents"
           value={String(settings.maxConcurrency)}
           onChange={(e) => void onSave({ maxConcurrency: Number(e.target.value) || 2 })}
         />
         <FormControlLabel
-          control={
-            <Checkbox checked={settings.prDraft} onChange={(e) => void onSave({ prDraft: e.target.checked })} />
-          }
+          control={<Checkbox size="small" checked={settings.prDraft} onChange={(e) => void onSave({ prDraft: e.target.checked })} />}
           label="Open PRs as drafts"
         />
         {(["modelRefiner", "modelPlanner", "modelImplementer", "modelReviewer"] as const).map((k) => (
-          <TextField key={k} label={k} value={settings[k]} onChange={(e) => void onSave({ [k]: e.target.value })} />
+          <TextField key={k} fullWidth label={k} value={settings[k]} onChange={(e) => void onSave({ [k]: e.target.value })} />
         ))}
       </Stack>
-    </Box>
+    </SettingsCard>
   );
 }
