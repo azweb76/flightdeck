@@ -1,15 +1,24 @@
-import { BaseStyles, ThemeProvider } from "@primer/react";
-import type { ReactNode } from "react";
+import { CssBaseline } from "@mui/material";
+import { CssVarsProvider, useColorScheme } from "@mui/material/styles";
+import { useEffect, type ReactNode } from "react";
 import type { ThemeMode } from "@flightdeck/shared";
+import { flightdeckTheme } from "./theme.ts";
 
 export function ThemeRoot({ mode, children }: { mode: ThemeMode; children: ReactNode }) {
-  const colorMode = mode === "system" ? "auto" : mode === "light" ? "day" : "night";
+  const defaultMode = mode === "dark" ? "dark" : mode === "light" ? "light" : "system";
   return (
-    <ThemeProvider colorMode={colorMode} dayScheme="light" nightScheme="dark">
-      <BaseStyles>
-        <style>{`html, body, #root { height: 100%; margin: 0; }`}</style>
-        {children}
-      </BaseStyles>
-    </ThemeProvider>
+    <CssVarsProvider theme={flightdeckTheme} defaultMode={defaultMode} modeStorageKey="flightdeck-mui-mode">
+      <CssBaseline />
+      <ModeSync mode={mode} />
+      {children}
+    </CssVarsProvider>
   );
+}
+
+function ModeSync({ mode }: { mode: ThemeMode }) {
+  const { setMode } = useColorScheme();
+  useEffect(() => {
+    setMode(mode === "dark" ? "dark" : mode === "light" ? "light" : "system");
+  }, [mode, setMode]);
+  return null;
 }
