@@ -1,4 +1,4 @@
-import { HandoffSchema } from "@flightdeck/shared";
+import { HandoffSchema, replayEvalCases, type StoredEvalCase } from "@flightdeck/shared";
 
 export type EvalCase = {
   name: string;
@@ -37,3 +37,7 @@ export const reviewHandoffEval = defineEval({
   },
   check: (input) => HandoffSchema.safeParse(input).success,
 });
+
+export function replayStored(cases: StoredEvalCase[]) {
+  return replayEvalCases(cases);
+}
