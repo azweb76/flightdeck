@@ -1,3 +1,5 @@
+import { unbindLive } from "./live.ts";
+
 const controllers = new Map<number, AbortController>();
 
 export function bindAbort(runId: number): AbortSignal {
@@ -10,6 +12,7 @@ export function bindAbort(runId: number): AbortSignal {
 export function abortRun(runId: number): void {
   controllers.get(runId)?.abort();
   controllers.delete(runId);
+  unbindLive(runId);
 }
 
 export function clearAbort(runId: number): void {

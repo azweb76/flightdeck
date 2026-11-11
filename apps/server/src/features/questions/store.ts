@@ -10,6 +10,7 @@ type Row = {
   answer: string | null;
   status: string;
   created_at: string;
+  tool_use_id?: string | null;
 };
 
 export function listQuestions(runId: number): Question[] {
@@ -28,16 +29,21 @@ export function insertQuestion(input: {
   runId: number;
   prompt: string;
   options: { id: string; label: string }[];
+  toolUseId?: string;
 }): Question {
   const createdAt = new Date().toISOString();
-  const r = getDb()
+  getDb()
     .prepare(
-      `INSERT INTO questions (run_id, prompt, options_json, allow_free_text, status, created_at)
-       VALUES (?,?,?,?,?,?)`,
+      `INSERT INTO questions (run_id, prompt, options_json, allow_free_text, status, created_at, tool_use_id)
+       VALUES (?,?,?,?,?,?,?)`,
     )
-    .run(input.runId, input.prompt, JSON.stringify(input.options), 1, "open", createdAt);
+    .run(input.runId, input.prompt, JSON.stringify(input.options), 1, "open", createdAt, input.toolUseId ?? null);
   return listQuestions(input.runId)[0]!;
-  void r;
+}
+
+export function getQuestion(id: number): Question | undefined {
+  const row = getDb().prepare("SELECT * FROM questions WHERE id = ?").get(id) as Row | undefined;
+  return row ? toQ(row) : undefined;
 }
 
 export function answerQuestion(id: number, answer: string): void {
@@ -54,5 +60,6 @@ function toQ(row: Row): Question {
     answer: row.answer ?? undefined,
     status: row.status as Question["status"],
     createdAt: row.created_at,
+    toolUseId: row.tool_use_id ?? undefined,
   };
 }

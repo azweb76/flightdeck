@@ -253,4 +253,18 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: "010_ask_and_picks",
+    sql: `
+      ALTER TABLE questions ADD COLUMN tool_use_id TEXT;
+      CREATE TABLE IF NOT EXISTS label_repo_picks (
+        project_key TEXT NOT NULL,
+        label TEXT NOT NULL,
+        owner TEXT NOT NULL,
+        name TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (project_key, label)
+      );
+    `,
+  },
 ];

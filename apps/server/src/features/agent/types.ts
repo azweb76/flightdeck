@@ -9,12 +9,12 @@ export type AgentEvent = {
   tokensIn?: number;
   tokensOut?: number;
   usd?: number;
-  ask?: { prompt: string; options: { id: string; label: string }[] };
+  ask?: { prompt: string; options: { id: string; label: string }[]; toolUseId?: string };
   sdkSessionId?: string;
 };
 
 export type AgentRunOpts = {
-  prompt: string;
+  prompt: string | AsyncIterable<unknown>;
   cwd: string;
   role: AgentRole;
   model: string;

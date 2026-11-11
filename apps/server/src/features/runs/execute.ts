@@ -4,12 +4,14 @@ import { getDb } from "../db/index.ts";
 import { publish } from "../events/index.ts";
 import { keepAwakeStart, keepAwakeStop } from "../keep-awake/index.ts";
 import { notify } from "../notify/index.ts";
-import { insertQuestion } from "../questions/store.ts";
+import { insertQuestion, answerQuestion } from "../questions/store.ts";
 import { getRepo } from "../repos/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { insertEvent, updateRun, activeRunCount, getRun, latestSdkSessionId } from "./store.ts";
 import { bindAbort, clearAbort } from "./abort.ts";
 import { takeMessages, type InjectMode } from "../messages/index.ts";
+import { MessageStream, userText } from "../agent/stream.ts";
+import { bindStream, unbindLive, waitForAnswer } from "./live.ts";
 
 export type PhaseResult = { status: "ok" | "ask" | "error"; output: string };
 
@@ -25,10 +27,14 @@ export async function runAgentPhase(
     ? `${prompt}\n\nOperator messages:\n${notes.map((n) => `- ${n}`).join("\n")}`
     : prompt;
   const abort = bindAbort(run.id);
+  const stream = new MessageStream();
+  stream.push(userText(full));
+  bindStream(run.id, stream);
   keepAwakeStart();
   try {
-    return await consume(run, role, full, sessionId, abort);
+    return await consume(run, role, stream, sessionId, abort);
   } finally {
+    unbindLive(run.id);
     clearAbort(run.id);
     if (activeRunCount() === 0) keepAwakeStop();
   }
@@ -37,7 +43,7 @@ export async function runAgentPhase(
 async function consume(
   run: Run,
   role: AgentRole,
-  prompt: string,
+  prompt: MessageStream,
   sessionId: number,
   abort: AbortSignal,
 ): Promise<PhaseResult> {
@@ -72,7 +78,12 @@ async function handleEvent(
   ev: AgentEvent,
 ): Promise<"ask" | "error" | undefined> {
   if (ev.kind === "ask" && ev.ask) {
-    const q = insertQuestion({ runId: run.id, prompt: ev.ask.prompt, options: ev.ask.options });
+    const q = insertQuestion({
+      runId: run.id,
+      prompt: ev.ask.prompt,
+      options: ev.ask.options,
+      toolUseId: ev.ask.toolUseId,
+    });
     updateRun(run.id, { status: "asking", questionId: q.id, pauseReason: ev.ask.prompt });
     if (ev.sdkSessionId) {
       getDb().prepare("UPDATE sessions SET sdk_session_id = ? WHERE id = ?").run(ev.sdkSessionId, sessionId);
@@ -80,7 +91,16 @@ async function handleEvent(
     await notify("Flightdeck needs you", ev.ask.prompt, `/runs/${run.id}`);
     publish("questions.updated", { runId: run.id });
     record(run.id, sessionId, role, ev);
-    return "ask";
+    const liveAsk = process.env.FLIGHTDECK_DEMO !== "1" && process.env.FLIGHTDECK_AGENT !== "fake";
+    if (!liveAsk) return "ask";
+    try {
+      const answer = await waitForAnswer(run.id);
+      answerQuestion(q.id, answer);
+      updateRun(run.id, { status: "running", questionId: null, pauseReason: null });
+      return undefined;
+    } catch {
+      return "error";
+    }
   }
   if (ev.kind === "error") {
     record(run.id, sessionId, role, ev);
@@ -100,10 +120,12 @@ async function handleUsage(
 ): Promise<"error" | undefined> {
   let extraUsd = 0;
   if (ev.kind === "usage") {
-    extraUsd = roundUsd(
-      ev.usd != null ? ev.usd : usageUsd(ev.tokensIn ?? 0, ev.tokensOut ?? 0),
-    );
-    const nextCost = roundUsd(current.costUsd + extraUsd);
+    if (ev.usd != null) {
+      extraUsd = roundUsd(Math.max(0, ev.usd - current.costUsd));
+    } else {
+      extraUsd = roundUsd(usageUsd(ev.tokensIn ?? 0, ev.tokensOut ?? 0));
+    }
+    const nextCost = ev.usd != null ? roundUsd(Math.max(current.costUsd, ev.usd)) : roundUsd(current.costUsd + extraUsd);
     updateRun(run.id, { costUsd: nextCost });
     if (nextCost >= run.capUsd) {
       record(run.id, sessionId, role, ev, extraUsd);

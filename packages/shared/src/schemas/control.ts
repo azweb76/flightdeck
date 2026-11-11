@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const QuestionSchema = z.object({
+  toolUseId: z.string().optional(),
   id: z.number().int().positive(),
   runId: z.number().int().positive(),
   prompt: z.string(),

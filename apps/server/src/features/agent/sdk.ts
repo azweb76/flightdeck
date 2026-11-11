@@ -2,7 +2,7 @@ import type { AgentDriver, AgentEvent, AgentRunOpts } from "./types.ts";
 import { allowTool } from "./permissions.ts";
 
 type SdkQuery = (args: {
-  prompt: string;
+  prompt: string | AsyncIterable<unknown>;
   options: Record<string, unknown>;
 }) => AsyncIterable<Record<string, unknown>>;
 
@@ -11,7 +11,7 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
   return {
     async *run(opts: AgentRunOpts): AsyncIterable<AgentEvent> {
       const query = queryFn ?? (await loadQuery());
-      const stream = query({
+      const handle = query({
         prompt: opts.prompt,
         options: {
           cwd: opts.cwd,
@@ -28,12 +28,21 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
           },
         },
       });
-      for await (const msg of stream) {
-        if (opts.abort?.aborted) {
-          yield { kind: "error", title: "aborted", detail: "session aborted" };
-          return;
+      const interrupt = () => {
+        void (handle as { interrupt?: () => Promise<void> }).interrupt?.();
+      };
+      opts.abort?.addEventListener("abort", interrupt);
+      try {
+        for await (const msg of handle) {
+          if (opts.abort?.aborted) {
+            interrupt();
+            yield { kind: "error", title: "aborted", detail: "session aborted" };
+            return;
+          }
+          yield* mapSdkMessage(msg);
         }
-        yield* mapSdkMessage(msg);
+      } finally {
+        opts.abort?.removeEventListener("abort", interrupt);
       }
     },
   };
@@ -69,7 +78,8 @@ function* mapAssistant(msg: Record<string, unknown>, sessionId?: string): Genera
       yield { kind: "text", title: "assistant", detail: p.text, sdkSessionId: sessionId };
     }
     if (p.type === "tool_use" && isAskTool(p.name)) {
-      yield askFromTool(p.input ?? {}, sessionId);
+      const part = p as { id?: string };
+      yield askFromTool(p.input ?? {}, sessionId, part.id);
       continue;
     }
     if (p.type === "tool_use") {
@@ -107,23 +117,24 @@ function isAskTool(name: string | undefined): boolean {
   return name === "AskUserQuestion" || name === "AskUser";
 }
 
-function askFromTool(input: Record<string, unknown>, sessionId?: string): AgentEvent {
+function askFromTool(input: Record<string, unknown>, sessionId?: string, toolUseId?: string): AgentEvent {
   const questions = Array.isArray(input.questions) ? input.questions : [input];
-  const first = (questions[0] ?? {}) as {
-    question?: string;
-    prompt?: string;
-    options?: { id?: string; label?: string }[];
-  };
-  const options = (first.options ?? []).map((o, i) => ({
-    id: o.id ?? `opt-${i}`,
-    label: o.label ?? String(i),
-  }));
+  const prompts: string[] = [];
+  const options: { id: string; label: string }[] = [];
+  for (const raw of questions) {
+    const q = raw as { question?: string; prompt?: string; options?: { id?: string; label?: string }[] };
+    prompts.push(String(q.question ?? q.prompt ?? ""));
+    for (const [i, o] of (q.options ?? []).entries()) {
+      options.push({ id: o.id ?? `opt-${options.length}-${i}`, label: o.label ?? String(i) });
+    }
+  }
   return {
     kind: "ask",
     title: "Need a decision",
     ask: {
-      prompt: String(first.question ?? first.prompt ?? input.question ?? "Need a decision"),
+      prompt: prompts.filter(Boolean).join("\n") || String(input.question ?? "Need a decision"),
       options: options.length ? options : [{ id: "ok", label: "Continue" }],
+      toolUseId,
     },
     sdkSessionId: sessionId,
   };

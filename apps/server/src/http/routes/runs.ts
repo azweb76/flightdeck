@@ -5,6 +5,8 @@ import { answerQuestion } from "../../features/questions/store.ts";
 import { enqueue } from "../../features/runs/start.ts";
 import { abortRun } from "../../features/runs/abort.ts";
 import { insertMessage } from "../../features/messages/index.ts";
+import { getQuestion } from "../../features/questions/store.ts";
+import { hasLiveSession, pushLiveInput, resolveLiveAnswer } from "../../features/runs/live.ts";
 import { runDiff } from "../../features/runs/diff.ts";
 import { activeRunCount, getRun, listEvents, listRuns, startRun, updateRun } from "../../features/runs/index.ts";
 import { apiError } from "../errors.ts";
@@ -61,6 +63,10 @@ async function message(id: number, body: unknown) {
   const run = getRun(id);
   if (!run) throw apiError(404, "not_found", "Run not found");
   const msg = MidRunMessageSchema.parse(body);
+  if (msg.target === "current" && hasLiveSession(run.id) && pushLiveInput(run.id, msg.text)) {
+    publish("run.event", { runId: run.id, message: msg });
+    return { ok: true, live: true };
+  }
   insertMessage(run.id, msg);
   publish("run.event", { runId: run.id, message: msg });
   return { ok: true };
@@ -70,6 +76,10 @@ async function answer(id: number, body: unknown) {
   const run = getRun(id);
   if (!run?.questionId) throw apiError(400, "no_question", "No open question");
   const parsed = body as { answer: string };
+  const question = getQuestion(run.questionId);
+  if (resolveLiveAnswer(run.id, parsed.answer, question?.toolUseId)) {
+    return getRun(run.id);
+  }
   answerQuestion(run.questionId, parsed.answer);
   insertMessage(run.id, { target: "current", text: `Operator answered: ${parsed.answer}` });
   updateRun(run.id, { status: "queued", questionId: null, pauseReason: null });

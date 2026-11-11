@@ -11,7 +11,8 @@ export function createFakeDriver(opts: FakeOpts = {}): AgentDriver {
         await Promise.resolve();
         return Boolean(req.abort?.aborted);
       };
-      yield { kind: "text", title: `${req.role} started`, detail: req.prompt.slice(0, 240) };
+      const promptText = await promptTextFrom(req.prompt);
+      yield { kind: "text", title: `${req.role} started`, detail: promptText.slice(0, 240) };
       if (await step()) {
         yield { kind: "error", title: "aborted", detail: "session aborted" };
         return;
@@ -25,12 +26,20 @@ export function createFakeDriver(opts: FakeOpts = {}): AgentDriver {
         yield { kind: "error", title: "Tool failed", detail: "simulated tool error" };
         return;
       }
-      if (req.role === "reviewer" && !isPrReviewPrompt(req.prompt)) reviews += 1;
-      yield jsonEvent(payload(req, reviews, opts.majorFirst === true));
+      if (req.role === "reviewer" && !isPrReviewPrompt(promptText)) reviews += 1;
+      yield jsonEvent(payload(req, reviews, opts.majorFirst === true, promptText));
       yield { kind: "usage", title: "usage", tokensIn: 1200, tokensOut: 400, usd: 0.012 };
       yield { kind: "done", title: `${req.role} finished`, sdkSessionId: req.resumeSessionId ?? "fake-session" };
     },
   };
+}
+
+async function promptTextFrom(prompt: AgentRunOpts["prompt"]): Promise<string> {
+  if (typeof prompt === "string") return prompt;
+  const first = await prompt[Symbol.asyncIterator]().next();
+  if (first.done) return "";
+  const content = (first.value as { message?: { content?: unknown } })?.message?.content;
+  return typeof content === "string" ? content : "";
 }
 
 function jsonEvent(obj: unknown): AgentEvent {
@@ -51,8 +60,8 @@ function askEvent(): AgentEvent {
   };
 }
 
-function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean): unknown {
-  if (req.role === "refiner") return refinePayload(req.prompt);
+function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean, prompt: string): unknown {
+      if (req.role === "refiner") return refinePayload(prompt);
   if (req.role === "planner") {
     return { kind: "plan", summary: "Ship the change", steps: ["Implement", "Add tests"], files: [] };
   }
@@ -65,14 +74,14 @@ function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean): unkno
       remaining: "",
     };
   }
-  if (isPrReviewPrompt(req.prompt)) {
+  if (isPrReviewPrompt(prompt)) {
     return {
       kind: "pr_review",
       comments: [{ path: "src/index.ts", line: 1, body: "Prefer a streaming cursor here." }],
     };
   }
   if (req.role === "reviewer") return reviewPayload(reviews, majorFirst);
-  const waste = req.prompt.includes("increase waste") || req.prompt.includes("REGRESS_PROMPT") ? 9 : 3;
+  const waste = prompt.includes("increase waste") || prompt.includes("REGRESS_PROMPT") ? 9 : 3;
   return {
     kind: "session_review",
     waste,

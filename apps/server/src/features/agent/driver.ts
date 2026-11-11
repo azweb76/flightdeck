@@ -18,5 +18,5 @@ export function getAgentDriver(): AgentDriver {
 }
 
 export function isFakeAgent(): boolean {
-  return Boolean(override) || process.env.FLIGHTDECK_AGENT === "fake" || process.env.FLIGHTDECK_DEMO === "1";
+  return process.env.FLIGHTDECK_AGENT === "fake" || process.env.FLIGHTDECK_DEMO === "1";
 }
