@@ -1,6 +1,7 @@
 import { createRepo, listRepos } from "../repos/index.ts";
 import { startDemoReview } from "../pr-review/index.ts";
-import { insertRun, insertEvent, listRuns } from "../runs/store.ts";
+import { insertRun, listRuns, updateRun } from "../runs/store.ts";
+import { seedAskingTranscript } from "./seedTranscript.ts";
 import { insertGoal, listGoals } from "../goals/store.ts";
 import { insertQuestion } from "../questions/index.ts";
 import { reviewSession } from "../improvements/index.ts";
@@ -60,25 +61,8 @@ async function seedRuns(): Promise<void> {
     updatedAt: now,
     startedAt: now,
   });
-  insertEvent({
-    runId: run.id,
-    role: "planner",
-    kind: "text",
-    title: "Planner finished",
-    detail: "Add /v2 only if we must break clients.",
-    at: now,
-  });
-  insertEvent({
-    runId: run.id,
-    role: "implementer",
-    kind: "tool",
-    title: "Edit",
-    tool: "Edit",
-    path: "src/middleware/rateLimit.ts",
-    detail: "",
-    at: now,
-  });
-  insertQuestion({
+  seedAskingTranscript(run.id, now);
+  const q = insertQuestion({
     runId: run.id,
     prompt: "Should the new endpoints go under /v2?",
     options: [
@@ -86,6 +70,7 @@ async function seedRuns(): Promise<void> {
       { id: "no", label: "Keep /v1 with headers" },
     ],
   });
+  updateRun(run.id, { questionId: q.id });
   seedPrOpenRun(now);
   await notify("Needs you", "PROJ-142 asked whether endpoints go under /v2.", `/runs/${run.id}`);
   startDemoReview();
