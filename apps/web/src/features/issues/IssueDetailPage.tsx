@@ -6,6 +6,7 @@ import { MarkdownEditor } from "../../ui/components/markdown/index.ts";
 import { GoalEditor } from "./GoalEditor.tsx";
 import { IssueActions } from "./IssueActions.tsx";
 import { IssueRunsTab } from "./IssueRunsTab.tsx";
+import { repoChipLabel } from "./repoDisplay.ts";
 import { useIssue } from "./useIssue.ts";
 
 export function IssueDetailPage() {
@@ -48,9 +49,9 @@ export function IssueDetailPage() {
         {issue.key} {issue.title}
       </Typography>
       <Stack direction="row" spacing={1} sx={{ my: 3, flexWrap: "wrap", gap: 1 }}>
-        <Chip label={issue.source} size="small" />
+        <Chip label={issue.source} size="small" color={issue.source === "jira" ? "primary" : "success"} />
         {issue.repos.map((r) => (
-          <Chip key={`${r.owner}/${r.name}`} size="small" variant="outlined" label={r.label ?? `${r.owner}/${r.name}`} />
+          <Chip key={`${r.owner}/${r.name}`} size="small" variant="outlined" label={repoChipLabel(r)} />
         ))}
         {issue.needsYou ? <Chip color="warning" size="small" label="Needs you" /> : null}
       </Stack>

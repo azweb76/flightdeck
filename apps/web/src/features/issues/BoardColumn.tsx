@@ -11,22 +11,12 @@ const TITLES: Record<IssueStage, string> = {
 
 export function BoardColumn({ stage, issues }: { stage: IssueStage; issues: Issue[] }) {
   return (
-    <Box
-      sx={{
-        flex: 1,
-        minWidth: 220,
-        bgcolor: "background.paper",
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 1,
-        p: 2,
-      }}
-    >
-      <Box sx={{ display: "flex", justifyContent: "space-between", px: 1, mb: 2 }}>
+    <Box sx={{ flex: 1, minWidth: 220, bgcolor: "action.hover", borderRadius: 1, p: 1.5 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", px: 1, mb: 1.5 }}>
         <Typography sx={{ fontWeight: 600 }}>{TITLES[stage]}</Typography>
         <Typography color="text.secondary">{issues.length}</Typography>
       </Box>
-      <Stack spacing={2}>
+      <Stack spacing={1.5}>
         {issues.map((issue) => (
           <IssueCard key={issue.id} issue={issue} />
         ))}
