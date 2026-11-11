@@ -23,6 +23,14 @@ export type JiraClient = {
     key: string;
     description: string;
   }): Promise<void>;
+  createIssue(opts: {
+    siteUrl: string;
+    email: string;
+    token: string;
+    projectKey: string;
+    title: string;
+    body: string;
+  }): Promise<{ key: string }>;
   createSubtask(opts: {
     siteUrl: string;
     email: string;
@@ -42,6 +50,7 @@ export function createJiraClient(fetchFn: FetchFn = fetch): JiraClient {
     search: (opts) => searchJira(fetchFn, opts),
     comment: (opts) => jiraComment(fetchFn, opts),
     writeDescription: (opts) => jiraWriteDesc(fetchFn, opts),
+    createIssue: (opts) => jiraCreateIssue(fetchFn, opts),
     createSubtask: (opts) => jiraSubtask(fetchFn, opts),
   };
 }
@@ -78,6 +87,38 @@ async function jiraWriteDesc(
     }),
   });
   if (!res.ok) throw new Error(`Jira update failed (${res.status})`);
+}
+
+async function jiraCreateIssue(
+  fetchFn: FetchFn,
+  opts: {
+    siteUrl: string;
+    email: string;
+    token: string;
+    projectKey: string;
+    title: string;
+    body: string;
+  },
+): Promise<{ key: string }> {
+  const base = opts.siteUrl.replace(/\/$/, "");
+  const res = await fetchFn(`${base}/rest/api/3/issue`, {
+    method: "POST",
+    headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fields: {
+        project: { key: opts.projectKey },
+        summary: opts.title,
+        issuetype: { name: "Task" },
+        description: {
+          type: "doc",
+          version: 1,
+          content: [{ type: "paragraph", content: [{ type: "text", text: opts.body }] }],
+        },
+      },
+    }),
+  });
+  if (!res.ok) throw new Error(`Jira create failed (${res.status})`);
+  return (await res.json()) as { key: string };
 }
 
 async function jiraSubtask(
