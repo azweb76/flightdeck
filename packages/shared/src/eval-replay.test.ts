@@ -27,6 +27,16 @@ describe("replayEvalCase", () => {
     expect(r.failed[0]).toContain("bad");
   });
 
+  it("does not treat prompt_replay as a Zod-only pass", () => {
+    expect(
+      replayEvalCase({
+        name: "p",
+        kind: "prompt_replay",
+        fixture: { input: "x", expect: { requireTests: true } },
+      }).passed,
+    ).toBe(false);
+  });
+
   it("detects a worse session score", () => {
     const base = { waste: 3, backtracking: 1, prQuality: 8, stuck: 2, missingContext: 4, notes: "a" };
     expect(scoreRegressed({ ...base, waste: 7 }, base)).toBe(true);

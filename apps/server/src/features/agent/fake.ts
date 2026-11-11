@@ -60,20 +60,26 @@ function askEvent(): AgentEvent {
   };
 }
 
+function implementPayload(prompt: string): unknown {
+  const applied = prompt.includes("Applied prompt version:")
+    ? prompt.slice(prompt.indexOf("Applied prompt version:"))
+    : "";
+  const runTests = /test/i.test(applied) && !/skip tests/i.test(applied);
+  return {
+    kind: "implement",
+    summary: runTests ? "Updated the worktree and ran tests" : "Updated the worktree",
+    filesChanged: ["src/index.ts"],
+    testsRun: runTests ? ["pnpm test"] : [],
+    remaining: runTests ? "" : "tests not run",
+  };
+}
+
 function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean, prompt: string): unknown {
       if (req.role === "refiner") return refinePayload(prompt);
   if (req.role === "planner") {
     return { kind: "plan", summary: "Ship the change", steps: ["Implement", "Add tests"], files: [] };
   }
-  if (req.role === "implementer") {
-    return {
-      kind: "implement",
-      summary: "Updated the worktree",
-      filesChanged: ["src/index.ts"],
-      testsRun: ["pnpm test"],
-      remaining: "",
-    };
-  }
+  if (req.role === "implementer") return implementPayload(prompt);
   if (isPrReviewPrompt(prompt)) {
     return {
       kind: "pr_review",
@@ -81,10 +87,9 @@ function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean, prompt
     };
   }
   if (req.role === "reviewer") return reviewPayload(reviews, majorFirst);
-  const waste = prompt.includes("increase waste") || prompt.includes("REGRESS_PROMPT") ? 9 : 3;
   return {
     kind: "session_review",
-    waste,
+    waste: 3,
     backtracking: 1,
     prQuality: 8,
     stuck: 2,

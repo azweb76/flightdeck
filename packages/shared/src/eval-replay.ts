@@ -24,9 +24,7 @@ export function replayEvalCase(c: StoredEvalCase): { passed: boolean; detail: st
     return { passed: false, detail: "prompt_edit must be replayed through a driver" };
   }
   if (c.kind === "prompt_replay") {
-    const fixture = c.fixture as { baseline?: unknown };
-    const ok = SessionScoreSchema.safeParse(fixture.baseline).success;
-    return { passed: ok, detail: ok ? "baseline ok" : "baseline invalid" };
+    return { passed: false, detail: "prompt_replay must run the patched implementer" };
   }
   return { passed: false, detail: `unknown kind ${c.kind}` };
 }

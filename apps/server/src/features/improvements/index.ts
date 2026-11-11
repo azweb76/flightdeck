@@ -72,8 +72,8 @@ export async function reviewSession(runId: number): Promise<{
     }),
   );
   insertEvalCase(`run-${runId}-prompt`, "prompt_replay", {
-    input: transcript.slice(0, 4000),
-    baseline: scoreOnly(parsed),
+    input: transcript.slice(0, 4000) || `Implement ${run.issueKey}: ${run.issueTitle}`,
+    expect: { requireTests: true },
   });
   publish("improvements.updated");
   return { score: scoreOnly(parsed), findings: parsed.findings, improvements: created };
@@ -100,7 +100,7 @@ export function loadEvalCases(): StoredEvalCase[] {
 }
 
 async function applyPrompt(row: Row): Promise<Improvement["status"]> {
-  const replay = await evalPromptPatch(row.patch, loadEvalCases(), roleModel("session_reviewer"));
+  const replay = await evalPromptPatch(row.patch, loadEvalCases(), roleModel("implementer"));
   getDb().prepare("UPDATE improvements SET eval_passed = ? WHERE id = ?").run(replay.passed ? 1 : 0, row.id);
   if (!replay.passed) return "proposed";
   savePromptVersion("implementer", row.patch);

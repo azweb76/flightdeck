@@ -55,6 +55,19 @@ export function planPrompt(run: Run): string {
     .join("\n\n"));
 }
 
+/** Candidate patch only — used to eval a prompt_edit before it is saved. */
+export function implementerEvalPrompt(input: string, patch: string): string {
+  return [
+    "Implement this eval fixture in the worktree. Follow CLAUDE.md.",
+    input,
+    patch ? `Applied prompt version:\n${patch}` : "",
+    "Reply with JSON only:",
+    '{"kind":"implement","summary":"...","filesChanged":[],"testsRun":[],"remaining":""}',
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 export function implementPrompt(run: Run, round: number): string {
   const plan = latestHandoff(run.id, "plan");
   const review = latestHandoff(run.id, "review");
