@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Alert, Box, Button, CircularProgress, Grid, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/index.ts";
+import { FormField } from "../../ui/components/form-field/index.ts";
 import { ColoredDiff } from "./ColoredDiff.tsx";
 import { AskPanel } from "./AskPanel.tsx";
 import { Transcript } from "./Transcript.tsx";
@@ -55,9 +56,8 @@ export function RunView() {
           <Paper variant="outlined" sx={{ p: 2 }}>
             <Typography sx={{ fontWeight: 600, mb: 2 }}>Ask the agent</Typography>
             <Stack spacing={2}>
-              <TextField
+              <FormField
                 select
-                size="small"
                 value={target}
                 onChange={(e) => setTarget(e.target.value as typeof target)}
                 label="Target"
@@ -65,7 +65,7 @@ export function RunView() {
                 <MenuItem value="current">Current phase</MenuItem>
                 <MenuItem value="next">Next phase</MenuItem>
                 <MenuItem value="run">Whole run</MenuItem>
-              </TextField>
+              </FormField>
               <TextField
                 size="small"
                 value={msg}

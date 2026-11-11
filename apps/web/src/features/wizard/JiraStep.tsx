@@ -1,6 +1,7 @@
-import { Alert, Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { useState } from "react";
 import { api } from "../api/index.ts";
+import { FormField } from "../../ui/components/form-field/index.ts";
 import { JiraTokenHint } from "../jira/index.ts";
 
 export function JiraStep({ onConnected }: { onConnected: () => void }) {
@@ -27,14 +28,16 @@ export function JiraStep({ onConnected }: { onConnected: () => void }) {
         Jira Cloud email plus API token. The token is stored in the macOS Keychain, or a permission-restricted file on
         Linux.
       </Typography>
-      <TextField
+      <FormField
+        required
         label="Site URL"
         value={siteUrl}
         onChange={(e) => setSiteUrl(e.target.value)}
         placeholder="https://your-site.atlassian.net"
       />
-      <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <TextField
+      <FormField required label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <FormField
+        required
         type="password"
         label="API token"
         value={apiToken}

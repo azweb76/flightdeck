@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Alert, Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { isPushable, type CatalogRepo } from "@flightdeck/shared";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/index.ts";
 import { useCatalog } from "../repos/index.ts";
+import { FieldLabel, FormField } from "../../ui/components/form-field/index.ts";
 import { MarkdownEditor } from "../../ui/components/markdown/index.ts";
 import { RepoPicker } from "../../ui/components/repo-picker/index.ts";
 
@@ -48,9 +49,11 @@ export function NewIssuePage() {
       {error ? <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert> : null}
       <Stack spacing={3} sx={{ mt: 3 }}>
         {kind === "jira" ? (
-          <TextField label="Project key" value={projectKey} onChange={(e) => setProjectKey(e.target.value)} />
+          <FormField required label="Project key" value={projectKey} onChange={(e) => setProjectKey(e.target.value)} />
         ) : (
           <RepoPicker
+            label="Repository"
+            required
             repos={catalog.repos}
             value={repo}
             autoFocus
@@ -62,9 +65,9 @@ export function NewIssuePage() {
             onChange={(next) => setRepo(next as CatalogRepo | null)}
           />
         )}
-        <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <FormField required label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
         <Box>
-          <Typography sx={{ mb: 1 }}>Body</Typography>
+          <FieldLabel>Body</FieldLabel>
           <MarkdownEditor id={`new-${kind}`} value={body} onChange={setBody} minRows={8} />
         </Box>
         <Button variant="contained" disabled={!title} onClick={() => void submit()}>

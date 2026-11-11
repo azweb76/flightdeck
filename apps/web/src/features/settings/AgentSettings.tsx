@@ -1,6 +1,9 @@
-import { Checkbox, FormControlLabel, Stack, TextField } from "@mui/material";
+import { Checkbox, FormControlLabel, Stack } from "@mui/material";
 import type { Settings } from "@flightdeck/shared";
+import { FormField } from "../../ui/components/form-field/index.ts";
 import { SettingsCard } from "./SettingsCard.tsx";
+
+const MODELS = ["modelRefiner", "modelPlanner", "modelImplementer", "modelReviewer"] as const;
 
 export function AgentSettings({
   settings,
@@ -12,23 +15,20 @@ export function AgentSettings({
   return (
     <SettingsCard title="Agent">
       <Stack spacing={2}>
-        <TextField
-          fullWidth
+        <FormField
           type="number"
           label="Review rounds"
           value={String(settings.reviewRounds)}
           onChange={(e) => void onSave({ reviewRounds: Number(e.target.value) || 2 })}
           helperText="Implement ↔ review loops per run."
         />
-        <TextField
-          fullWidth
+        <FormField
           type="number"
           label="Per-run dollar cap"
           value={String(settings.dollarCapUsd)}
           onChange={(e) => void onSave({ dollarCapUsd: Number(e.target.value) || 10 })}
         />
-        <TextField
-          fullWidth
+        <FormField
           type="number"
           label="Max concurrent agents"
           value={String(settings.maxConcurrency)}
@@ -38,16 +38,15 @@ export function AgentSettings({
           control={<Checkbox size="small" checked={settings.prDraft} onChange={(e) => void onSave({ prDraft: e.target.checked })} />}
           label="Open PRs as drafts"
         />
-        <TextField
-          fullWidth
+        <FormField
           label="Clone folder"
           value={settings.workspaceFolder}
           onChange={(e) => void onSave({ workspaceFolder: e.target.value })}
           placeholder="~/.flightdeck/repos"
           helperText="Local directory for gh repo clone."
         />
-        {(["modelRefiner", "modelPlanner", "modelImplementer", "modelReviewer"] as const).map((k) => (
-          <TextField key={k} fullWidth label={k} value={settings[k]} onChange={(e) => void onSave({ [k]: e.target.value })} />
+        {MODELS.map((k) => (
+          <FormField key={k} label={k} value={settings[k]} onChange={(e) => void onSave({ [k]: e.target.value })} />
         ))}
       </Stack>
     </SettingsCard>

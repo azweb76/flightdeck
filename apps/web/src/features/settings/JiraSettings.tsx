@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Button, Stack, TextField, Typography } from "@mui/material";
+import { Button, Stack, Typography } from "@mui/material";
 import type { Settings } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
+import { FormField } from "../../ui/components/form-field/index.ts";
 import { JiraTokenHint } from "../jira/index.ts";
 import { SettingsCard } from "./SettingsCard.tsx";
 
@@ -37,25 +38,22 @@ export function JiraSettings({
   return (
     <SettingsCard title="Jira Cloud">
       <Stack spacing={2}>
-        <TextField
-          fullWidth
+        <FormField
           label="Site URL"
           value={siteUrl}
           onChange={(e) => setSiteUrl(e.target.value)}
           placeholder="https://your-site.atlassian.net"
           helperText="Your Atlassian site, including https://"
         />
-        <TextField fullWidth label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <TextField
-          fullWidth
+        <FormField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <FormField
           type="password"
           label="API token"
           value={apiToken}
           onChange={(e) => setApiToken(e.target.value)}
           helperText={<JiraTokenHint keepStored={settings.jiraConfigured} />}
         />
-        <TextField
-          fullWidth
+        <FormField
           label="Board JQL"
           value={jql}
           onChange={(e) => setJql(e.target.value)}

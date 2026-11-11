@@ -9,6 +9,7 @@ import {
   type RankedGroup,
 } from "@flightdeck/shared";
 import { RefreshIcon } from "../../../features/ui/icons.tsx";
+import { FieldLabel } from "../form-field/index.ts";
 import { VirtualListbox } from "./listbox.tsx";
 import { OptionRow } from "./option-row.tsx";
 
@@ -25,6 +26,8 @@ export type RepoPickerProps = {
   multiple?: boolean;
   filter?: (repo: CatalogRepo) => boolean;
   placeholder?: string;
+  label?: string;
+  required?: boolean;
   autoFocus?: boolean;
   onRefresh?: () => void;
   refreshing?: boolean;
@@ -40,6 +43,8 @@ export function RepoPicker(props: RepoPickerProps) {
     return flattenRanked(rankRepos(source, query));
   }, [props.repos, props.filter, query]);
   return (
+    <Stack spacing={0} sx={{ width: "100%" }}>
+      {props.label ? <FieldLabel required={props.required}>{props.label}</FieldLabel> : null}
     <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start", width: "100%" }}>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Autocomplete
@@ -88,6 +93,7 @@ export function RepoPicker(props: RepoPickerProps) {
           <RefreshIcon />
         </IconButton>
       ) : null}
+    </Stack>
     </Stack>
   );
 }

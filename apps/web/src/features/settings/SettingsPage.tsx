@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Alert, Box, MenuItem, TextField, Typography } from "@mui/material";
+import { Alert, Box, MenuItem, Typography } from "@mui/material";
 import type { Settings, ThemeMode } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 import { useThemeMode } from "../theme/index.ts";
+import { FormField } from "../../ui/components/form-field/index.ts";
 import { AgentSettings } from "./AgentSettings.tsx";
 import { SettingsCard } from "./SettingsCard.tsx";
 import { TeamConfigButtons } from "./TeamConfigButtons.tsx";
@@ -31,9 +32,8 @@ export function SettingsPage({ settings: initial }: { settings: Settings }) {
       </Typography>
       {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
       <SettingsCard title="Theme">
-        <TextField
+        <FormField
           select
-          fullWidth
           label="Color mode"
           value={mode}
           onChange={(e) => setMode(e.target.value as ThemeMode)}
@@ -42,12 +42,11 @@ export function SettingsPage({ settings: initial }: { settings: Settings }) {
           <MenuItem value="system">System (macOS)</MenuItem>
           <MenuItem value="light">Light</MenuItem>
           <MenuItem value="dark">Dark</MenuItem>
-        </TextField>
+        </FormField>
       </SettingsCard>
       <JiraSettings settings={settings} onSave={save} setError={setError} />
       <SettingsCard title="Label prefix">
-        <TextField
-          fullWidth
+        <FormField
           label="Jira repo label prefix"
           value={settings.labelPrefix}
           onChange={(e) => void save({ labelPrefix: e.target.value || "gh:" })}

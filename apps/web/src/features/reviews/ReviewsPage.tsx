@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import type { PrReviewSession } from "@flightdeck/shared";
 import { Link } from "react-router-dom";
 import { api } from "../api/index.ts";
+import { FormField } from "../../ui/components/form-field/index.ts";
 
 export function ReviewsPage() {
   const [reviews, setReviews] = useState<PrReviewSession[]>([]);
@@ -15,8 +16,8 @@ export function ReviewsPage() {
     <Box sx={{ p: 4, minHeight: "100%" }}>
       <Typography variant="h2">Reviews</Typography>
       <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-        <TextField size="small" label="owner/repo" value={slug} onChange={(e) => setSlug(e.target.value)} />
-        <TextField size="small" label="PR number" value={num} onChange={(e) => setNum(e.target.value)} />
+        <FormField fullWidth={false} label="owner/repo" value={slug} onChange={(e) => setSlug(e.target.value)} />
+        <FormField fullWidth={false} label="PR number" value={num} onChange={(e) => setNum(e.target.value)} />
         <Button
           variant="contained"
           onClick={() => void api.createReview(slug, Number(num)).then((s) => setReviews((r) => [s, ...r]))}
