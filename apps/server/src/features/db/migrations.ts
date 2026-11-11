@@ -225,4 +225,32 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: "009_discovery_cache",
+    sql: `
+      ALTER TABLE issues ADD COLUMN assigned INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE issues ADD COLUMN closed INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE issues ADD COLUMN comments_json TEXT NOT NULL DEFAULT '[]';
+      CREATE TABLE IF NOT EXISTS api_cache (
+        key TEXT PRIMARY KEY,
+        etag TEXT,
+        body TEXT NOT NULL,
+        fetched_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS project_repo_picks (
+        project_key TEXT PRIMARY KEY,
+        owner TEXT NOT NULL,
+        name TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS issue_comments (
+        issue_id TEXT NOT NULL,
+        comment_id TEXT NOT NULL,
+        author TEXT NOT NULL DEFAULT '',
+        body TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (issue_id, comment_id)
+      );
+    `,
+  },
 ];
