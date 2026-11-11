@@ -39,7 +39,16 @@ export async function splitIssue(issueId: string): Promise<{ created: string[] }
       body: issue.body,
       labels: [repo.label ?? `${settings.labelPrefix}${repo.owner}/${repo.name}`],
     });
-    created.push(sub.key);
+    const id = `jira:${sub.key}`;
+    rememberIssue({
+      ...issue,
+      id,
+      key: sub.key,
+      repos: [{ ...repo, registered: true }],
+      repoWarning: "none",
+      parentId: issue.id,
+    });
+    created.push(id);
   }
   return { created };
 }
