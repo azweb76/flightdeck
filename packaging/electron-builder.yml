@@ -1,0 +1,13 @@
+appId: dev.flightdeck.app
+productName: Flightdeck
+directories:
+  output: release
+files:
+  - apps/desktop/dist/**
+  - apps/server/src/**
+  - apps/web/dist/**
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+    - zip

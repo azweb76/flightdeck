@@ -2,41 +2,52 @@
 
 Local macOS app that turns Jira Cloud or GitHub issues into pull requests using the Claude Agent SDK.
 
-Phase 1 ships the foundation: setup wizard, GitHub/`gh` + Jira + Claude config checks, registered repos, and a read-only issues board. Agent runs, refine, and PRs come later.
-
 One developer per machine. Data lives in `~/.flightdeck/`. Identifiers: product **Flightdeck**, slug `flightdeck`, bundle id `dev.flightdeck.app`, Keychain service `flightdeck`.
 
 ## How agents work here
 
-This repo is written for coding agents as much as humans. Start at the short root [`CLAUDE.md`](./CLAUDE.md); it indexes per-package `CLAUDE.md` files so you only load the package you are changing. Architecture decisions are in [`docs/adr`](./docs/adr).
+Start at [`CLAUDE.md`](./CLAUDE.md). It indexes per-package `CLAUDE.md` files so you only load the package you are changing. ADRs are in [`docs/adr`](./docs/adr).
+
+The app owns the loop: refine → approve goal → plan → implement → review for N rounds (default 2). Each phase is an SDK session. Handoffs are Zod JSON in SQLite and markdown in the worktree. Full transcripts and token/cost are stored from the first run.
 
 ## Packages
 
 | Package | Role |
 | --- | --- |
-| `@flightdeck/shared` | Zod schemas, label parsing, app constants |
-| `@flightdeck/server` | Node HTTP API + SSE on `127.0.0.1` |
+| `@flightdeck/shared` | Zod schemas, labels, PR body, cost |
+| `@flightdeck/server` | Node HTTP API + SSE + runner on `127.0.0.1` |
 | `@flightdeck/web` | React UI (Primer) |
 | `@flightdeck/desktop` | Electron main + preload |
+| `@flightdeck/evals` | Prompt eval harness |
 | `eslint-plugin-flightdeck` | Cross-package import boundaries |
 
 ## Run
 
 ```bash
 pnpm install
-pnpm check          # typecheck, lint, tests — prints only failures
-pnpm check -- --changed
-pnpm check -- --filter @flightdeck/shared
-pnpm dev            # server :47321 + web :47322 (browser)
-pnpm dev:desktop    # Electron (macOS); expects `pnpm dev` for the UI
+pnpm check
+pnpm dev            # server :47321 + web :47322
+FLIGHTDECK_DEMO=1 pnpm dev   # sample board, fake agent, seed run
+pnpm dev:desktop
 ```
 
-The server binds **127.0.0.1 only**. Override data dir with `FLIGHTDECK_DATA_DIR`. Set `FLIGHTDECK_DEMO=1` to show sample issue cards when Jira/`gh` are empty.
+Real agent: `FLIGHTDECK_AGENT=sdk` (needs Claude Code config). Fake agent is the default in this repo's tests and demo.
 
-## Secrets (Jira)
+The server binds **127.0.0.1 only**. `FLIGHTDECK_DATA_DIR` overrides `~/.flightdeck`.
 
-On macOS the Jira API token is stored in Keychain (`security`, service `flightdeck`). On Linux, Flightdeck writes `~/.flightdeck/secrets/jira-api-token` with mode `0600`. GitHub uses your existing `gh auth login`. Claude reuses Claude Code's `apiKeyHelper` and `ANTHROPIC_BASE_URL`.
+## Defaults
 
-## Team config
+- Jira repo labels: `gh:owner/repo` (prefix configurable)
+- PRs open as **drafts**
+- Review rounds: **2**
+- Dollar cap: **$10** / run
+- Max concurrency: **2**
+- SDK permission mode: **auto**, plus a Bash deny-list
 
-Import a `version: 1` JSON file in the wizard (repos, `labelRules.prefix`, optional Jira JQL, plus prompts/models kept for later). Schema: `TeamConfigSchema` in `@flightdeck/shared`.
+## Packaging
+
+Homebrew cask template: `packaging/homebrew/flightdeck.rb`. electron-builder config: `packaging/electron-builder.yml`.
+
+## Token/cost in CI
+
+`pnpm --filter @flightdeck/evals test` is the prompt eval harness. Session reviews write eval cases into SQLite; a future CI job comments cost from `transcript_events.usd` onto the PR.

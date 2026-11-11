@@ -20,6 +20,7 @@ const workspacePkgs = [
   { name: "@flightdeck/server", dir: "apps/server" },
   { name: "@flightdeck/web", dir: "apps/web" },
   { name: "@flightdeck/desktop", dir: "apps/desktop" },
+  { name: "@flightdeck/evals", dir: "packages/evals" },
 ];
 
 function takeFlag(flag) {
