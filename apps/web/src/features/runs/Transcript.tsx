@@ -1,57 +1,44 @@
-import { Box, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Stack, Typography } from "@mui/material";
 import type { TranscriptEvent } from "@flightdeck/shared";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 export function Transcript({ events }: { events: TranscriptEvent[] }) {
   const groups = useMemo(() => group(events), [events]);
-  const [open, setOpen] = useState<Record<string, boolean>>({});
   return (
     <Box>
-      {groups.map((g) => {
-        const key = g.key;
-        const expanded = open[key] ?? g.key === groups.at(-1)?.key;
-        return (
-          <Box key={key} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, mb: 2 }}>
-            <Box
-              component="button"
-              onClick={() => setOpen((o) => ({ ...o, [key]: !expanded }))}
-              sx={{
-                width: "100%",
-                textAlign: "left",
-                p: 3,
-                bgcolor: "background.default",
-                border: 0,
-                cursor: "pointer",
-                color: "text.primary",
-                fontSize: 13,
-              }}
-            >
-              {expanded ? "▾" : "▸"} {g.title}
-            </Box>
-            {expanded
-              ? g.events.map((e) => (
-                  <Box key={e.id} sx={{ px: 3, py: 2, borderTop: "1px solid", borderColor: "divider" }}>
-                    <Typography sx={{ fontFamily: "ui-monospace, monospace", fontSize: 11 }}>
-                      {e.tool ?? e.kind}
-                    </Typography>
-                    <Typography>{e.title}</Typography>
-                    {e.path ? (
-                      <Typography color="text.secondary" sx={{ fontFamily: "ui-monospace, monospace", fontSize: 11 }}>
-                        {e.path}
-                      </Typography>
-                    ) : null}
-                    {e.detail ? (
-                      <Box component="pre" sx={{ fontSize: 11, whiteSpace: "pre-wrap", color: "text.secondary", m: 0 }}>
-                        {e.detail.slice(0, 800)}
-                      </Box>
-                    ) : null}
-                  </Box>
-                ))
-              : null}
-          </Box>
-        );
-      })}
+      {groups.map((g, i) => (
+        <Accordion key={g.key} defaultExpanded={i === groups.length - 1} sx={{ "&:before": { display: "none" }, bgcolor: "transparent" }}>
+          <AccordionSummary sx={{ minHeight: 28, px: 1, "& .MuiAccordionSummary-content": { my: 0.5 } }}>
+            <Typography sx={{ fontWeight: 600 }}>{g.title}</Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ p: 0 }}>
+            {g.events.map((e) => (
+              <ToolRow key={e.id} event={e} />
+            ))}
+          </AccordionDetails>
+        </Accordion>
+      ))}
     </Box>
+  );
+}
+
+function ToolRow({ event }: { event: TranscriptEvent }) {
+  const name = event.tool ?? event.title;
+  return (
+    <Stack
+      direction="row"
+      spacing={2}
+      sx={{ minHeight: 28, px: 1, py: 0.5, alignItems: "center", borderTop: "1px solid", borderColor: "divider" }}
+    >
+      <Typography sx={{ minWidth: 88 }}>{name}</Typography>
+      {event.path ? (
+        <Typography sx={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12, color: "text.secondary" }}>
+          {event.path}
+        </Typography>
+      ) : (
+        <Typography color="text.secondary">{event.title !== name ? event.title : ""}</Typography>
+      )}
+    </Stack>
   );
 }
 

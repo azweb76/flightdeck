@@ -24,7 +24,7 @@ export function RunView() {
     );
   }
   return (
-    <Box sx={{ p: 4, display: "flex", flexDirection: "column", minHeight: "100%" }}>
+    <Box sx={{ p: 3, display: "flex", flexDirection: "column", minHeight: "100%" }}>
       <Typography color="text.secondary">
         <Link to="/runs">Runs</Link> / {run.issueKey}
       </Typography>
@@ -65,6 +65,7 @@ export function RunView() {
                 <MenuItem value="run">Whole run</MenuItem>
               </TextField>
               <TextField
+                size="small"
                 value={msg}
                 onChange={(e) => setMsg(e.target.value)}
                 placeholder="Message the agent mid-run…"
