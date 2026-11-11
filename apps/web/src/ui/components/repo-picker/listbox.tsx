@@ -22,7 +22,14 @@ export const VirtualListbox = forwardRef<HTMLUListElement, HTMLAttributes<HTMLEl
         setTop(e.currentTarget.scrollTop);
         onScroll?.(e);
       }}
-      sx={{ maxHeight: ROW * 8, overflow: "auto", margin: 0, padding: 0, listStyle: "none" }}
+      sx={{
+        maxHeight: ROW * 8,
+        overflow: "auto",
+        margin: 0,
+        padding: 0,
+        listStyle: "none",
+        bgcolor: "background.paper",
+      }}
     >
       <li aria-hidden style={{ height: start * ROW, padding: 0, border: 0 }} />
       {slice.map((child) => (isValidElement(child) ? cloneElement(child) : child))}

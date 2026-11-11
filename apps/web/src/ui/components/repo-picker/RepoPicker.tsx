@@ -57,6 +57,7 @@ export function RepoPicker(props: RepoPickerProps) {
           }}
           onChange={(_, next) => emitChange(props, next)}
           slots={{ listbox: VirtualListbox }}
+          slotProps={{ popper: { placement: "bottom-start", sx: { width: 420 } } }}
           renderInput={(params) => (
             <TextField {...params} autoFocus={props.autoFocus} placeholder={props.placeholder ?? "Search repos"} />
           )}
