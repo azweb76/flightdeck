@@ -9,6 +9,9 @@ import {
   DEFAULT_PR_DRAFT,
   DEFAULT_REVIEW_ROUNDS,
   DEFAULT_THEME,
+  DEFAULT_BOARD_AUTHORED_PRS,
+  DEFAULT_BOARD_REVIEW_PRS,
+  DEFAULT_BOARD_LINKED_ISSUES,
 } from "../meta.ts";
 import { ThemeModeSchema } from "./common.ts";
 import { PermissionModeSchema } from "./roles.ts";
@@ -35,6 +38,10 @@ export const SettingsSchema = z.object({
   promptPlanner: z.string().default(""),
   promptImplementer: z.string().default(""),
   promptReviewer: z.string().default(""),
+  boardAuthoredPrs: z.boolean().default(DEFAULT_BOARD_AUTHORED_PRS),
+  boardReviewPrs: z.boolean().default(DEFAULT_BOARD_REVIEW_PRS),
+  boardLinkedIssues: z.boolean().default(DEFAULT_BOARD_LINKED_ISSUES),
+  boardPrExcludeRepos: z.string().default(""),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 

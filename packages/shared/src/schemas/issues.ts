@@ -11,6 +11,38 @@ export type LinkedRepo = z.infer<typeof LinkedRepoSchema>;
 
 export const RepoLinkWarningSchema = z.enum(["none", "missing", "multiple"]);
 
+export const PrRoleSchema = z.enum(["mine", "review"]);
+export type PrRole = z.infer<typeof PrRoleSchema>;
+
+export const PrCiSchema = z.enum(["passing", "failing", "pending"]);
+export type PrCi = z.infer<typeof PrCiSchema>;
+
+export const PrReviewStateSchema = z.enum(["approved", "changes_requested", "pending"]);
+export type PrReviewState = z.infer<typeof PrReviewStateSchema>;
+
+export const BoardPrSchema = z.object({
+  id: z.string(),
+  number: z.number().int(),
+  title: z.string(),
+  url: z.string(),
+  repo: z.string(),
+  role: PrRoleSchema,
+  ci: PrCiSchema,
+  review: PrReviewStateSchema,
+  unresolvedThreads: z.number().int().nonnegative().default(0),
+  draft: z.boolean(),
+  ageDays: z.number().nonnegative(),
+  headRef: z.string(),
+  headRepo: z.string(),
+  viewerCanPush: z.boolean(),
+  isFork: z.boolean(),
+  body: z.string().default(""),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  linkedIssueIds: z.array(z.string()).default([]),
+});
+export type BoardPr = z.infer<typeof BoardPrSchema>;
+
 export const IssueSchema = z.object({
   id: z.string(),
   source: IssueSourceSchema,
@@ -37,6 +69,8 @@ export const IssueSchema = z.object({
       }),
     )
     .optional(),
+  viaPr: z.boolean().optional(),
+  prs: z.array(BoardPrSchema).optional(),
 });
 export type Issue = z.infer<typeof IssueSchema>;
 
