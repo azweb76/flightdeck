@@ -6,6 +6,7 @@ import { MarkdownEditor } from "../../ui/components/markdown/index.ts";
 import { GoalEditor } from "./GoalEditor.tsx";
 import { IssueActions } from "./IssueActions.tsx";
 import { IssueRunsTab } from "./IssueRunsTab.tsx";
+import { PrsTab } from "./PrsTab.tsx";
 import { repoChipLabel } from "./repoDisplay.ts";
 import { useIssue } from "./useIssue.ts";
 
@@ -54,6 +55,7 @@ export function IssueDetailPage() {
           <Chip key={`${r.owner}/${r.name}`} size="small" variant="outlined" label={repoChipLabel(r)} />
         ))}
         {issue.needsYou ? <Chip color="warning" size="small" label="Needs you" /> : null}
+        {issue.viaPr ? <Chip size="small" variant="outlined" label="via PR" /> : null}
       </Stack>
       <IssueActions issue={issue} onChange={load} offline={sourceOffline} />
       {issue.comments?.length ? (
@@ -74,7 +76,7 @@ export function IssueDetailPage() {
       </Tabs>
       {tab === "goal" ? <GoalEditor issueId={issue.id} fallback={issue.body} offline={sourceOffline} /> : null}
       {tab === "runs" ? <IssueRunsTab issueId={issue.id} /> : null}
-      {tab === "prs" ? <Typography color="text.secondary">Open a run to see the PR link.</Typography> : null}
+      {tab === "prs" ? <PrsTab issue={issue} onChange={load} /> : null}
     </Box>
   );
 }

@@ -40,6 +40,9 @@ export function IssueActions({
           Fix
         </Button>
       ) : null}
+      {issue.prs?.some((p) => p.role === "mine") ? (
+        <Button onClick={() => nav(`/issues/${encodeURIComponent(issue.id)}?tab=prs`)}>PR Open</Button>
+      ) : null}
       {issue.repoWarning === "multiple" ? (
         <Button onClick={() => void api.splitIssue(issue.id).then(onChange)}>Split into sub-issues</Button>
       ) : null}

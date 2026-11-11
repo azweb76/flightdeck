@@ -84,6 +84,9 @@ export const api = {
   issue: (id: string) => request<Issue>(`/api/issues/${encodeURIComponent(id)}`),
   startRun: (issueId: string, repoId?: number) =>
     request<Run>("/api/runs", { method: "POST", body: JSON.stringify({ issueId, repoId }) }),
+  fixPr: (prId: string) => request<Run>(`/api/prs/${encodeURIComponent(prId)}/fix`, { method: "POST" }),
+  draftPrReview: (prId: string) =>
+    request<PrReviewSession>(`/api/prs/${encodeURIComponent(prId)}/draft-review`, { method: "POST" }),
   runs: () => request<{ runs: Run[]; active: number }>("/api/runs"),
   run: (id: number) => request<{ run: Run; events: TranscriptEvent[]; question?: Question | null }>(`/api/runs/${id}`),
   cancelRun: (id: number) => request<Run>(`/api/runs/${id}/cancel`, { method: "POST" }),

@@ -8,6 +8,7 @@ import { SettingsCard } from "./SettingsCard.tsx";
 import { TeamConfigButtons } from "./TeamConfigButtons.tsx";
 import { JiraSettings } from "./JiraSettings.tsx";
 import { RepoSettings } from "./RepoSettings.tsx";
+import { BoardSettings } from "./BoardSettings.tsx";
 
 export function SettingsPage({
   settings: initial,
@@ -61,6 +62,7 @@ export function SettingsPage({
           helperText={`Issues tagged like ${settings.labelPrefix}owner/repo map to that GitHub repo.`}
         />
       </SettingsCard>
+      <BoardSettings settings={settings} onSave={save} />
       <TeamConfigButtons />
       <AgentSettings settings={settings} onSave={save} />
       <RepoSettings

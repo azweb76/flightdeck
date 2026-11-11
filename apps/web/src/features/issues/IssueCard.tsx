@@ -1,6 +1,7 @@
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import type { Issue } from "@flightdeck/shared";
 import { Link } from "react-router-dom";
+import { NestedPrs } from "./IssuePrs.tsx";
 import { repoChipLabel } from "./repoDisplay.ts";
 import { issueWarningText } from "./warning.ts";
 
@@ -39,7 +40,9 @@ export function IssueCard({ issue }: { issue: Issue }) {
         {issue.repos.map((r) => (
           <Chip key={`${r.owner}/${r.name}`} size="small" label={repoChipLabel(r)} variant="outlined" />
         ))}
+        {issue.viaPr ? <Chip size="small" variant="outlined" label="via PR" /> : null}
       </Stack>
+      <NestedPrs prs={issue.prs ?? []} />
       {issue.statusNote ? (
         <Typography sx={{ mt: 1, fontSize: 12, color: "text.secondary" }}>{issue.statusNote}</Typography>
       ) : null}
