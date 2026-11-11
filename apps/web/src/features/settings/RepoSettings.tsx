@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Button, Checkbox, FormControl, Text, TextInput } from "@primer/react";
+import { Box, Button, Checkbox, FormControlLabel, Stack, TextField, Typography } from "@mui/material";
 import type { Repo } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 
@@ -35,32 +35,32 @@ export function RepoSettings({
 
   return (
     <Box sx={{ mt: 4 }}>
-      <Text as="h3" sx={{ fontSize: 2, fontWeight: 600, display: "block", mb: 3 }}>
+      <Typography variant="h3" sx={{ mb: 3 }}>
         Repositories
-      </Text>
-      <FormControl sx={{ mb: 3 }}>
-        <FormControl.Label>Clone folder</FormControl.Label>
-        <TextInput
-          value={folder}
-          onChange={(e) => setFolder(e.target.value)}
-          onBlur={() => onWorkspace(folder)}
-          placeholder="~/.flightdeck/repos"
-        />
-      </FormControl>
+      </Typography>
+      <TextField
+        label="Clone folder"
+        value={folder}
+        onChange={(e) => setFolder(e.target.value)}
+        onBlur={() => onWorkspace(folder)}
+        placeholder="~/.flightdeck/repos"
+        fullWidth
+        sx={{ mb: 3 }}
+      />
       {repos.map((r) => (
         <RepoRow key={r.id} repo={r} onChange={onChange} setError={setError} />
       ))}
-      <Box sx={{ display: "flex", gap: 2, mt: 3, flexWrap: "wrap", alignItems: "center" }}>
-        <TextInput placeholder="owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
-        <TextInput placeholder="name" value={name} onChange={(e) => setName(e.target.value)} />
-        <FormControl>
-          <Checkbox checked={clone} onChange={(e) => setClone(e.target.checked)} />
-          <FormControl.Label>Clone with gh</FormControl.Label>
-        </FormControl>
+      <Stack direction="row" spacing={2} sx={{ mt: 3, flexWrap: "wrap", alignItems: "center" }}>
+        <TextField size="small" placeholder="owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
+        <TextField size="small" placeholder="name" value={name} onChange={(e) => setName(e.target.value)} />
+        <FormControlLabel
+          control={<Checkbox checked={clone} onChange={(e) => setClone(e.target.checked)} />}
+          label="Clone with gh"
+        />
         <Button onClick={() => void add()} disabled={!owner || !name}>
           Add repo
         </Button>
-      </Box>
+      </Stack>
     </Box>
   );
 }
@@ -75,43 +75,40 @@ function RepoRow({
   setError: (m: string | undefined) => void;
 }) {
   return (
-    <Box
+    <Stack
+      direction="row"
+      spacing={2}
       sx={{
-        display: "flex",
-        gap: 2,
         alignItems: "center",
         py: 2,
         borderBottom: "1px solid",
-        borderColor: "border.muted",
+        borderColor: "divider",
         flexWrap: "wrap",
       }}
     >
-      <Text sx={{ fontFamily: "mono", flex: 1 }}>
+      <Typography sx={{ fontFamily: "ui-monospace, monospace", flex: 1 }}>
         {repo.owner}/{repo.name}
-      </Text>
-      <Text sx={{ fontSize: 0, color: "fg.muted", flex: 1 }}>{repo.localPath || "not cloned"}</Text>
-      <FormControl>
-        <Checkbox
-          checked={repo.pinned}
-          onChange={() => void api.patchRepo(repo.id, { pinned: !repo.pinned }).then(onChange)}
-        />
-        <FormControl.Label>Pin</FormControl.Label>
-      </FormControl>
+      </Typography>
+      <Typography sx={{ fontSize: 11, color: "text.secondary", flex: 1 }}>{repo.localPath || "not cloned"}</Typography>
+      <FormControlLabel
+        control={
+          <Checkbox checked={repo.pinned} onChange={() => void api.patchRepo(repo.id, { pinned: !repo.pinned }).then(onChange)} />
+        }
+        label="Pin"
+      />
       <Button
         size="small"
-        onClick={() => void api.cloneRepo(repo.id).then(onChange).catch((e: unknown) => {
-          setError(e instanceof Error ? e.message : "Clone failed");
-        })}
+        onClick={() =>
+          void api.cloneRepo(repo.id).then(onChange).catch((e: unknown) => {
+            setError(e instanceof Error ? e.message : "Clone failed");
+          })
+        }
       >
         Clone
       </Button>
-      <Button
-        size="small"
-        variant="danger"
-        onClick={() => void api.deleteRepo(repo.id).then(onChange)}
-      >
+      <Button size="small" color="error" onClick={() => void api.deleteRepo(repo.id).then(onChange)}>
         Remove
       </Button>
-    </Box>
+    </Stack>
   );
 }

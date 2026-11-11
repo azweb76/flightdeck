@@ -1,43 +1,19 @@
-import { useEffect, useState } from "react";
-import { Box, Heading, Label, Spinner, Text } from "@primer/react";
-import type { Issue } from "@flightdeck/shared";
+import { useEffect } from "react";
+import { Alert, Box, Chip, CircularProgress, Stack, Tab, Tabs, Typography } from "@mui/material";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { api, subscribeEvents } from "../api/index.ts";
+import { api } from "../api/index.ts";
+import { MarkdownEditor } from "../../ui/components/markdown/index.ts";
 import { GoalEditor } from "./GoalEditor.tsx";
 import { IssueActions } from "./IssueActions.tsx";
 import { IssueRunsTab } from "./IssueRunsTab.tsx";
+import { useIssue } from "./useIssue.ts";
 
 export function IssueDetailPage() {
   const { id } = useParams();
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "goal";
-  const [issue, setIssue] = useState<Issue | undefined>();
-  const [error, setError] = useState<string>();
-  const [offline, setOffline] = useState(false);
-  const [offlineSources, setOfflineSources] = useState({ jira: false, github: false });
+  const { issue, error, offline, offlineSources, load } = useIssue(id);
 
-  function load() {
-    if (!id) return;
-    void api
-      .issues({})
-      .then((r) => {
-        setOffline(r.offline);
-        setOfflineSources(r.offlineSources ?? { jira: false, github: false });
-      })
-      .catch(() => {
-        setOffline(true);
-        setOfflineSources({ jira: true, github: true });
-      });
-    void api.issue(decodeURIComponent(id)).then(setIssue).catch((err: unknown) => {
-      setError(err instanceof Error ? err.message : "Not found");
-    });
-  }
-
-  useEffect(() => {
-    load();
-    return subscribeEvents(() => load());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (!issue) return;
@@ -50,75 +26,54 @@ export function IssueDetailPage() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [issue, offlineSources, offline]);
+  }, [issue, offlineSources, offline, load]);
 
-  if (error) return <Box sx={{ p: 4 }}>{error}</Box>;
-  if (!issue) return <Box sx={{ p: 4 }}><Spinner /></Box>;
+  if (error) return <Alert severity="error" sx={{ m: 4 }}>{error}</Alert>;
+  if (!issue) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <CircularProgress size={20} />
+      </Box>
+    );
+  }
   const sourceOffline =
     issue.source === "jira" ? offlineSources.jira : issue.source === "github" ? offlineSources.github : offline;
 
   return (
-    <Box sx={{ p: [3, 4] }}>
-      <Text sx={{ color: "fg.muted", fontSize: 1 }}>
+    <Box sx={{ p: 4 }}>
+      <Typography color="text.secondary">
         <Link to="/issues">Issues</Link> / {issue.key}
-      </Text>
-      <Heading as="h2" sx={{ mt: 2 }}>
+      </Typography>
+      <Typography variant="h2" sx={{ mt: 2 }}>
         {issue.key} {issue.title}
-      </Heading>
-      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", my: 3 }}>
-        <Label>{issue.source}</Label>
+      </Typography>
+      <Stack direction="row" spacing={1} sx={{ my: 3, flexWrap: "wrap", gap: 1 }}>
+        <Chip label={issue.source} size="small" />
         {issue.repos.map((r) => (
-          <Label key={`${r.owner}/${r.name}`} variant="secondary">
-            {r.label ?? `${r.owner}/${r.name}`}
-          </Label>
+          <Chip key={`${r.owner}/${r.name}`} size="small" variant="outlined" label={r.label ?? `${r.owner}/${r.name}`} />
         ))}
-        {issue.needsYou ? <Label variant="attention">Needs you</Label> : null}
-      </Box>
+        {issue.needsYou ? <Chip color="warning" size="small" label="Needs you" /> : null}
+      </Stack>
       <IssueActions issue={issue} onChange={load} offline={sourceOffline} />
       {issue.comments?.length ? (
         <Box sx={{ mb: 3 }}>
-          <Text sx={{ fontWeight: 600, display: "block", mb: 2 }}>Comments</Text>
+          <Typography sx={{ fontWeight: 600, mb: 2 }}>Comments</Typography>
           {issue.comments.map((c) => (
-            <Text key={c.id} sx={{ display: "block", mb: 2 }}>
-              {c.author}: {c.body}
-            </Text>
+            <Box key={c.id} sx={{ mb: 2 }}>
+              <Typography sx={{ fontWeight: 600 }}>{c.author}</Typography>
+              <MarkdownEditor id={`comment-${c.id}`} value={c.body} readOnly />
+            </Box>
           ))}
         </Box>
       ) : null}
-      <TabBar tab={tab} onTab={(t) => setParams({ tab: t })} />
+      <Tabs value={tab} onChange={(_, t) => setParams({ tab: t })} sx={{ mb: 3 }}>
+        <Tab value="goal" label="Goal" />
+        <Tab value="runs" label="Runs" />
+        <Tab value="prs" label="PRs" />
+      </Tabs>
       {tab === "goal" ? <GoalEditor issueId={issue.id} fallback={issue.body} offline={sourceOffline} /> : null}
       {tab === "runs" ? <IssueRunsTab issueId={issue.id} /> : null}
-      {tab === "prs" ? <Text sx={{ color: "fg.muted" }}>Open a run to see the PR link.</Text> : null}
-    </Box>
-  );
-}
-
-function TabBar({ tab, onTab }: { tab: string; onTab: (t: string) => void }) {
-  return (
-    <Box
-      as="nav"
-      sx={{ display: "flex", gap: 3, mb: 3, borderBottom: "1px solid", borderColor: "border.default" }}
-    >
-      {["goal", "runs", "prs"].map((id) => (
-        <Box
-          as="button"
-          key={id}
-          onClick={() => onTab(id)}
-          sx={{
-            appearance: "none",
-            bg: "transparent",
-            border: 0,
-            borderBottom: "3px solid",
-            borderColor: tab === id ? "accent.emphasis" : "transparent",
-            fontWeight: tab === id ? 600 : 400,
-            pb: 2,
-            cursor: "pointer",
-          }}
-        >
-          {id === "goal" ? "Goal" : id === "runs" ? "Runs" : "PRs"}
-        </Box>
-      ))}
+      {tab === "prs" ? <Typography color="text.secondary">Open a run to see the PR link.</Typography> : null}
     </Box>
   );
 }

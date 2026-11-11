@@ -1,4 +1,4 @@
-import { Box, Button } from "@primer/react";
+import { Box, Button } from "@mui/material";
 
 export function WizardActions({
   step,
@@ -24,20 +24,16 @@ export function WizardActions({
         mt: 4,
         pt: 3,
         borderTop: "1px solid",
-        borderColor: "border.muted",
+        borderColor: "divider",
       }}
     >
-      {step === 0 ? (
-        <Button onClick={onRecheck}>Re-check</Button>
-      ) : (
-        <Button onClick={onBack}>Back</Button>
-      )}
+      {step === 0 ? <Button onClick={onRecheck}>Re-check</Button> : <Button onClick={onBack}>Back</Button>}
       {step < 2 ? (
-        <Button variant="primary" disabled={step === 0 && !requiredOk} onClick={onNext}>
+        <Button variant="contained" disabled={step === 0 && !requiredOk} onClick={onNext}>
           Next
         </Button>
       ) : (
-        <Button variant="primary" onClick={onFinish}>
+        <Button variant="contained" onClick={onFinish}>
           Finish
         </Button>
       )}

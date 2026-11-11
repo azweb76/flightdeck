@@ -1,12 +1,12 @@
-import { Box, Heading, Text } from "@primer/react";
+import { Box, Typography } from "@mui/material";
 
 export function PlaceholderPage({ title }: { title: string }) {
   return (
-    <Box sx={{ p: [3, 4] }}>
-      <Heading as="h2">{title}</Heading>
-      <Text as="p" sx={{ color: "fg.muted", mt: 2 }}>
-        Coming in a later phase.
-      </Text>
+    <Box sx={{ p: 4 }}>
+      <Typography variant="h2">{title}</Typography>
+      <Typography color="text.secondary" sx={{ mt: 2 }}>
+        This page has no extra content.
+      </Typography>
     </Box>
   );
 }

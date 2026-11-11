@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Button, Checkbox, FormControl, Text, TextInput } from "@primer/react";
+import { Alert, Box, Button, Checkbox, FormControlLabel, Stack, TextField, Typography } from "@mui/material";
 import type { Repo } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 
@@ -33,27 +33,27 @@ export function ReposStep() {
 
   return (
     <Box>
-      <Text sx={{ color: "fg.muted", display: "block", mb: 3 }}>
+      <Typography color="text.secondary" sx={{ mb: 3 }}>
         Register the GitHub repos this machine will work in. Cloning uses `gh repo clone`.
-      </Text>
+      </Typography>
       {repos.map((r) => (
-        <Text key={r.id} sx={{ display: "block", fontFamily: "mono", mb: 1 }}>
+        <Typography key={r.id} sx={{ fontFamily: "ui-monospace, monospace", mb: 1 }}>
           {r.owner}/{r.name}
           {r.pinned ? " · pinned" : ""}
-        </Text>
+        </Typography>
       ))}
-      <Box sx={{ display: "flex", gap: 2, mt: 3, flexWrap: "wrap", alignItems: "center" }}>
-        <TextInput placeholder="owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
-        <TextInput placeholder="name" value={name} onChange={(e) => setName(e.target.value)} />
-        <FormControl>
-          <Checkbox checked={clone} onChange={(e) => setClone(e.target.checked)} />
-          <FormControl.Label>Clone with gh</FormControl.Label>
-        </FormControl>
+      <Stack direction="row" spacing={2} sx={{ mt: 3, flexWrap: "wrap", alignItems: "center" }}>
+        <TextField size="small" placeholder="owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
+        <TextField size="small" placeholder="name" value={name} onChange={(e) => setName(e.target.value)} />
+        <FormControlLabel
+          control={<Checkbox checked={clone} onChange={(e) => setClone(e.target.checked)} />}
+          label="Clone with gh"
+        />
         <Button onClick={() => void add()} disabled={!owner || !name}>
           Add
         </Button>
-      </Box>
-      {error ? <Text sx={{ color: "danger.fg", display: "block", mt: 2 }}>{error}</Text> : null}
+      </Stack>
+      {error ? <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert> : null}
     </Box>
   );
 }

@@ -1,4 +1,4 @@
-import { Box, Label, Text } from "@primer/react";
+import { Box, Chip, Stack, Typography } from "@mui/material";
 import type { Issue } from "@flightdeck/shared";
 import { Link } from "react-router-dom";
 import { issueWarningText } from "./warning.ts";
@@ -7,46 +7,41 @@ import { issueWarningText } from "./warning.ts";
 export function IssueCard({ issue }: { issue: Issue }) {
   const warning = issueWarningText(issue);
   const unregistered = issue.repos.filter((r) => !r.registered);
-
   return (
     <Box
-      as={Link}
+      component={Link}
       to={`/issues/${encodeURIComponent(issue.id)}`}
       sx={{
         display: "block",
         p: 3,
-        bg: "canvas.default",
+        bgcolor: "background.paper",
         border: "1px solid",
-        borderColor: issue.needsYou || warning ? "attention.emphasis" : "border.default",
+        borderColor: issue.needsYou || warning ? "warning.main" : "divider",
         borderWidth: issue.needsYou ? 2 : 1,
-        borderRadius: 2,
+        borderRadius: 1,
         textDecoration: "none",
-        color: "fg.default",
-        "&:hover": { borderColor: "accent.emphasis" },
+        color: "text.primary",
+        "&:hover": { borderColor: "primary.main" },
       }}
     >
-      <Text sx={{ fontFamily: "mono", fontSize: 0, color: "fg.muted" }}>{issue.key}</Text>
-      <Text as="p" sx={{ m: 0, mt: 1, fontWeight: 600, fontSize: 1 }}>
-        {issue.title}
-      </Text>
-      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 2 }}>
-        <Label variant={issue.source === "jira" ? "accent" : "done"}>{issue.source}</Label>
+      <Typography sx={{ fontFamily: "ui-monospace, monospace", fontSize: 11, color: "text.secondary" }}>
+        {issue.key}
+      </Typography>
+      <Typography sx={{ mt: 1, fontWeight: 600 }}>{issue.title}</Typography>
+      <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap", gap: 1 }}>
+        <Chip size="small" label={issue.source} color={issue.source === "jira" ? "primary" : "success"} />
         {issue.repos.map((r) => (
-          <Label key={`${r.owner}/${r.name}`} variant="secondary">
-            {r.label ?? `${r.owner}/${r.name}`}
-          </Label>
+          <Chip key={`${r.owner}/${r.name}`} size="small" label={r.label ?? `${r.owner}/${r.name}`} variant="outlined" />
         ))}
-      </Box>
+      </Stack>
       {issue.statusNote ? (
-        <Text sx={{ display: "block", mt: 2, fontSize: 0 }}>{issue.statusNote}</Text>
+        <Typography sx={{ mt: 2, fontSize: 12 }}>{issue.statusNote}</Typography>
       ) : null}
       {warning ? (
-        <Text sx={{ display: "block", mt: 2, fontSize: 0, color: "attention.fg" }}>
+        <Typography sx={{ mt: 2, fontSize: 12, color: "warning.main" }}>
           {warning}
-          {unregistered.length
-            ? ` · unknown: ${unregistered.map((r) => `${r.owner}/${r.name}`).join(", ")}`
-            : ""}
-        </Text>
+          {unregistered.length ? ` · unknown: ${unregistered.map((r) => `${r.owner}/${r.name}`).join(", ")}` : ""}
+        </Typography>
       ) : null}
     </Box>
   );

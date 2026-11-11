@@ -1,11 +1,11 @@
-import { Box, Button, CounterLabel, Text } from "@primer/react";
+import { Badge, Box, Button, Menu, MenuItem, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { AppNotification } from "@flightdeck/shared";
 import { api, subscribeEvents } from "../api/index.ts";
 
 export function Alerts() {
-  const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState<AppNotification[]>([]);
   const nav = useNavigate();
@@ -31,42 +31,31 @@ export function Alerts() {
   }, []);
 
   return (
-    <Box sx={{ position: "relative" }}>
-      <Button onClick={() => setOpen((o) => !o)}>
-        Alerts {unread ? <CounterLabel>{unread}</CounterLabel> : null}
+    <>
+      <Button size="small" onClick={(e) => setAnchor(e.currentTarget)} aria-label="alerts">
+        <Badge badgeContent={unread} color="error">
+          Bell
+        </Badge>
       </Button>
-      {open ? (
-        <Box
-          sx={{
-            position: "absolute",
-            right: 0,
-            mt: 2,
-            width: 320,
-            bg: "canvas.default",
-            border: "1px solid",
-            borderColor: "border.default",
-            borderRadius: 2,
-            p: 2,
-            zIndex: 5,
-          }}
-        >
-          {items.length === 0 ? <Text sx={{ color: "fg.muted" }}>No notifications</Text> : null}
-          {items.map((n) => (
-            <Box
-              as="button"
-              key={n.id}
-              onClick={() => {
-                if (n.href) nav(n.href);
-                setOpen(false);
-              }}
-              sx={{ display: "block", width: "100%", textAlign: "left", bg: "transparent", border: 0, py: 2, cursor: "pointer" }}
-            >
-              <Text sx={{ fontWeight: n.read ? 400 : 600 }}>{n.title}</Text>
-              <Text sx={{ display: "block", color: "fg.muted", fontSize: 0 }}>{n.body}</Text>
+      <Menu open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)}>
+        {items.length === 0 ? <MenuItem disabled>No notifications</MenuItem> : null}
+        {items.map((n) => (
+          <MenuItem
+            key={n.id}
+            onClick={() => {
+              if (n.href) nav(n.href);
+              setAnchor(null);
+            }}
+          >
+            <Box>
+              <Typography sx={{ fontWeight: n.read ? 400 : 600 }}>{n.title}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {n.body}
+              </Typography>
             </Box>
-          ))}
-        </Box>
-      ) : null}
-    </Box>
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 }

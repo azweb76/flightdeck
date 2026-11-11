@@ -1,14 +1,57 @@
+import { Box, Dialog, List, ListItemButton, ListSubheader, TextField, Typography } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import { Box, TextInput } from "@primer/react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/index.ts";
+
+type Item = { label: string; to: string; group: string };
 
 export function Palette() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const [items, setItems] = useState<{ label: string; to: string }[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [sel, setSel] = useState(0);
   const nav = useNavigate();
 
+  usePaletteOpen(setOpen);
+  useEffect(() => {
+    if (!open) return;
+    setQ("");
+    setSel(0);
+    void loadItems().then(setItems);
+  }, [open]);
+
+  const shown = useMemo(
+    () => items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 16),
+    [items, q],
+  );
+  const groups = groupOf(shown);
+
+  function go(item: Item) {
+    nav(item.to);
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+      <Box sx={{ p: 2 }}>
+        <TextField
+          autoFocus
+          fullWidth
+          placeholder="Search or jump to…"
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setSel(0);
+          }}
+          onKeyDown={(e) => onPaletteKey(e, shown, sel, setSel, go)}
+        />
+        <PaletteList groups={groups} shown={shown} sel={sel} onGo={go} />
+      </Box>
+    </Dialog>
+  );
+}
+
+function usePaletteOpen(setOpen: (v: boolean | ((b: boolean) => boolean)) => void) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -16,55 +59,95 @@ export function Palette() {
         setOpen(true);
       }
       if (e.key === "Escape") setOpen(false);
-      if (open) return;
-      if (e.key.toLowerCase() === "r") nav(window.location.pathname);
-      if (e.key.toLowerCase() === "s" && !e.metaKey) {
-        /* Start is issued from the issue page */
-      }
+    }
+    function onOpen() {
+      setOpen(true);
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [nav, open]);
+    window.addEventListener("flightdeck:palette", onOpen);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("flightdeck:palette", onOpen);
+    };
+  }, [setOpen]);
+}
 
-  useEffect(() => {
-    if (!open) return;
-    void Promise.all([api.issues(), api.runs()]).then(([iss, runs]) => {
-      setItems([
-        ...iss.issues.map((i) => ({ label: `Issue ${i.key} ${i.title}`, to: `/issues/${encodeURIComponent(i.id)}` })),
-        ...runs.runs.map((r) => ({ label: `Run ${r.issueKey} ${r.repoSlug}`, to: `/runs/${r.id}` })),
-        { label: "Settings", to: "/settings" },
-        { label: "Stats", to: "/stats" },
-        { label: "Reviews", to: "/reviews" },
-        { label: "New GitHub issue", to: "/issues/new?kind=github" },
-        { label: "New Jira issue", to: "/issues/new?kind=jira" },
-        { label: "Ad-hoc task", to: "/issues/new?kind=adhoc" },
-      ]);
-    });
-  }, [open]);
+function onPaletteKey(
+  e: React.KeyboardEvent,
+  shown: Item[],
+  sel: number,
+  setSel: (n: number | ((s: number) => number)) => void,
+  go: (item: Item) => void,
+) {
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    setSel((s) => Math.min(shown.length - 1, s + 1));
+  }
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    setSel((s) => Math.max(0, s - 1));
+  }
+  if (e.key === "Enter" && shown[sel]) go(shown[sel]!);
+}
 
-  const shown = useMemo(
-    () => items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())).slice(0, 12),
-    [items, q],
-  );
-  if (!open) return null;
+function PaletteList({
+  groups,
+  shown,
+  sel,
+  onGo,
+}: {
+  groups: { name: string; items: Item[] }[];
+  shown: Item[];
+  sel: number;
+  onGo: (item: Item) => void;
+}) {
   return (
-    <Box sx={{ position: "fixed", inset: 0, bg: "rgba(0,0,0,0.4)", zIndex: 20, display: "flex", justifyContent: "center", pt: 8 }}>
-      <Box sx={{ width: 520, bg: "canvas.default", borderRadius: 2, p: 3 }}>
-        <TextInput autoFocus placeholder="Search or jump to…" value={q} onChange={(e) => setQ(e.target.value)} />
-        {shown.map((i) => (
-          <Box
-            as="button"
-            key={i.to}
-            onClick={() => {
-              nav(i.to);
-              setOpen(false);
-            }}
-            sx={{ display: "block", width: "100%", textAlign: "left", p: 2, bg: "transparent", border: 0, cursor: "pointer" }}
-          >
-            {i.label}
-          </Box>
-        ))}
-      </Box>
-    </Box>
+    <List dense sx={{ mt: 1, maxHeight: 360, overflow: "auto" }}>
+      {groups.map((g) => (
+        <Box key={g.name}>
+          <ListSubheader disableSticky>{g.name}</ListSubheader>
+          {g.items.map((item) => {
+            const idx = shown.indexOf(item);
+            return (
+              <ListItemButton key={item.to + item.label} selected={idx === sel} onClick={() => onGo(item)}>
+                <Typography>{item.label}</Typography>
+              </ListItemButton>
+            );
+          })}
+        </Box>
+      ))}
+    </List>
   );
+}
+
+async function loadItems(): Promise<Item[]> {
+  const [iss, runs] = await Promise.all([api.issues(), api.runs()]);
+  return [
+    ...iss.issues.map((i) => ({
+      label: `${i.key} ${i.title}`,
+      to: `/issues/${encodeURIComponent(i.id)}`,
+      group: "Issues",
+    })),
+    ...runs.runs.map((r) => ({
+      label: `${r.issueKey} ${r.repoSlug}`,
+      to: `/runs/${r.id}`,
+      group: "Runs",
+    })),
+    { label: "Settings", to: "/settings", group: "Go to" },
+    { label: "Stats", to: "/stats", group: "Go to" },
+    { label: "Reviews", to: "/reviews", group: "Go to" },
+    { label: "New GitHub issue", to: "/issues/new?kind=github", group: "Create" },
+    { label: "New Jira issue", to: "/issues/new?kind=jira", group: "Create" },
+    { label: "Ad-hoc task", to: "/issues/new?kind=adhoc", group: "Create" },
+  ];
+}
+
+function groupOf(items: Item[]): { name: string; items: Item[] }[] {
+  const out: { name: string; items: Item[] }[] = [];
+  for (const item of items) {
+    const last = out.at(-1);
+    if (last && last.name === item.group) last.items.push(item);
+    else out.push({ name: item.group, items: [item] });
+  }
+  return out;
 }

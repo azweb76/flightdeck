@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Button, Heading, Label, Text } from "@primer/react";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import type { Improvement } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 
@@ -10,15 +10,18 @@ export function ImprovementsInbox() {
   }, []);
   return (
     <Box sx={{ mt: 4 }}>
-      <Heading as="h3" sx={{ fontSize: 2 }}>Improvements inbox</Heading>
-      {items.length === 0 ? <Text sx={{ color: "fg.muted" }}>No session reviews yet.</Text> : null}
+      <Typography variant="h3">Improvements inbox</Typography>
+      {items.length === 0 ? <Typography color="text.secondary">No session reviews yet.</Typography> : null}
       {items.map((it) => (
-        <Box key={it.id} sx={{ border: "1px solid", borderColor: "border.default", p: 3, borderRadius: 2, mt: 2 }}>
-          <Label>{it.kind}</Label> <Label variant="secondary">{it.status}</Label>
-          <Text sx={{ display: "block", fontWeight: 600, mt: 2 }}>{it.title}</Text>
-          <Text sx={{ color: "fg.muted", display: "block" }}>{it.detail}</Text>
+        <Box key={it.id} sx={{ border: "1px solid", borderColor: "divider", p: 3, borderRadius: 1, mt: 2 }}>
+          <Stack direction="row" spacing={1}>
+            <Chip size="small" label={it.kind} />
+            <Chip size="small" variant="outlined" label={it.status} />
+          </Stack>
+          <Typography sx={{ fontWeight: 600, mt: 2 }}>{it.title}</Typography>
+          <Typography color="text.secondary">{it.detail}</Typography>
           {it.status === "proposed" ? (
-            <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
               <Button
                 onClick={() =>
                   void api.decideImprovement(it.id, "approved").then(() =>
@@ -37,7 +40,7 @@ export function ImprovementsInbox() {
               >
                 Reject
               </Button>
-            </Box>
+            </Stack>
           ) : null}
         </Box>
       ))}

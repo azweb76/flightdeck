@@ -1,3 +1,4 @@
+import { CircularProgress } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import type { Repo } from "@flightdeck/shared";
@@ -31,7 +32,13 @@ export function App() {
     });
   }, [refresh]);
 
-  if (!ready) return <ThemeRoot mode={mode}>Loading…</ThemeRoot>;
+  if (!ready) {
+    return (
+      <ThemeRoot mode={mode}>
+        <CircularProgress size={20} sx={{ m: 4 }} />
+      </ThemeRoot>
+    );
+  }
 
   return (
     <ThemeRoot mode={mode}>

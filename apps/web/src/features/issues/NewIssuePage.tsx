@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Box, Button, FormControl, Heading, Text, TextInput, Textarea } from "@primer/react";
+import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import type { Repo } from "@flightdeck/shared";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/index.ts";
+import { MarkdownEditor } from "../../ui/components/markdown/index.ts";
 
 export function NewIssuePage() {
   const [params] = useSearchParams();
@@ -44,38 +45,37 @@ export function NewIssuePage() {
     }
   }
 
+  const heading = kind === "adhoc" ? "Ad-hoc task" : kind === "jira" ? "New Jira issue" : "New GitHub issue";
   return (
-    <Box sx={{ p: [3, 4], maxWidth: 640 }}>
-      <Heading as="h2">{kind === "adhoc" ? "Ad-hoc task" : kind === "jira" ? "New Jira issue" : "New GitHub issue"}</Heading>
-      {error ? <Text sx={{ color: "danger.fg" }}>{error}</Text> : null}
-      {kind === "jira" ? (
-        <FormControl sx={{ mt: 3 }}>
-          <FormControl.Label>Project key</FormControl.Label>
-          <TextInput value={projectKey} onChange={(e) => setProjectKey(e.target.value)} />
-        </FormControl>
-      ) : (
-        <FormControl sx={{ mt: 3 }}>
-          <FormControl.Label>Repo</FormControl.Label>
-          <select value={repoId ?? ""} onChange={(e) => setRepoId(Number(e.target.value))} style={{ padding: 6 }}>
+    <Box sx={{ p: 4, maxWidth: 640 }}>
+      <Typography variant="h2">{heading}</Typography>
+      {error ? <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert> : null}
+      <Stack spacing={3} sx={{ mt: 3 }}>
+        {kind === "jira" ? (
+          <TextField label="Project key" value={projectKey} onChange={(e) => setProjectKey(e.target.value)} />
+        ) : (
+          <TextField
+            select
+            label="Repo"
+            value={repoId ?? ""}
+            onChange={(e) => setRepoId(Number(e.target.value))}
+          >
             {repos.map((r) => (
-              <option key={r.id} value={r.id}>
+              <MenuItem key={r.id} value={r.id}>
                 {r.owner}/{r.name}
-              </option>
+              </MenuItem>
             ))}
-          </select>
-        </FormControl>
-      )}
-      <FormControl sx={{ mt: 3 }}>
-        <FormControl.Label>Title</FormControl.Label>
-        <TextInput value={title} onChange={(e) => setTitle(e.target.value)} />
-      </FormControl>
-      <FormControl sx={{ mt: 3 }}>
-        <FormControl.Label>Body</FormControl.Label>
-        <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={8} />
-      </FormControl>
-      <Button sx={{ mt: 3 }} variant="primary" disabled={!title} onClick={() => void submit()}>
-        {kind === "adhoc" ? "Start run" : "Create issue"}
-      </Button>
+          </TextField>
+        )}
+        <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Box>
+          <Typography sx={{ mb: 1 }}>Body</Typography>
+          <MarkdownEditor id={`new-${kind}`} value={body} onChange={setBody} minRows={8} />
+        </Box>
+        <Button variant="contained" disabled={!title} onClick={() => void submit()}>
+          {kind === "adhoc" ? "Start run" : "Create issue"}
+        </Button>
+      </Stack>
     </Box>
   );
 }

@@ -1,4 +1,4 @@
-import { Box, Button } from "@primer/react";
+import { Stack, Button } from "@mui/material";
 import type { Issue } from "@flightdeck/shared";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/index.ts";
@@ -16,7 +16,7 @@ export function IssueActions({
   const nav = useNavigate();
   const oneRepo = issue.repos.length === 1;
   return (
-    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
+    <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", mb: 3, gap: 1 }}>
       <RepoChips issue={issue} onChange={onChange} />
       <Button
         disabled={offline}
@@ -27,7 +27,7 @@ export function IssueActions({
         Refine (R)
       </Button>
       <Button
-        variant="primary"
+        variant="contained"
         disabled={!oneRepo || offline}
         onClick={() => {
           void api.startRun(issue.id).then((run) => nav(`/runs/${run.id}`));
@@ -36,22 +36,13 @@ export function IssueActions({
         Start (S)
       </Button>
       {issue.latestRunId ? (
-        <Button
-          disabled={offline}
-          onClick={() => void api.fixRun(issue.latestRunId!).then((run) => nav(`/runs/${run.id}`))}
-        >
+        <Button disabled={offline} onClick={() => void api.fixRun(issue.latestRunId!).then((run) => nav(`/runs/${run.id}`))}>
           Fix
         </Button>
       ) : null}
       {issue.repoWarning === "multiple" ? (
-        <Button
-          onClick={() => {
-            void api.splitIssue(issue.id).then(onChange);
-          }}
-        >
-          Split into sub-issues
-        </Button>
+        <Button onClick={() => void api.splitIssue(issue.id).then(onChange)}>Split into sub-issues</Button>
       ) : null}
-    </Box>
+    </Stack>
   );
 }

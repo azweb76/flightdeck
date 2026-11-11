@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Button, Heading, Text } from "@primer/react";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import type { PrReviewSession } from "@flightdeck/shared";
 import { Link } from "react-router-dom";
 import { api } from "../api/index.ts";
@@ -12,29 +12,28 @@ export function ReviewsPage() {
     void api.reviews().then((r) => setReviews(r.reviews));
   }, []);
   return (
-    <Box sx={{ p: [3, 4] }}>
-      <Heading as="h2">Reviews</Heading>
-      <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-        <input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="owner/repo" />
-        <input value={num} onChange={(e) => setNum(e.target.value)} placeholder="PR number" />
+    <Box sx={{ p: 4, minHeight: "100%" }}>
+      <Typography variant="h2">Reviews</Typography>
+      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+        <TextField size="small" label="owner/repo" value={slug} onChange={(e) => setSlug(e.target.value)} />
+        <TextField size="small" label="PR number" value={num} onChange={(e) => setNum(e.target.value)} />
         <Button
-          onClick={() =>
-            void api.createReview(slug, Number(num)).then((s) => setReviews((r) => [s, ...r]))
-          }
+          variant="contained"
+          onClick={() => void api.createReview(slug, Number(num)).then((s) => setReviews((r) => [s, ...r]))}
         >
           Draft review
         </Button>
-      </Box>
-      <Box sx={{ mt: 3, display: "grid", gap: 2 }}>
+      </Stack>
+      <Stack spacing={2} sx={{ mt: 3 }}>
         {reviews.map((r) => (
-          <Box key={r.id} sx={{ border: "1px solid", borderColor: "border.default", p: 3, borderRadius: 2 }}>
+          <Box key={r.id} sx={{ border: "1px solid", borderColor: "divider", p: 3, borderRadius: 1, bgcolor: "background.paper" }}>
             <Link to={`/reviews/${r.id}`}>
               {r.repoSlug} #{r.prNumber} {r.title}
             </Link>
-            <Text sx={{ display: "block", color: "fg.muted", fontSize: 1 }}>{r.status}</Text>
+            <Typography color="text.secondary">{r.status}</Typography>
           </Box>
         ))}
-      </Box>
+      </Stack>
     </Box>
   );
 }

@@ -1,9 +1,11 @@
 # @flightdeck/web
 
-React UI (Primer). Talks to the local server over `/api`. Never import `apps/server`.
+React UI (MUI v9 + Emotion). Talks to the local server over `/api`. Never import `apps/server`.
 
+- Theme: `src/features/theme/` (`CssVarsProvider`, macOS light/dark via `prefers-color-scheme` / system mode). Use `sx` only; Grid `size`; Stack.
 - Canonical component: `src/features/issues/IssueCard.tsx`
 - Shell: `src/features/shell/AppShell.tsx`
+- Markdown editor: `src/ui/components/markdown/` (preview-first, no third-party editor)
 - Wizard: `src/features/wizard/`
 - Feature folders expose `index.ts`.
 - Run view: `src/features/runs/RunView.tsx`

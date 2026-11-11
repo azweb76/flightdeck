@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, Text, TextInput } from "@primer/react";
+import { Alert, Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { api } from "../api/index.ts";
 
@@ -21,35 +21,26 @@ export function JiraStep({ onConnected }: { onConnected: () => void }) {
   }
 
   return (
-    <Box sx={{ display: "grid", gap: 3 }}>
-      <Text sx={{ color: "fg.muted" }}>
-        Jira Cloud email plus API token. The token is stored in the macOS Keychain, or a
-        permission-restricted file on Linux.
-      </Text>
-      <FormControl>
-        <FormControl.Label>Site URL</FormControl.Label>
-        <TextInput
-          value={siteUrl}
-          onChange={(e) => setSiteUrl(e.target.value)}
-          placeholder="https://your-site.atlassian.net"
-        />
-      </FormControl>
-      <FormControl>
-        <FormControl.Label>Email</FormControl.Label>
-        <TextInput value={email} onChange={(e) => setEmail(e.target.value)} />
-      </FormControl>
-      <FormControl>
-        <FormControl.Label>API token</FormControl.Label>
-        <TextInput type="password" value={apiToken} onChange={(e) => setApiToken(e.target.value)} />
-      </FormControl>
-      <Button variant="primary" onClick={() => void connect()} disabled={!siteUrl || !email || !apiToken}>
+    <Stack spacing={3}>
+      <Typography color="text.secondary">
+        Jira Cloud email plus API token. The token is stored in the macOS Keychain, or a permission-restricted file on
+        Linux.
+      </Typography>
+      <TextField
+        label="Site URL"
+        value={siteUrl}
+        onChange={(e) => setSiteUrl(e.target.value)}
+        placeholder="https://your-site.atlassian.net"
+      />
+      <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <TextField type="password" label="API token" value={apiToken} onChange={(e) => setApiToken(e.target.value)} />
+      <Button variant="contained" onClick={() => void connect()} disabled={!siteUrl || !email || !apiToken}>
         Test connection
       </Button>
-      {detail ? <Text sx={{ color: "success.fg" }}>{detail}</Text> : null}
-      {error ? <Text sx={{ color: "danger.fg" }}>{error}</Text> : null}
-      <Text sx={{ color: "fg.subtle", fontSize: 1 }}>
-        You can skip Jira and use GitHub issues only. Next still works.
-      </Text>
-    </Box>
+      {detail ? <Typography color="success.main">{detail}</Typography> : null}
+      {error ? <Alert severity="error">{error}</Alert> : null}
+      <Typography color="text.secondary">You can skip Jira and use GitHub issues only. Next still works.</Typography>
+      <Box />
+    </Stack>
   );
 }

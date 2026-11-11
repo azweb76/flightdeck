@@ -1,108 +1,110 @@
-import { useEffect, useState } from "react";
-import { Box, Button, Heading, Text, TextInput } from "@primer/react";
-import type { Run, TranscriptEvent } from "@flightdeck/shared";
+import { useState } from "react";
+import { Alert, Box, Button, CircularProgress, Grid, MenuItem, Paper, Stack, Tab, Tabs, TextField, Typography } from "@mui/material";
 import { Link, useParams } from "react-router-dom";
-import { api, subscribeEvents } from "../api/index.ts";
+import { api } from "../api/index.ts";
+import { ColoredDiff } from "./ColoredDiff.tsx";
 import { Transcript } from "./Transcript.tsx";
 import { RunActions } from "./RunActions.tsx";
+import { useRun } from "./useRun.ts";
 
 export function RunView() {
   const { id } = useParams();
-  const [run, setRun] = useState<Run>();
-  const [events, setEvents] = useState<TranscriptEvent[]>([]);
-  const [diff, setDiff] = useState("");
-  const [reviewNotes, setReviewNotes] = useState("");
-  const [findings, setFindings] = useState<{ title: string; detail: string; excerpt?: string }[]>([]);
+  const { run, setRun, error, events, diff, reviewNotes, setReviewNotes, findings } = useRun(id);
   const [tab, setTab] = useState<"transcript" | "diff" | "plan" | "review">("transcript");
   const [msg, setMsg] = useState("");
   const [target, setTarget] = useState<"current" | "next" | "run">("current");
   const [answer, setAnswer] = useState("");
 
-  function load() {
-    if (!id) return;
-    void api.run(Number(id)).then((r) => {
-      setRun(r.run);
-      setEvents(r.events);
-    });
-    void api.runDiff(Number(id)).then((d) => setDiff(d.diff)).catch(() => setDiff(""));
-    void api.sessionReviewGet(Number(id)).then((s) => {
-      setReviewNotes(s.score.notes);
-      setFindings(s.findings ?? []);
-    }).catch(() => undefined);
-  }
-  useEffect(() => {
-    load();
-    return subscribeEvents(load);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  if (!run) return <Box sx={{ p: 4 }}>Loading…</Box>;
-  return (
-    <Box sx={{ p: [3, 4], display: "flex", flexDirection: "column", minHeight: "100%" }}>
-      <Text sx={{ color: "fg.muted", fontSize: 1 }}>
-        <Link to="/runs">Runs</Link> / {run.issueKey}
-      </Text>
-      <Heading as="h2">
-        Run {run.issueKey} on {run.repoSlug}
-      </Heading>
-      <RunActions run={run} onRun={setRun} onReview={setReviewNotes} answer={answer} setAnswer={setAnswer} />
-      <RunTabs tab={tab} setTab={setTab} events={events} diff={diff} reviewNotes={reviewNotes} findings={findings} />
-      <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-        <select value={target} onChange={(e) => setTarget(e.target.value as typeof target)}>
-          <option value="current">Current phase</option>
-          <option value="next">Next phase</option>
-          <option value="run">Whole run (constraint)</option>
-        </select>
-        <TextInput value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Message the agent mid-run…" sx={{ flex: 1 }} />
-        <Button variant="primary" onClick={() => void api.messageRun(run.id, msg, target).then(() => setMsg(""))}>
-          Send
-        </Button>
+  if (error) return <Alert severity="error" sx={{ m: 4 }}>{error}</Alert>;
+  if (!run) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <CircularProgress size={20} />
       </Box>
+    );
+  }
+  return (
+    <Box sx={{ p: 4, display: "flex", flexDirection: "column", minHeight: "100%" }}>
+      <Typography color="text.secondary">
+        <Link to="/runs">Runs</Link> / {run.issueKey}
+      </Typography>
+      <Typography variant="h2">
+        Run {run.issueKey} on {run.repoSlug}
+      </Typography>
+      <RunActions run={run} onRun={setRun} onReview={setReviewNotes} answer={answer} setAnswer={setAnswer} />
+      <Grid container spacing={3} sx={{ flex: 1, minHeight: 0 }}>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <Tabs value={tab} onChange={(_, t) => setTab(t)} sx={{ mb: 2 }}>
+            <Tab value="transcript" label="Transcript" />
+            <Tab value="diff" label="Diff" />
+            <Tab value="plan" label="Plan" />
+            <Tab value="review" label="Review" />
+          </Tabs>
+          {tab === "transcript" ? <Transcript events={events} /> : null}
+          {tab === "diff" ? <ColoredDiff diff={diff} /> : null}
+          {tab === "plan" ? (
+            <Box component="pre" sx={{ whiteSpace: "pre-wrap" }}>
+              {events.find((e) => e.role === "planner")?.detail ?? "No plan yet."}
+            </Box>
+          ) : null}
+          {tab === "review" ? <ReviewPane findings={findings} notes={reviewNotes} /> : null}
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <Paper variant="outlined" sx={{ p: 2 }}>
+            <Typography sx={{ fontWeight: 600, mb: 2 }}>Ask the agent</Typography>
+            <Stack spacing={2}>
+              <TextField
+                select
+                size="small"
+                value={target}
+                onChange={(e) => setTarget(e.target.value as typeof target)}
+                label="Target"
+              >
+                <MenuItem value="current">Current phase</MenuItem>
+                <MenuItem value="next">Next phase</MenuItem>
+                <MenuItem value="run">Whole run</MenuItem>
+              </TextField>
+              <TextField
+                value={msg}
+                onChange={(e) => setMsg(e.target.value)}
+                placeholder="Message the agent mid-run…"
+                multiline
+                minRows={4}
+              />
+              <Button variant="contained" onClick={() => void api.messageRun(run.id, msg, target).then(() => setMsg(""))}>
+                Send
+              </Button>
+            </Stack>
+          </Paper>
+        </Grid>
+      </Grid>
     </Box>
   );
 }
 
-function RunTabs({
-  tab,
-  setTab,
-  events,
-  diff,
-  reviewNotes,
+function ReviewPane({
   findings,
+  notes,
 }: {
-  tab: "transcript" | "diff" | "plan" | "review";
-  setTab: (t: typeof tab) => void;
-  events: TranscriptEvent[];
-  diff: string;
-  reviewNotes: string;
   findings: { title: string; detail: string; excerpt?: string }[];
+  notes: string;
 }) {
   return (
-    <>
-      <Box sx={{ display: "flex", gap: 3, mb: 3 }}>
-        {(["transcript", "diff", "plan", "review"] as const).map((t) => (
-          <Box as="button" key={t} onClick={() => setTab(t)} sx={{ appearance: "none", bg: "transparent", border: 0, fontWeight: tab === t ? 600 : 400, cursor: "pointer" }}>
-            {t}
-          </Box>
-        ))}
+    <Box>
+      {findings.map((f) => (
+        <Box key={f.title} sx={{ mb: 2 }}>
+          <Typography sx={{ fontWeight: 600 }}>{f.title}</Typography>
+          <Typography>{f.detail}</Typography>
+          {f.excerpt ? (
+            <Box component="pre" sx={{ fontSize: 12 }}>
+              {f.excerpt}
+            </Box>
+          ) : null}
+        </Box>
+      ))}
+      <Box component="pre" sx={{ whiteSpace: "pre-wrap" }}>
+        {notes || "Press Review session to score this run."}
       </Box>
-      <Box sx={{ flex: 1 }}>
-        {tab === "transcript" ? <Transcript events={events} /> : null}
-        {tab === "diff" ? <Text as="pre" sx={{ fontSize: 1, whiteSpace: "pre-wrap" }}>{diff || "No diff yet."}</Text> : null}
-        {tab === "plan" ? <Text as="pre">{events.find((e) => e.role === "planner")?.detail ?? "No plan yet."}</Text> : null}
-        {tab === "review" ? (
-          <Box>
-            {findings.map((f) => (
-              <Box key={f.title} sx={{ mb: 2 }}>
-                <Text sx={{ fontWeight: 600, display: "block" }}>{f.title}</Text>
-                <Text sx={{ display: "block" }}>{f.detail}</Text>
-                {f.excerpt ? <Text as="pre" sx={{ fontSize: 1 }}>{f.excerpt}</Text> : null}
-              </Box>
-            ))}
-            <Text as="pre" sx={{ whiteSpace: "pre-wrap" }}>{reviewNotes || "Press Review session to score this run."}</Text>
-          </Box>
-        ) : null}
-      </Box>
-    </>
+    </Box>
   );
 }

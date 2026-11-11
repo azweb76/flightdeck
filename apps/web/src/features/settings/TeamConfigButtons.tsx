@@ -1,4 +1,4 @@
-import { Box, Button } from "@primer/react";
+import { Box, Button } from "@mui/material";
 import { api } from "../api/index.ts";
 
 export function TeamConfigButtons() {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Button, FormControl, Text, TextInput } from "@primer/react";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import type { Settings } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 
@@ -31,40 +31,30 @@ export function JiraSettings({
 
   return (
     <Box sx={{ mt: 4 }}>
-      <Text as="h3" sx={{ fontSize: 2, fontWeight: 600, display: "block", mb: 3 }}>
+      <Typography variant="h3" sx={{ mb: 3 }}>
         Jira Cloud
-      </Text>
-      <Box sx={{ display: "grid", gap: 3 }}>
-        <FormControl>
-          <FormControl.Label>Site URL</FormControl.Label>
-          <TextInput
-            value={siteUrl}
-            onChange={(e) => setSiteUrl(e.target.value)}
-            placeholder="https://your-site.atlassian.net"
-          />
-        </FormControl>
-        <FormControl>
-          <FormControl.Label>Email</FormControl.Label>
-          <TextInput value={email} onChange={(e) => setEmail(e.target.value)} />
-        </FormControl>
-        <FormControl>
-          <FormControl.Label>API token</FormControl.Label>
-          <TextInput
-            type="password"
-            value={apiToken}
-            onChange={(e) => setApiToken(e.target.value)}
-            placeholder={settings.jiraConfigured ? "Stored in Keychain (or local secrets file)" : ""}
-          />
-        </FormControl>
-        <FormControl>
-          <FormControl.Label>Board JQL</FormControl.Label>
-          <TextInput value={jql} onChange={(e) => setJql(e.target.value)} />
-        </FormControl>
-        <Button variant="primary" onClick={() => void connect()} disabled={!siteUrl || !email || !apiToken}>
+      </Typography>
+      <Stack spacing={3}>
+        <TextField
+          label="Site URL"
+          value={siteUrl}
+          onChange={(e) => setSiteUrl(e.target.value)}
+          placeholder="https://your-site.atlassian.net"
+        />
+        <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <TextField
+          type="password"
+          label="API token"
+          value={apiToken}
+          onChange={(e) => setApiToken(e.target.value)}
+          placeholder={settings.jiraConfigured ? "Stored in Keychain (or local secrets file)" : ""}
+        />
+        <TextField label="Board JQL" value={jql} onChange={(e) => setJql(e.target.value)} />
+        <Button variant="contained" onClick={() => void connect()} disabled={!siteUrl || !email || !apiToken}>
           Test and save
         </Button>
-        {status ? <Text sx={{ color: "success.fg" }}>{status}</Text> : null}
-      </Box>
+        {status ? <Typography color="success.main">{status}</Typography> : null}
+      </Stack>
     </Box>
   );
 }

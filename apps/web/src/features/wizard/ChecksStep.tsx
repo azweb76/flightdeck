@@ -1,4 +1,4 @@
-import { Box, Button, Text } from "@primer/react";
+import { Box, Button, Typography } from "@mui/material";
 import type { SetupCheck } from "@flightdeck/shared";
 import { useRef } from "react";
 import { api } from "../api/index.ts";
@@ -26,18 +26,18 @@ export function ChecksStep({
           key={c.id}
           sx={{
             border: "1px solid",
-            borderColor: c.ok ? "border.default" : "attention.emphasis",
-            borderRadius: 2,
+            borderColor: c.ok ? "divider" : "warning.main",
+            borderRadius: 1,
             p: 3,
             mb: 2,
           }}
         >
-          <Text sx={{ fontWeight: 600 }}>
+          <Typography sx={{ fontWeight: 600 }}>
             {c.ok ? "✓" : "!"} {c.title}
-          </Text>
-          <Text sx={{ display: "block", color: "fg.muted", fontSize: 1, fontFamily: c.hint ? "mono" : "normal" }}>
+          </Typography>
+          <Typography color="text.secondary" sx={{ fontFamily: c.hint ? "ui-monospace, monospace" : "inherit" }}>
             {c.hint ?? c.detail}
-          </Text>
+          </Typography>
         </Box>
       ))}
       <input
@@ -53,9 +53,9 @@ export function ChecksStep({
       <Button sx={{ mt: 2 }} onClick={() => input.current?.click()}>
         Import team config…
       </Button>
-      <Text sx={{ display: "block", mt: 2, fontSize: 0, color: "fg.subtle" }}>
+      <Typography sx={{ display: "block", mt: 2, fontSize: 11, color: "text.secondary" }}>
         Fills in repos, label rules, prompts and models.
-      </Text>
+      </Typography>
     </Box>
   );
 }

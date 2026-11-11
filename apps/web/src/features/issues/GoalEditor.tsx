@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Box, Button, Text } from "@primer/react";
-import Markdown from "react-markdown";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { api } from "../api/index.ts";
+import { MarkdownEditor } from "../../ui/components/markdown/index.ts";
 import { RefineQuestions } from "./RefineQuestions.tsx";
 
 export function GoalEditor({
@@ -29,36 +29,31 @@ export function GoalEditor({
 
   return (
     <Box>
-      {questions.length ? <RefineQuestions issueId={issueId} questions={questions} onDone={() => void api.goal(issueId).then((r) => {
-        if (r.goal) setMarkdown(r.goal.markdown);
-        setQuestions([]);
-        setStatus(r.goal?.status);
-      })} /> : null}
-      <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-        <Box sx={{ flex: 1, minWidth: 280 }}>
-          <Text sx={{ fontSize: 0, color: "fg.muted" }}>Markdown</Text>
-          <textarea
-            value={markdown}
-            onChange={(e) => setMarkdown(e.target.value)}
-            style={{ width: "100%", minHeight: 280, fontFamily: "ui-monospace, monospace", fontSize: 13 }}
-          />
-        </Box>
-        <Box sx={{ flex: 1, minWidth: 280, border: "1px solid", borderColor: "border.default", p: 3, borderRadius: 2 }}>
-          <Text sx={{ fontSize: 0, color: "fg.muted" }}>Preview</Text>
-          <Markdown>{markdown || fallback || "_No description_"}</Markdown>
-        </Box>
-      </Box>
-      <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
+      {questions.length ? (
+        <RefineQuestions
+          issueId={issueId}
+          questions={questions}
+          onDone={() =>
+            void api.goal(issueId).then((r) => {
+              if (r.goal) setMarkdown(r.goal.markdown);
+              setQuestions([]);
+              setStatus(r.goal?.status);
+            })
+          }
+        />
+      ) : null}
+      <MarkdownEditor id={`goal-${issueId}`} value={markdown} onChange={setMarkdown} />
+      <Stack direction="row" spacing={2} sx={{ mt: 3, alignItems: "center" }}>
         <Button onClick={() => void api.saveGoal(issueId, markdown)}>Save draft</Button>
         <Button
-          variant="primary"
+          variant="contained"
           disabled={offline}
           onClick={() => void api.approveGoal(issueId).then((g) => setStatus(g.status))}
         >
           Approve and write back
         </Button>
-        {status ? <Text sx={{ color: "fg.muted", alignSelf: "center" }}>{status}</Text> : null}
-      </Box>
+        {status ? <Typography color="text.secondary">{status}</Typography> : null}
+      </Stack>
     </Box>
   );
 }

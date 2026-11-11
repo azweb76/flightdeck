@@ -16,7 +16,7 @@ The app owns the loop: refine → approve goal → plan → implement → review
 | --- | --- |
 | `@flightdeck/shared` | Zod schemas, labels, PR body, cost |
 | `@flightdeck/server` | Node HTTP API + SSE + runner on `127.0.0.1` |
-| `@flightdeck/web` | React UI (Primer) |
+| `@flightdeck/web` | React UI (MUI v9) |
 | `@flightdeck/desktop` | Electron main + preload |
 | `@flightdeck/evals` | Prompt eval harness |
 | `eslint-plugin-flightdeck` | Cross-package import boundaries |

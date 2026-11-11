@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Button, FormControl, Text, TextInput } from "@primer/react";
+import { Box, Button, FormControl, FormControlLabel, Radio, RadioGroup, TextField, Typography } from "@mui/material";
 import { api } from "../api/index.ts";
 
 type Q = { id: string; prompt: string; options: { id: string; label: string }[] };
@@ -17,35 +17,35 @@ export function RefineQuestions({
   const [other, setOther] = useState<Record<string, string>>({});
 
   return (
-    <Box sx={{ mb: 4, p: 3, border: "1px solid", borderColor: "border.default", borderRadius: 2 }}>
-      <Text as="h3" sx={{ fontSize: 2, fontWeight: 600, display: "block", mb: 3 }}>
+    <Box sx={{ mb: 4, p: 3, border: "1px solid", borderColor: "divider", borderRadius: 1 }}>
+      <Typography variant="h3" sx={{ mb: 3 }}>
         Clarifying questions
-      </Text>
+      </Typography>
       {questions.map((q) => (
         <Box key={q.id} sx={{ mb: 3 }}>
-          <Text sx={{ fontWeight: 600, display: "block", mb: 2 }}>{q.prompt}</Text>
-          {q.options.map((o) => (
-            <FormControl key={o.id} sx={{ mb: 1 }}>
-              <FormControl.Label>
-                <input
-                  type="radio"
-                  name={q.id}
-                  checked={picked[q.id] === o.id}
-                  onChange={() => setPicked((p) => ({ ...p, [q.id]: o.id }))}
-                />{" "}
-                {o.label}
-              </FormControl.Label>
-            </FormControl>
-          ))}
-          <TextInput
+          <Typography sx={{ fontWeight: 600, mb: 2 }}>{q.prompt}</Typography>
+          <FormControl>
+            <RadioGroup
+              value={picked[q.id] ?? ""}
+              onChange={(e) => setPicked((p) => ({ ...p, [q.id]: e.target.value }))}
+            >
+              {q.options.map((o) => (
+                <FormControlLabel key={o.id} value={o.id} control={<Radio size="small" />} label={o.label} />
+              ))}
+            </RadioGroup>
+          </FormControl>
+          <TextField
+            size="small"
             placeholder="Other"
             value={other[q.id] ?? ""}
             onChange={(e) => setOther((p) => ({ ...p, [q.id]: e.target.value }))}
+            sx={{ mt: 1 }}
+            fullWidth
           />
         </Box>
       ))}
       <Button
-        variant="primary"
+        variant="contained"
         onClick={() => {
           const answers = questions.map((q) => ({
             questionId: q.id,

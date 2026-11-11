@@ -1,4 +1,4 @@
-import { Box, Button, Text } from "@primer/react";
+import { Alert, Button, Stack } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, subscribeEvents } from "../api/index.ts";
@@ -14,9 +14,7 @@ export function NeedsYouBanner() {
         if (q) {
           setText(q.prompt);
           setHref(`/runs/${q.runId}`);
-        } else {
-          setText(undefined);
-        }
+        } else setText(undefined);
       });
     }
     load();
@@ -24,11 +22,15 @@ export function NeedsYouBanner() {
   }, []);
   if (!text || !href) return null;
   return (
-    <Box sx={{ bg: "attention.subtle", px: 3, py: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      <Text>Needs you: {text}</Text>
-      <Button variant="primary" onClick={() => nav(href)}>
-        Open question
-      </Button>
-    </Box>
+    <Alert
+      severity="warning"
+      action={
+        <Button color="inherit" size="small" onClick={() => nav(href)}>
+          Open question
+        </Button>
+      }
+    >
+      <Stack>Needs you: {text}</Stack>
+    </Alert>
   );
 }

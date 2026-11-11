@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { Box, FormControl, Heading, Text, TextInput } from "@primer/react";
+import { Alert, Box, MenuItem, TextField, Typography } from "@mui/material";
 import type { Repo, Settings, ThemeMode } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 import { useThemeMode } from "../theme/index.ts";
@@ -31,36 +31,40 @@ export function SettingsPage({
     setSettings(next);
   }
 
-  if (!settings) return <Box sx={{ p: 4 }}>{error ?? "Loading…"}</Box>;
+  if (!settings) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Typography>{error ?? "Loading settings…"}</Typography>
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ p: [3, 4], maxWidth: 720 }}>
-      <Heading as="h2">Settings</Heading>
-      {error ? <Text sx={{ color: "danger.fg" }}>{error}</Text> : null}
+    <Box sx={{ p: 4, maxWidth: 720, minHeight: "100%" }}>
+      <Typography variant="h2">Settings</Typography>
+      {error ? <Alert severity="error">{error}</Alert> : null}
       <Section title="Theme">
-        <FormControl>
-          <FormControl.Label>Color mode</FormControl.Label>
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as ThemeMode)}
-            style={{ padding: 6 }}
-          >
-            <option value="system">System (macOS)</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </FormControl>
+        <TextField
+          select
+          label="Color mode"
+          value={mode}
+          onChange={(e) => setMode(e.target.value as ThemeMode)}
+          helperText="System follows macOS prefers-color-scheme"
+        >
+          <MenuItem value="system">System (macOS)</MenuItem>
+          <MenuItem value="light">Light</MenuItem>
+          <MenuItem value="dark">Dark</MenuItem>
+        </TextField>
       </Section>
       <JiraSettings settings={settings} onSave={save} setError={setError} />
       <Section title="Label prefix">
-        <FormControl>
-          <FormControl.Label>Jira repo label prefix</FormControl.Label>
-          <TextInput
-            value={settings.labelPrefix}
-            onChange={(e) => void save({ labelPrefix: e.target.value || "gh:" })}
-          />
-          <FormControl.Caption>Issues tagged like {settings.labelPrefix}owner/repo map to that GitHub repo.</FormControl.Caption>
-        </FormControl>
+        <TextField
+          label="Jira repo label prefix"
+          value={settings.labelPrefix}
+          onChange={(e) => void save({ labelPrefix: e.target.value || "gh:" })}
+          helperText={`Issues tagged like ${settings.labelPrefix}owner/repo map to that GitHub repo.`}
+          fullWidth
+        />
       </Section>
       <TeamConfigButtons />
       <AgentSettings settings={settings} onSave={save} />
@@ -78,9 +82,9 @@ export function SettingsPage({
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Box sx={{ mt: 4 }}>
-      <Heading as="h3" sx={{ fontSize: 2, mb: 3 }}>
+      <Typography variant="h3" sx={{ mb: 3 }}>
         {title}
-      </Heading>
+      </Typography>
       {children}
     </Box>
   );

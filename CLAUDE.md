@@ -10,7 +10,7 @@ Read this file first. Then open only the package you are changing:
 
 - `packages/shared/CLAUDE.md` — Zod schemas and label parsing
 - `apps/server/CLAUDE.md` — localhost API, SQLite, integrations, runner
-- `apps/web/CLAUDE.md` — Primer React UI
+- `apps/web/CLAUDE.md` — MUI v9 React UI
 - `apps/desktop/CLAUDE.md` — Electron shell
 - `packages/eslint-plugin-flightdeck/CLAUDE.md` — import-boundary rules
 - `packages/evals/CLAUDE.md` — prompt eval harness

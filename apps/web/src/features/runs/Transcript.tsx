@@ -1,4 +1,4 @@
-import { Box, Text } from "@primer/react";
+import { Box, Typography } from "@mui/material";
 import type { TranscriptEvent } from "@flightdeck/shared";
 import { useMemo, useState } from "react";
 
@@ -11,24 +11,39 @@ export function Transcript({ events }: { events: TranscriptEvent[] }) {
         const key = g.key;
         const expanded = open[key] ?? g.key === groups.at(-1)?.key;
         return (
-          <Box key={key} sx={{ border: "1px solid", borderColor: "border.default", borderRadius: 2, mb: 2 }}>
+          <Box key={key} sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1, mb: 2 }}>
             <Box
-              as="button"
+              component="button"
               onClick={() => setOpen((o) => ({ ...o, [key]: !expanded }))}
-              sx={{ width: "100%", textAlign: "left", p: 3, bg: "canvas.subtle", border: 0, cursor: "pointer" }}
+              sx={{
+                width: "100%",
+                textAlign: "left",
+                p: 3,
+                bgcolor: "background.default",
+                border: 0,
+                cursor: "pointer",
+                color: "text.primary",
+                fontSize: 13,
+              }}
             >
               {expanded ? "▾" : "▸"} {g.title}
             </Box>
             {expanded
               ? g.events.map((e) => (
-                  <Box key={e.id} sx={{ px: 3, py: 2, borderTop: "1px solid", borderColor: "border.muted" }}>
-                    <Text sx={{ fontFamily: "mono", fontSize: 0 }}>{e.tool ?? e.kind}</Text>{" "}
-                    <Text sx={{ fontSize: 1 }}>{e.title}</Text>
-                    {e.path ? <Text sx={{ color: "fg.muted", fontFamily: "mono", fontSize: 0 }}> {e.path}</Text> : null}
+                  <Box key={e.id} sx={{ px: 3, py: 2, borderTop: "1px solid", borderColor: "divider" }}>
+                    <Typography sx={{ fontFamily: "ui-monospace, monospace", fontSize: 11 }}>
+                      {e.tool ?? e.kind}
+                    </Typography>
+                    <Typography>{e.title}</Typography>
+                    {e.path ? (
+                      <Typography color="text.secondary" sx={{ fontFamily: "ui-monospace, monospace", fontSize: 11 }}>
+                        {e.path}
+                      </Typography>
+                    ) : null}
                     {e.detail ? (
-                      <Text as="pre" sx={{ fontSize: 0, whiteSpace: "pre-wrap", color: "fg.muted" }}>
+                      <Box component="pre" sx={{ fontSize: 11, whiteSpace: "pre-wrap", color: "text.secondary", m: 0 }}>
                         {e.detail.slice(0, 800)}
-                      </Text>
+                      </Box>
                     ) : null}
                   </Box>
                 ))

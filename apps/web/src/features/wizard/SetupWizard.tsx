@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Box, Heading, Text } from "@primer/react";
+import { Alert, Box, Paper, Typography } from "@mui/material";
 import type { SetupStatus } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 import { ChecksStep } from "./ChecksStep.tsx";
@@ -37,31 +37,14 @@ export function SetupWizard({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100%",
-        bg: "canvas.subtle",
-        display: "flex",
-        justifyContent: "center",
-        py: [4, 6],
-        px: 3,
-      }}
-    >
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: 720,
-          bg: "canvas.default",
-          border: "1px solid",
-          borderColor: "border.default",
-          borderRadius: 3,
-          p: [3, 4],
-        }}
-      >
-        <Heading as="h1">Set up</Heading>
-        <Text sx={{ color: "fg.muted", display: "block", mb: 4 }}>Step {step + 1} of 3</Text>
+    <Box sx={{ minHeight: "100%", bgcolor: "background.default", display: "flex", justifyContent: "center", py: 6, px: 3 }}>
+      <Paper variant="outlined" sx={{ width: "100%", maxWidth: 720, p: 4 }}>
+        <Typography variant="h1">Set up</Typography>
+        <Typography color="text.secondary" sx={{ mb: 4 }}>
+          Step {step + 1} of 3
+        </Typography>
         <Stepper step={step} />
-        {error ? <Text sx={{ color: "danger.fg", display: "block", mb: 3 }}>{error}</Text> : null}
+        {error ? <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert> : null}
         {step === 0 ? <ChecksStep checks={checks} onImported={() => void refresh()} /> : null}
         {step === 1 ? <JiraStep onConnected={() => void refresh()} /> : null}
         {step === 2 ? <ReposStep /> : null}
@@ -73,7 +56,7 @@ export function SetupWizard({ onDone }: { onDone: () => void }) {
           onNext={() => setStep((s) => s + 1)}
           onFinish={() => void finish()}
         />
-      </Box>
+      </Paper>
     </Box>
   );
 }
