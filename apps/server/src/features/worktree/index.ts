@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 
@@ -20,6 +21,23 @@ export async function createWorktree(
   );
   if (add.code !== 0) throw new Error(add.stderr || "git worktree add failed");
   return { path, branch };
+}
+
+/** Reuse an existing worktree on resume/fix/answer; fetch then continue. */
+export async function ensureWorktree(
+  clonePath: string,
+  issueKey: string,
+  baseBranch: string,
+  existingPath?: string,
+  exec: ExecFn = defaultExec,
+): Promise<Worktree> {
+  const safe = issueKey.replace(/[^A-Za-z0-9._-]+/g, "-");
+  const branch = `agent/${safe}`;
+  if (existingPath && existsSync(existingPath)) {
+    await exec("git", ["fetch", "origin", baseBranch], { cwd: clonePath });
+    return { path: existingPath, branch };
+  }
+  return createWorktree(clonePath, issueKey, baseBranch, exec);
 }
 
 export async function removeWorktree(
