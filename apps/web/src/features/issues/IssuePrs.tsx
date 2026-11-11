@@ -13,15 +13,17 @@ export function PrChips({ pr }: { pr: BoardPr }) {
   );
 }
 
-export function NestedPrs({ prs }: { prs: BoardPr[] }) {
+export function NestedPrs({ prs, hideSlug }: { prs: BoardPr[]; hideSlug?: boolean }) {
   if (!prs.length) return null;
   return (
     <Box sx={{ mt: 1 }}>
       {prs.map((pr) => (
         <Box key={pr.id} sx={{ mt: 0.5 }}>
-          <Typography sx={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 11, color: "text.secondary" }}>
-            {pr.repo}#{pr.number}
-          </Typography>
+          {hideSlug ? null : (
+            <Typography sx={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 11, color: "text.secondary" }}>
+              {pr.repo}#{pr.number}
+            </Typography>
+          )}
           <PrChips pr={pr} />
         </Box>
       ))}

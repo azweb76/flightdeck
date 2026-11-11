@@ -8,6 +8,7 @@ import { SettingsCard } from "./SettingsCard.tsx";
 import { TeamConfigButtons } from "./TeamConfigButtons.tsx";
 import { JiraSettings } from "./JiraSettings.tsx";
 import { BoardSettings } from "./BoardSettings.tsx";
+import { Diagnostics } from "./Diagnostics.tsx";
 
 export function SettingsPage({ settings: initial }: { settings: Settings }) {
   const [settings, setSettings] = useState<Settings>(initial);
@@ -54,6 +55,7 @@ export function SettingsPage({ settings: initial }: { settings: Settings }) {
         />
       </SettingsCard>
       <BoardSettings settings={settings} onSave={save} />
+      <Diagnostics />
       <TeamConfigButtons />
       <AgentSettings settings={settings} onSave={save} />
     </Box>

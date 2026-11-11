@@ -14,4 +14,15 @@ describe("syncFromIssues", () => {
     );
     expect(syncFromIssues({ offline: true, errors: [], offlineSources: { jira: true, github: true } }).label).toBe("Offline");
   });
+
+  it("marks Partial when PR sync failed even if issue sources are up", () => {
+    const s = syncFromIssues({
+      offline: false,
+      errors: [],
+      offlineSources: { jira: false, github: false },
+      prSync: { error: "PR sync: GraphQL rate limit", total: 0 },
+    });
+    expect(s.label).toBe("Partial");
+    expect(s.detail).toContain("PR sync:");
+  });
 });

@@ -13,7 +13,7 @@ export function IssuesPage() {
   const [params, setParams] = useSearchParams();
   const source = params.get("source") ?? "all";
   const repo = params.get("repo") ?? undefined;
-  const { issues, errors, offline, offlineSources, load } = useAssignedIssues(source, repo);
+  const { issues, errors, offline, offlineSources, prSync, load } = useAssignedIssues(source, repo);
   const [menu, setMenu] = useState<HTMLElement | null>(null);
 
   function setSource(next: string) {
@@ -51,6 +51,11 @@ export function IssuesPage() {
       {offline ? <Alert severity="warning" sx={{ mb: 2 }}>Offline — showing cached issues. Start and write-backs are disabled.</Alert> : null}
       {!offline && offlineSources.jira ? <Alert severity="warning" sx={{ mb: 2 }}>Jira sync failed. GitHub issues can still start.</Alert> : null}
       {!offline && offlineSources.github ? <Alert severity="warning" sx={{ mb: 2 }}>GitHub sync failed. Jira issues can still start.</Alert> : null}
+      {prSync?.error && !errors.includes(prSync.error) ? (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {prSync.error}
+        </Alert>
+      ) : null}
       {errors.map((e) => (
         <Alert key={e} severity="warning" sx={{ mb: 2 }}>
           {e}

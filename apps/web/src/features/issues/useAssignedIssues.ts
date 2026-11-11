@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Issue } from "@flightdeck/shared";
+import type { Issue, PrSyncDiag } from "@flightdeck/shared";
 import { api, subscribeEvents } from "../api/index.ts";
 
 export type SourceOffline = { jira: boolean; github: boolean };
@@ -9,6 +9,7 @@ export function useAssignedIssues(source: string, repo?: string) {
   const [errors, setErrors] = useState<string[]>([]);
   const [offline, setOffline] = useState(false);
   const [offlineSources, setOfflineSources] = useState<SourceOffline>({ jira: false, github: false });
+  const [prSync, setPrSync] = useState<PrSyncDiag>();
 
   function load(refresh = false) {
     void api
@@ -18,6 +19,7 @@ export function useAssignedIssues(source: string, repo?: string) {
         setErrors(r.errors);
         setOffline(r.offline);
         setOfflineSources(r.offlineSources ?? { jira: false, github: false });
+        setPrSync(r.prSync);
       })
       .catch((err: unknown) => {
         setErrors([err instanceof Error ? err.message : "Failed to load issues"]);
@@ -46,5 +48,5 @@ export function useAssignedIssues(source: string, repo?: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, repo]);
 
-  return { issues, errors, offline, offlineSources, load };
+  return { issues, errors, offline, offlineSources, prSync, load };
 }

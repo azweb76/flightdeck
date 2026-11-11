@@ -12,6 +12,7 @@ import { demoIssues } from "../issues/demo.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { seedBoardPrs } from "./seed-prs.ts";
 import { applyBoardPrs, listBoardPrs } from "../board-prs/index.ts";
+import { countsFrom, writePrDiag } from "../board-prs/diag.ts";
 import { loadIssues } from "../issues/store.ts";
 
 export async function seedDemo(): Promise<void> {
@@ -26,6 +27,13 @@ export async function seedDemo(): Promise<void> {
   for (const issue of demoIssues()) upsertIssue(issue);
   seedBoardPrs();
   applyBoardPrs(loadIssues(), listBoardPrs(), true, true);
+  const prs = listBoardPrs();
+  writePrDiag({
+    syncedAt: new Date().toISOString(),
+    viewerLogin: "demo",
+    query: "demo seed",
+    ...countsFrom(prs),
+  });
   seedApprovedGoal();
   await seedRuns();
 }

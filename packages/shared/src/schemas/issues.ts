@@ -74,6 +74,17 @@ export const IssueSchema = z.object({
 });
 export type Issue = z.infer<typeof IssueSchema>;
 
+export const PrSyncDiagSchema = z.object({
+  syncedAt: z.string().optional(),
+  viewerLogin: z.string().optional(),
+  query: z.string().optional(),
+  authored: z.number().int().nonnegative().default(0),
+  reviewRequested: z.number().int().nonnegative().default(0),
+  total: z.number().int().nonnegative().default(0),
+  error: z.string().optional(),
+});
+export type PrSyncDiag = z.infer<typeof PrSyncDiagSchema>;
+
 export const IssueListQuerySchema = z.object({
   source: z.enum(["all", "jira", "github"]).optional().default("all"),
   repo: z.string().optional(),

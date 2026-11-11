@@ -1,4 +1,5 @@
-import type { Issue } from "@flightdeck/shared";
+import type { Issue, PrSyncDiag } from "@flightdeck/shared";
+import { readPrDiag } from "../board-prs/diag.ts";
 import { cacheGet, cacheSet } from "../cache/index.ts";
 import { nestPrs } from "../board-prs/nest.ts";
 import { listBoardPrs } from "../board-prs/store.ts";
@@ -15,6 +16,7 @@ export type IssueListResult = {
   offlineSources: SourceOffline;
   fromCache: boolean;
   syncedAt?: string;
+  prSync?: PrSyncDiag;
 };
 
 export type SyncStatus = {
@@ -62,6 +64,7 @@ export function present(
     fromCache: boolean;
     errors: string[];
     syncedAt?: string;
+    prSync?: PrSyncDiag;
   },
 ): IssueListResult {
   const withComments = issues.map((i) => ({ ...i, comments: i.comments ?? loadComments(i.id) }));
@@ -75,5 +78,5 @@ export function present(
     next = next.filter((i) => i.repos.some((r) => `${r.owner}/${r.name}`.toLowerCase() === want));
   }
   next.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  return { issues: next, ...extra };
+  return { issues: next, ...extra, prSync: extra.prSync ?? readPrDiag() };
 }

@@ -4,6 +4,7 @@ import type {
   Improvement,
   Issue,
   PrReviewSession,
+  PrSyncDiag,
   Question,
   CatalogRepo,
   Run,
@@ -72,10 +73,12 @@ export const api = {
       offline: boolean;
       offlineSources?: { jira: boolean; github: boolean };
       fromCache: boolean;
+      prSync?: PrSyncDiag;
     }>(
       `/api/issues${s ? `?${s}` : ""}`,
     );
   },
+  prDiagnostics: () => request<PrSyncDiag>("/api/prs/diagnostics"),
   pickIssueRepo: (id: string, owner: string, name: string, label?: string) =>
     request<Issue>(`/api/issues/${encodeURIComponent(id)}/repo`, {
       method: "POST",

@@ -42,7 +42,7 @@ export function IssueCard({ issue }: { issue: Issue }) {
         ))}
         {issue.viaPr ? <Chip size="small" variant="outlined" label="via PR" /> : null}
       </Stack>
-      <NestedPrs prs={issue.prs ?? []} />
+      <NestedPrs prs={issue.prs ?? []} hideSlug={issue.id.startsWith("pr:")} />
       {issue.statusNote ? (
         <Typography sx={{ mt: 1, fontSize: 12, color: "text.secondary" }}>{issue.statusNote}</Typography>
       ) : null}
