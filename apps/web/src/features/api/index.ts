@@ -79,6 +79,13 @@ export const api = {
     );
   },
   prDiagnostics: () => request<PrSyncDiag>("/api/prs/diagnostics"),
+  syncStatus: () =>
+    request<{
+      offline: boolean;
+      sources: { jira: boolean; github: boolean };
+      errors: string[];
+      syncedAt?: string;
+    }>("/api/issues/sync-status"),
   pickIssueRepo: (id: string, owner: string, name: string, label?: string) =>
     request<Issue>(`/api/issues/${encodeURIComponent(id)}/repo`, {
       method: "POST",

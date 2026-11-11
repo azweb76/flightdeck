@@ -4,15 +4,33 @@ import type { PrSyncDiag } from "@flightdeck/shared";
 import { api } from "../api/index.ts";
 import { SettingsCard } from "./SettingsCard.tsx";
 
+type SyncStatus = {
+  offline: boolean;
+  sources: { jira: boolean; github: boolean };
+  errors: string[];
+  syncedAt?: string;
+};
+
 export function Diagnostics() {
   const [diag, setDiag] = useState<PrSyncDiag>();
+  const [sync, setSync] = useState<SyncStatus>();
   useEffect(() => {
     void api.prDiagnostics().then(setDiag).catch(() => undefined);
+    void api.syncStatus().then(setSync).catch(() => undefined);
   }, []);
-  const row = diag ?? { authored: 0, reviewRequested: 0, total: 0 };
+  const row: PrSyncDiag = diag ?? { authored: 0, reviewRequested: 0, total: 0 };
   return (
     <SettingsCard title="Diagnostics">
       <Typography variant="body2" sx={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 12 }}>
+        Issue sync {sync?.syncedAt ?? "never"} · Jira {sync?.sources.jira ? "unreachable" : "ok"} · GitHub{" "}
+        {sync?.sources.github ? "unreachable" : "ok"}
+      </Typography>
+      {(sync?.errors ?? []).map((e) => (
+        <Typography key={e} variant="body2" color="error" sx={{ fontSize: 12, wordBreak: "break-word" }}>
+          {e}
+        </Typography>
+      ))}
+      <Typography variant="body2" sx={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 12, mt: 1 }}>
         PR sync {row.syncedAt ?? "never"}
       </Typography>
       <Typography variant="body2" sx={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 12 }}>

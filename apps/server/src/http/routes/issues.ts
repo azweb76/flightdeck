@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { IssueListQuerySchema } from "@flightdeck/shared";
 import { startAdhoc } from "../../features/adhoc/index.ts";
 import { getIssue, listIssues, scheduleAssignedSync } from "../../features/issues/index.ts";
+import { readSyncStatus } from "../../features/issues/health.ts";
 import { draftGithubIssue, draftJiraIssue } from "../../features/issues/draft.ts";
 import { splitIssue } from "../../features/split/index.ts";
 import { getRepo } from "../../features/repos/index.ts";
@@ -22,6 +23,7 @@ export function issueRoutes(): Hono {
     return c.json(result);
   });
   app.post("/sync", async (c) => c.json(await listIssues({ refresh: "1" })));
+  app.get("/sync-status", (c) => c.json(readSyncStatus()));
   app.post("/adhoc", async (c) => {
     const body = (await c.req.json()) as {
       repoId?: number;

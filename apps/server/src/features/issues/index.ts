@@ -1,4 +1,5 @@
-import { DEFAULT_JIRA_JQL, type Issue, type VisibleRepo } from "@flightdeck/shared";
+import type { Issue, VisibleRepo } from "@flightdeck/shared";
+import { jiraSearchJql } from "../jira/jql.ts";
 import { createGithubClient, type GithubClient } from "../github/index.ts";
 import { createJiraClient, type JiraClient } from "../jira/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
@@ -221,7 +222,7 @@ async function loadJira(
   if (!token) return [];
   try {
     const client = deps.jira ?? createJiraClient();
-    const jql = assignedJql(settings.jiraJql, since);
+    const jql = jiraSearchJql(settings.jiraJql, since);
     const raw = await client.search({
       siteUrl: settings.jiraSiteUrl,
       email: settings.jiraEmail,
@@ -246,13 +247,6 @@ async function loadGithub(deps: IssueDeps, errors: string[], since?: string): Pr
     errors.push(err instanceof Error ? err.message : "GitHub assigned-issue search failed");
     return [];
   }
-}
-
-function assignedJql(settingsJql: string | undefined, since?: string): string {
-  const base = settingsJql?.trim() || DEFAULT_JIRA_JQL;
-  if (!since) return base;
-  const stamp = since.slice(0, 19).replace("T", " ");
-  return `(${base}) AND updated >= "${stamp}"`;
 }
 
 async function refreshIssue(issue: Issue, deps: IssueDeps): Promise<void> {

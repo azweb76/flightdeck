@@ -1,0 +1,6 @@
+{
+  "errorMessages": [
+    "Error in the JQL Query: Expecting operator but got 'AND'. The error occurred at AND updated >= \"2026-11-11 20:15\""
+  ],
+  "errors": {}
+}

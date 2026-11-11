@@ -1,0 +1,19 @@
+{
+  "issues": [
+    {
+      "key": "PROJ-9",
+      "fields": {
+        "summary": "Assigned Jira",
+        "description": {
+          "type": "doc",
+          "version": 1,
+          "content": [{ "type": "paragraph", "content": [{ "type": "text", "text": "Ship it." }] }]
+        },
+        "labels": ["gh:acme/web"],
+        "updated": "2026-11-11T20:00:00.000+0000"
+      }
+    }
+  ],
+  "nextPageToken": "token-page-2",
+  "isLast": false
+}

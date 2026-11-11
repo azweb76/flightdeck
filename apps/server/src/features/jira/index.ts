@@ -1,13 +1,11 @@
 import { adfToMarkdown, markdownToAdf } from "@flightdeck/shared";
+import { authHeaders, jiraHttpError, throwIfJiraFailed } from "./http.ts";
+import { searchJira } from "./search.ts";
+import type { JiraIssue } from "./types.ts";
 
-export type JiraIssue = {
-  key: string;
-  title: string;
-  body: string;
-  url: string;
-  labels: string[];
-  updatedAt: string;
-};
+export { jiraSearchJql } from "./jql.ts";
+export { parseJiraErrorBody } from "./http.ts";
+export type { JiraIssue } from "./types.ts";
 
 export type JiraClient = {
   test(siteUrl: string, email: string, token: string): Promise<{ ok: boolean; detail: string }>;
@@ -74,7 +72,7 @@ async function jiraComment(
     headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
     body: JSON.stringify({ body: { type: "doc", version: 1, content: [{ type: "paragraph", content: [{ type: "text", text: opts.body }] }] } }),
   });
-  if (!res.ok) throw new Error(`Jira comment failed (${res.status})`);
+  await throwIfJiraFailed(res, "Jira comment failed");
 }
 
 async function jiraWriteDesc(
@@ -91,7 +89,7 @@ async function jiraWriteDesc(
       },
     }),
   });
-  if (!res.ok) throw new Error(`Jira update failed (${res.status})`);
+  await throwIfJiraFailed(res, "Jira update failed");
 }
 
 async function jiraCreateIssue(
@@ -118,7 +116,7 @@ async function jiraCreateIssue(
       },
     }),
   });
-  if (!res.ok) throw new Error(`Jira create failed (${res.status})`);
+  await throwIfJiraFailed(res, "Jira create failed");
   return (await res.json()) as { key: string };
 }
 
@@ -147,7 +145,7 @@ async function jiraSubtask(
       },
     }),
   });
-  if (!res.ok) throw new Error(`Jira subtask failed (${res.status})`);
+  await throwIfJiraFailed(res, "Jira subtask failed");
   return (await res.json()) as { key: string };
 }
 
@@ -159,7 +157,7 @@ async function jiraComments(
   const res = await fetchFn(`${base}/rest/api/3/issue/${opts.key}/comment`, {
     headers: authHeaders(opts.email, opts.token),
   });
-  if (!res.ok) throw new Error(`Jira comments failed (${res.status})`);
+  await throwIfJiraFailed(res, "Jira comments failed");
   const data = (await res.json()) as {
     comments?: { id?: string; author?: { displayName?: string }; body?: unknown; created?: string }[];
   };
@@ -182,77 +180,14 @@ async function testJira(
     headers: authHeaders(email, token),
   });
   if (!res.ok) {
-    return { ok: false, detail: `Jira auth failed (${res.status})` };
+    const err = await jiraHttpError(res, "Jira auth failed");
+    return { ok: false, detail: err.message };
   }
   const me = (await res.json()) as { displayName?: string; emailAddress?: string };
   return {
     ok: true,
     detail: `Connected as ${me.displayName ?? me.emailAddress ?? email}`,
   };
-}
-
-async function searchJira(
-  fetchFn: FetchFn,
-  opts: { siteUrl: string; email: string; token: string; jql: string },
-): Promise<JiraIssue[]> {
-  const base = opts.siteUrl.replace(/\/$/, "");
-  const url = new URL(`${base}/rest/api/3/search/jql`);
-  url.searchParams.set("jql", opts.jql);
-  url.searchParams.set("maxResults", "50");
-  url.searchParams.set("fields", "summary,description,labels,updated");
-  const res = await fetchFn(url, { headers: authHeaders(opts.email, opts.token) });
-  if (!res.ok) {
-    const fallback = await searchLegacy(fetchFn, base, opts);
-    if (fallback) return fallback;
-    throw new Error(`Jira search failed (${res.status})`);
-  }
-  const data = (await res.json()) as { issues?: JiraApiIssue[] };
-  return (data.issues ?? []).map((i) => toIssue(base, i));
-}
-
-async function searchLegacy(
-  fetchFn: FetchFn,
-  base: string,
-  opts: { email: string; token: string; jql: string },
-): Promise<JiraIssue[] | undefined> {
-  const res = await fetchFn(`${base}/rest/api/3/search`, {
-    method: "POST",
-    headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jql: opts.jql,
-      maxResults: 50,
-      fields: ["summary", "description", "labels", "updated"],
-    }),
-  });
-  if (!res.ok) return undefined;
-  const data = (await res.json()) as { issues?: JiraApiIssue[] };
-  return (data.issues ?? []).map((i) => toIssue(base, i));
-}
-
-type JiraApiIssue = {
-  key: string;
-  fields?: {
-    summary?: string;
-    description?: unknown;
-    labels?: string[];
-    updated?: string;
-  };
-};
-
-function toIssue(base: string, issue: JiraApiIssue): JiraIssue {
-  return {
-    key: issue.key,
-    title: issue.fields?.summary ?? issue.key,
-    body: adfToMarkdown(issue.fields?.description),
-    url: `${base}/browse/${issue.key}`,
-    labels: issue.fields?.labels ?? [],
-    updatedAt: issue.fields?.updated ?? new Date().toISOString(),
-  };
-}
-
-function authHeaders(email: string, token: string): Record<string, string> {
-  const basic = Buffer.from(`${email}:${token}`).toString("base64");
-  return { Authorization: `Basic ${basic}`, Accept: "application/json" };
 }
 
 export function adfToText(node: unknown): string {
