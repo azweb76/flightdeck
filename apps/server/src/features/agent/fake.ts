@@ -25,7 +25,7 @@ export function createFakeDriver(opts: FakeOpts = {}): AgentDriver {
         yield { kind: "error", title: "Tool failed", detail: "simulated tool error" };
         return;
       }
-      if (req.role === "reviewer") reviews += 1;
+      if (req.role === "reviewer" && !isPrReviewPrompt(req.prompt)) reviews += 1;
       yield jsonEvent(payload(req, reviews, opts.majorFirst === true));
       yield { kind: "usage", title: "usage", tokensIn: 1200, tokensOut: 400, usd: 0.012 };
       yield { kind: "done", title: `${req.role} finished`, sdkSessionId: req.resumeSessionId ?? "fake-session" };
@@ -65,13 +65,13 @@ function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean): unkno
       remaining: "",
     };
   }
-  if (req.role === "reviewer") return reviewPayload(reviews, majorFirst);
-  if (req.prompt.includes("inline review comments") || req.prompt.includes("teammate PR")) {
+  if (isPrReviewPrompt(req.prompt)) {
     return {
       kind: "pr_review",
       comments: [{ path: "src/index.ts", line: 1, body: "Prefer a streaming cursor here." }],
     };
   }
+  if (req.role === "reviewer") return reviewPayload(reviews, majorFirst);
   return {
     kind: "session_review",
     waste: 3,
@@ -96,6 +96,10 @@ function payload(req: AgentRunOpts, reviews: number, majorFirst: boolean): unkno
       },
     ],
   };
+}
+
+function isPrReviewPrompt(prompt: string): boolean {
+  return prompt.includes("inline review comments") || prompt.includes("teammate PR");
 }
 
 function refinePayload(prompt: string): unknown {

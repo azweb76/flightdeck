@@ -92,3 +92,16 @@ export function sessionReviewPrompt(issueKey: string, transcript: string): strin
     ].join("\n\n"),
   );
 }
+
+export function prReviewPrompt(repoSlug: string, prNumber: number, title: string, diff: string): string {
+  return withApplied(
+    "reviewer",
+    [
+      "You review a teammate PR. Draft inline review comments. Do not submit them.",
+      `${repoSlug}#${prNumber} ${title}`,
+      diff.slice(0, 8000),
+      "Reply with JSON only:",
+      '{"kind":"pr_review","comments":[{"path":"src/index.ts","line":1,"body":"..."}]}',
+    ].join("\n\n"),
+  );
+}

@@ -30,3 +30,15 @@ export const PrReviewSessionSchema = z.object({
   status: z.enum(["drafting", "submitted"]),
 });
 export type PrReviewSession = z.infer<typeof PrReviewSessionSchema>;
+
+export const PrReviewAgentSchema = z.object({
+  kind: z.literal("pr_review").optional(),
+  comments: z.array(
+    z.object({
+      path: z.string(),
+      line: z.number().int().positive().default(1),
+      body: z.string(),
+    }),
+  ),
+});
+export type PrReviewAgent = z.infer<typeof PrReviewAgentSchema>;

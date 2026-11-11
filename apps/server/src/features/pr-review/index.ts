@@ -1,7 +1,10 @@
+import { PrReviewAgentSchema, parseAgentJson, type PrReviewSession, type ReviewDraft } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
 import { createGithubClient } from "../github/index.ts";
 import { publish } from "../events/index.ts";
-import type { PrReviewSession, ReviewDraft } from "@flightdeck/shared";
+import { collectAgentOutput } from "../agent/collect.ts";
+import { prReviewPrompt } from "../agent/prompts.ts";
+import { roleModel } from "../runs/execute.ts";
 
 export function listReviews(): PrReviewSession[] {
   const rows = getDb().prepare("SELECT * FROM pr_reviews ORDER BY id DESC").all() as {
@@ -40,20 +43,44 @@ export function startDemoReview(): PrReviewSession {
         deletions: 0,
       },
     ],
-    ["findAll() loads every invoice; stream with a cursor."],
+    [],
   );
 }
 
 export async function startReview(repoSlug: string, prNumber: number): Promise<PrReviewSession> {
-  if (process.env.FLIGHTDECK_DEMO === "1") return startDemoReview();
+  if (process.env.FLIGHTDECK_DEMO === "1") {
+    const session = startDemoReview();
+    return attachAgentDrafts(session, "demo.diff", session.title);
+  }
   const [owner, name] = repoSlug.split("/");
   const gh = createGithubClient();
   const view = await gh.prView(owner ?? "", name ?? "", prNumber);
   const diff = await gh.prDiff(owner ?? "", name ?? "", prNumber);
   const files = [{ path: "diff.patch", patch: diff.slice(0, 8000), additions: 0, deletions: 0 }];
-  return insertReview(repoSlug, prNumber, view.title || `PR #${prNumber}`, files, [
-    "Draft a comment on the riskiest change.",
-  ]);
+  const session = insertReview(repoSlug, prNumber, view.title || `PR #${prNumber}`, files, []);
+  return attachAgentDrafts(session, diff, view.title || `PR #${prNumber}`);
+}
+
+async function attachAgentDrafts(
+  session: PrReviewSession,
+  diff: string,
+  title: string,
+): Promise<PrReviewSession> {
+  const collected = await collectAgentOutput({
+    prompt: prReviewPrompt(session.repoSlug, session.prNumber, title, diff),
+    cwd: process.cwd(),
+    role: "reviewer",
+    model: roleModel("reviewer"),
+    permissionMode: "auto",
+  });
+  const parsed = parseAgentJson(collected.text, (v) => PrReviewAgentSchema.parse(v));
+  for (const c of parsed.comments) {
+    getDb()
+      .prepare("INSERT INTO review_drafts (review_id, path, line, body, state) VALUES (?,?,?,?,?)")
+      .run(session.id, c.path, c.line, c.body, "pending");
+  }
+  publish("reviews.updated");
+  return getReview(session.id)!;
 }
 
 export function patchDraft(id: number, state: ReviewDraft["state"], body?: string): void {
