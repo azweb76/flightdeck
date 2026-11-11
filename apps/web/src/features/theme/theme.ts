@@ -16,6 +16,7 @@ export const flightdeckTheme = extendTheme({
         warning: { main: "#c93400", contrastText: "#ffffff" },
         error: { main: "#d70015", contrastText: "#ffffff" },
         success: { main: "#248a3d", contrastText: "#ffffff" },
+        info: { main: "#0071e3", contrastText: "#ffffff" },
       },
     },
     dark: {
@@ -27,6 +28,7 @@ export const flightdeckTheme = extendTheme({
         warning: { main: "#ff9f0a", contrastText: "#1c1c1e" },
         error: { main: "#ff453a", contrastText: "#ffffff" },
         success: { main: "#30d158", contrastText: "#1c1c1e" },
+        info: { main: "#0a84ff", contrastText: "#ffffff" },
       },
     },
   },
@@ -51,12 +53,27 @@ export const flightdeckTheme = extendTheme({
         body: { fontFamily: mac, fontSize: 13 },
       },
     },
+    MuiTextField: { defaultProps: { size: "small" } },
+    MuiInputLabel: { defaultProps: { shrink: true } },
     MuiOutlinedInput: {
+      defaultProps: { notched: true },
       styleOverrides: {
         notchedOutline: { borderColor: FIELD },
-        root: { fontSize: 13, backgroundColor: "var(--fd-palette-background-paper)" },
+        root: { fontSize: 13, minHeight: 28, backgroundColor: "var(--fd-palette-background-paper)" },
+        input: { padding: "4px 10px", height: 20, boxSizing: "border-box" },
       },
     },
-    MuiButton: { defaultProps: { disableElevation: true }, styleOverrides: { root: { minHeight: 28 } } },
+    MuiButton: {
+      defaultProps: { disableElevation: true, size: "small" },
+      styleOverrides: { root: { minHeight: 28, paddingLeft: 10, paddingRight: 10 } },
+    },
+    MuiIconButton: { styleOverrides: { root: { width: 28, height: 28 } } },
+    MuiChip: {
+      defaultProps: { size: "small" },
+      styleOverrides: { root: { height: 20, fontSize: 11 }, label: { px: 1, paddingLeft: 8, paddingRight: 8 } },
+    },
+    MuiTab: { styleOverrides: { root: { minHeight: 32, padding: "6px 12px" } } },
+    MuiTabs: { styleOverrides: { root: { minHeight: 32 } } },
+    MuiAccordion: { defaultProps: { disableGutters: true, elevation: 0, square: true } },
   },
 });

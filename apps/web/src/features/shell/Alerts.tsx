@@ -1,8 +1,9 @@
-import { Badge, Box, Button, Menu, MenuItem, Typography } from "@mui/material";
+import { Badge, Box, IconButton, Menu, MenuItem, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { AppNotification } from "@flightdeck/shared";
 import { api, subscribeEvents } from "../api/index.ts";
+import { BellIcon } from "../ui/icons.tsx";
 
 export function Alerts() {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -32,11 +33,11 @@ export function Alerts() {
 
   return (
     <>
-      <Button size="small" onClick={(e) => setAnchor(e.currentTarget)} aria-label="alerts">
-        <Badge badgeContent={unread} color="error">
-          Bell
+      <IconButton size="small" onClick={(e) => setAnchor(e.currentTarget)} aria-label="Alerts">
+        <Badge badgeContent={unread} color="error" overlap="circular">
+          <BellIcon />
         </Badge>
-      </Button>
+      </IconButton>
       <Menu open={Boolean(anchor)} anchorEl={anchor} onClose={() => setAnchor(null)}>
         {items.length === 0 ? <MenuItem disabled>No notifications</MenuItem> : null}
         {items.map((n) => (

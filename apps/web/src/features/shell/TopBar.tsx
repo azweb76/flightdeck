@@ -1,14 +1,12 @@
-import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import { useLocation } from "react-router-dom";
+import { SearchIcon } from "../ui/icons.tsx";
 import { Alerts } from "./Alerts.tsx";
+import type { SyncState } from "./syncStatus.ts";
 
-export function TopBar({
-  syncLabel,
-  syncTone,
-}: {
-  syncLabel: string;
-  syncTone: "success" | "warning" | "default";
-}) {
+export type { SyncState };
+
+export function TopBar({ sync }: { sync: SyncState }) {
   const loc = useLocation();
   const crumb = crumbFor(loc.pathname);
   return (
@@ -18,30 +16,53 @@ export function TopBar({
         alignItems: "center",
         gap: 2,
         px: 3,
-        py: 2,
+        py: 1,
         borderBottom: "1px solid",
         borderColor: "divider",
         bgcolor: "background.paper",
-        minHeight: 48,
+        minHeight: 40,
       }}
     >
-      <Typography sx={{ flex: 1, color: "text.secondary" }}>{crumb}</Typography>
-      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={() => window.dispatchEvent(new Event("flightdeck:palette"))}
-        >
-          Search ⌘K
-        </Button>
-        <Chip
-          size="small"
-          label={syncLabel}
-          color={syncTone === "default" ? "default" : syncTone}
-          variant="outlined"
-        />
+      <Typography sx={{ color: "text.secondary", minWidth: 120 }}>{crumb}</Typography>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", ml: "auto" }}>
+        <SearchField />
+        <Tooltip title={sync.detail}>
+          <Chip size="small" label={sync.label} color={sync.tone === "default" ? "default" : sync.tone} variant="outlined" />
+        </Tooltip>
         <Alerts />
       </Stack>
+    </Box>
+  );
+}
+
+function SearchField() {
+  return (
+    <Box
+      role="button"
+      tabIndex={0}
+      onClick={() => window.dispatchEvent(new Event("flightdeck:palette"))}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") window.dispatchEvent(new Event("flightdeck:palette"));
+      }}
+      sx={{
+        width: 280,
+        height: 28,
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        px: 1.5,
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1,
+        bgcolor: "background.default",
+        color: "text.secondary",
+        cursor: "pointer",
+        fontSize: 13,
+      }}
+    >
+      <SearchIcon />
+      <Box sx={{ flex: 1 }}>Search or jump to…</Box>
+      <Typography sx={{ fontFamily: "ui-monospace, monospace", fontSize: 11, color: "text.disabled" }}>⌘K</Typography>
     </Box>
   );
 }
