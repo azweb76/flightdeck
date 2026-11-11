@@ -159,6 +159,27 @@ export function insertEvent(
   return { ...e, id: Number(r.lastInsertRowid) };
 }
 
+export function latestSdkSessionId(runId: number, role?: string): string | undefined {
+  const row = (
+    role
+      ? getDb()
+          .prepare(
+            `SELECT sdk_session_id FROM sessions
+             WHERE run_id = ? AND role = ? AND sdk_session_id IS NOT NULL
+             ORDER BY id DESC LIMIT 1`,
+          )
+          .get(runId, role)
+      : getDb()
+          .prepare(
+            `SELECT sdk_session_id FROM sessions
+             WHERE run_id = ? AND sdk_session_id IS NOT NULL
+             ORDER BY id DESC LIMIT 1`,
+          )
+          .get(runId)
+  ) as { sdk_session_id: string } | undefined;
+  return row?.sdk_session_id;
+}
+
 export function listEvents(runId: number): TranscriptEvent[] {
   const rows = getDb()
     .prepare("SELECT * FROM transcript_events WHERE run_id = ? ORDER BY id")

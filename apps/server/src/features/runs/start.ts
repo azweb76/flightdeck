@@ -3,13 +3,14 @@ import { getSettings } from "../settings/index.ts";
 import { getRepo, getRepoBySlug, listRepos } from "../repos/index.ts";
 import { getIssue } from "../issues/index.ts";
 import { latestGoal } from "../goals/store.ts";
-import { createWorktree } from "../worktree/index.ts";
+import { ensureWorktree } from "../worktree/index.ts";
 import { publish } from "../events/index.ts";
 import { notify } from "../notify/index.ts";
 import { activeRunCount, insertRun, updateRun, getRun } from "./store.ts";
 import { runAgentPhase } from "./execute.ts";
 import { openPullRequest } from "./pr.ts";
 import { orchestrate } from "./orchestrate.ts";
+import { buildFixPrompt } from "./fix.ts";
 
 const queue: number[] = [];
 let pumping = false;
@@ -79,17 +80,32 @@ async function executeQueued(id: number): Promise<void> {
     updateRun(id, { status: "failed", pauseReason: "Repo missing" });
     return;
   }
+  const resuming = Boolean(run.startedAt);
   try {
     if (repo.localPath) {
-      const wt = await createWorktree(repo.localPath, run.issueKey, repo.defaultBranch);
-      updateRun(id, { worktreePath: wt.path, status: "running", startedAt: new Date().toISOString() });
+      const wt = await ensureWorktree(
+        repo.localPath,
+        run.issueKey,
+        repo.defaultBranch,
+        run.worktreePath || undefined,
+      );
+      updateRun(id, {
+        worktreePath: wt.path,
+        status: "running",
+        startedAt: run.startedAt ?? new Date().toISOString(),
+      });
     } else {
-      updateRun(id, { status: "running", startedAt: new Date().toISOString() });
+      updateRun(id, { status: "running", startedAt: run.startedAt ?? new Date().toISOString() });
     }
     const live = getRun(id)!;
+    if (live.phase === "fix") {
+      const result = await runAgentPhase(live, "implementer", await buildFixPrompt(live), "resume");
+      if (result.status === "ok") updateRun(id, { status: "paused", pauseReason: "Fix finished" });
+      publish("runs.updated");
+      return;
+    }
     const goal = latestGoal(run.issueId);
-    const useLoop = Boolean(goal);
-    const result = useLoop ? await orchestrate(live) : await singleSession(live);
+    const result = goal ? await orchestrate(live, resuming) : await singleSession(live, resuming);
     if (result === "ok") await openPullRequest(getRun(id)!);
     publish("runs.updated");
     publish("issues.updated");
@@ -101,9 +117,14 @@ async function executeQueued(id: number): Promise<void> {
   }
 }
 
-async function singleSession(run: Run): Promise<"ok" | "ask" | "error"> {
+async function singleSession(run: Run, resuming: boolean): Promise<"ok" | "ask" | "error"> {
   updateRun(run.id, { phase: "implement" });
-  const result = await runAgentPhase(getRun(run.id)!, "implementer", promptFor(run));
+  const result = await runAgentPhase(
+    getRun(run.id)!,
+    "implementer",
+    promptFor(run),
+    resuming ? "resume" : "start",
+  );
   return result.status;
 }
 

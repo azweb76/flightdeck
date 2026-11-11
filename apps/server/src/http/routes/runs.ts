@@ -1,10 +1,8 @@
 import { Hono } from "hono";
 import { MidRunMessageSchema, StartRunSchema } from "@flightdeck/shared";
 import { publish } from "../../features/events/index.ts";
-import { notify } from "../../features/notify/index.ts";
 import { answerQuestion } from "../../features/questions/store.ts";
 import { enqueue } from "../../features/runs/start.ts";
-import { runAgentPhase } from "../../features/runs/execute.ts";
 import { abortRun } from "../../features/runs/abort.ts";
 import { insertMessage } from "../../features/messages/index.ts";
 import { runDiff } from "../../features/runs/diff.ts";
@@ -71,6 +69,7 @@ async function answer(id: number, body: unknown) {
   if (!run?.questionId) throw apiError(400, "no_question", "No open question");
   const parsed = body as { answer: string };
   answerQuestion(run.questionId, parsed.answer);
+  insertMessage(run.id, { target: "current", text: `Operator answered: ${parsed.answer}` });
   updateRun(run.id, { status: "queued", questionId: null, pauseReason: null });
   enqueue(run.id);
   return getRun(run.id);
@@ -79,19 +78,7 @@ async function answer(id: number, body: unknown) {
 async function fix(id: number) {
   const run = getRun(id);
   if (!run) throw apiError(404, "not_found", "Run not found");
-  updateRun(run.id, { phase: "fix", status: "running" });
-  await runAgentPhase(getRun(run.id)!, "implementer", await buildFixPrompt(run));
-  await notify("Fix finished", `Run ${run.id}`, `/runs/${run.id}`);
+  updateRun(run.id, { phase: "fix", status: "queued" });
+  enqueue(run.id);
   return getRun(run.id);
-}
-
-async function buildFixPrompt(run: { repoSlug: string; prNumber?: number }): Promise<string> {
-  const lines = ["Fix CI failures and PR review comments in this worktree."];
-  if (!run.prNumber || process.env.FLIGHTDECK_DEMO === "1") return lines.join("\n");
-  const [owner, name] = run.repoSlug.split("/");
-  const { createGithubClient } = await import("../../features/github/index.ts");
-  const gh = createGithubClient();
-  lines.push("Checks:", await gh.prChecks(owner ?? "", name ?? "", run.prNumber));
-  lines.push("Review comments:", await gh.prComments(owner ?? "", name ?? "", run.prNumber));
-  return lines.join("\n");
 }

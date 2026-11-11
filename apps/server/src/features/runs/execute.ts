@@ -7,9 +7,9 @@ import { notify } from "../notify/index.ts";
 import { insertQuestion } from "../questions/store.ts";
 import { getRepo } from "../repos/index.ts";
 import { getSettings } from "../settings/index.ts";
-import { insertEvent, updateRun, activeRunCount, getRun } from "./store.ts";
+import { insertEvent, updateRun, activeRunCount, getRun, latestSdkSessionId } from "./store.ts";
 import { bindAbort, clearAbort } from "./abort.ts";
-import { takeMessages } from "../messages/index.ts";
+import { takeMessages, type InjectMode } from "../messages/index.ts";
 
 export type PhaseResult = { status: "ok" | "ask" | "error"; output: string };
 
@@ -17,9 +17,10 @@ export async function runAgentPhase(
   run: Run,
   role: AgentRole,
   prompt: string,
+  inject: InjectMode = "start",
 ): Promise<PhaseResult> {
   const sessionId = insertSession(run.id, role, run.phase, run.round);
-  const notes = takeMessages(run.id);
+  const notes = takeMessages(run.id, inject);
   const full = notes.length
     ? `${prompt}\n\nOperator messages:\n${notes.map((n) => `- ${n}`).join("\n")}`
     : prompt;
@@ -48,6 +49,7 @@ async function consume(
     role,
     model: roleModel(role, run),
     permissionMode: "auto",
+    resumeSessionId: latestSdkSessionId(run.id, role),
     abort,
   })) {
     const current = getRun(run.id);
