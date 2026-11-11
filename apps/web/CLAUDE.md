@@ -2,7 +2,7 @@
 
 React UI (MUI v9 + Emotion). Talks to the local server over `/api`. Never import `apps/server`.
 
-- Theme: `src/features/theme/` (`CssVarsProvider`, macOS light/dark via `prefers-color-scheme` / system mode). Use `sx` only; Grid `size`; Stack.
+- Theme: `src/features/theme/` (`CssVarsProvider`, macOS light/dark via `prefers-color-scheme` / system mode). Use `sx` only; Grid `size`; Stack. Form inputs: `FormField` / `FieldLabel` in `src/ui/components/form-field/` (static label above, never a notched InputLabel). Cmd-K and search stay placeholder-only.
 - Canonical component: `src/features/issues/IssueCard.tsx` (PR Open cards nest `BoardPr` rows)
 - Board PR settings: `src/features/settings/BoardSettings.tsx`
 - Repo picker: `src/ui/components/repo-picker/` (flattened Favorites/Recent/All headers + virtual listbox)

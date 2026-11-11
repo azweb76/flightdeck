@@ -1,7 +1,6 @@
 import { extendTheme } from "@mui/material/styles";
 
 const mac = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif';
-const FIELD = "#8e8e93";
 
 export const flightdeckTheme = extendTheme({
   cssVarPrefix: "fd",
@@ -53,15 +52,25 @@ export const flightdeckTheme = extendTheme({
         body: { fontFamily: mac, fontSize: 13 },
       },
     },
-    MuiTextField: { defaultProps: { size: "small" } },
-    MuiInputLabel: { defaultProps: { shrink: true } },
-    MuiOutlinedInput: {
-      defaultProps: { notched: true },
+    MuiTextField: { defaultProps: { size: "small", variant: "outlined" } },
+    MuiInputLabel: {
+      defaultProps: { shrink: true, disableAnimation: true },
       styleOverrides: {
-        notchedOutline: { borderColor: FIELD },
-        root: { fontSize: 13, minHeight: 28, backgroundColor: "var(--fd-palette-background-paper)" },
-        input: { padding: "4px 10px", height: 20, boxSizing: "border-box" },
+        root: { position: "static", transform: "none", pointerEvents: "auto" },
       },
+    },
+    MuiOutlinedInput: {
+      defaultProps: { notched: false, size: "small" },
+      styleOverrides: outlinedInput(),
+    },
+    MuiFormLabel: {
+      styleOverrides: {
+        root: { fontSize: 12.5, fontWeight: 500, color: "var(--fd-palette-text-primary)" },
+        asterisk: { color: "var(--fd-palette-text-secondary)", fontWeight: 400, marginLeft: 2 },
+      },
+    },
+    MuiFormHelperText: {
+      styleOverrides: { root: { marginLeft: 0, marginRight: 0, fontSize: 12 } },
     },
     MuiButton: {
       defaultProps: { disableElevation: true, size: "small" },
@@ -77,3 +86,28 @@ export const flightdeckTheme = extendTheme({
     MuiAccordion: { defaultProps: { disableGutters: true, elevation: 0, square: true } },
   },
 });
+
+function outlinedInput() {
+  const ring = "0 0 0 3px color-mix(in srgb, var(--fd-palette-primary-main) 28%, transparent)";
+  return {
+    notchedOutline: {
+      borderColor: "var(--fd-palette-divider)",
+      borderWidth: 1,
+      "& legend": { display: "none", width: 0, padding: 0 },
+    },
+    root: {
+      borderRadius: 6,
+      fontSize: 13,
+      minHeight: 32,
+      backgroundColor: "var(--fd-palette-background-paper)",
+      "&.MuiInputBase-multiline": { minHeight: "unset" },
+      "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--fd-palette-text-secondary)" },
+      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+        borderWidth: 1,
+        borderColor: "var(--fd-palette-primary-main)",
+      },
+      "&.Mui-focused": { boxShadow: ring },
+    },
+    input: { padding: "6px 10px", height: 20, boxSizing: "border-box" as const },
+  };
+}
