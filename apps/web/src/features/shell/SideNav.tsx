@@ -56,6 +56,8 @@ export function SideNav({
               fullWidth
               sx={{
                 justifyContent: "flex-start",
+                minHeight: 28,
+                py: 0,
                 color: activeRepo === slug ? "primary.main" : "text.primary",
                 fontWeight: activeRepo === slug ? 600 : 400,
               }}
@@ -69,15 +71,26 @@ export function SideNav({
         ) : null}
       </Stack>
       <Box sx={{ flex: 1 }} />
-      {asking ? (
-        <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "background.default" }}>
-          <Typography sx={{ fontWeight: 600, mb: 1 }}>Agent asking</Typography>
-          <Typography sx={{ color: "text.secondary", mb: 1 }}>{asking.prompt}</Typography>
-          <Button size="small" variant="contained" onClick={() => nav(asking.href)}>
-            Open
-          </Button>
-        </Box>
-      ) : null}
+      <AskingFooter asking={asking} onOpen={(href) => nav(href)} />
+    </Box>
+  );
+}
+
+function AskingFooter({
+  asking,
+  onOpen,
+}: {
+  asking?: { prompt: string; href: string };
+  onOpen: (href: string) => void;
+}) {
+  if (!asking) return null;
+  return (
+    <Box sx={{ p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "background.default" }}>
+      <Typography sx={{ fontWeight: 600, mb: 1 }}>Agent asking</Typography>
+      <Typography sx={{ color: "text.secondary", mb: 1 }}>{asking.prompt}</Typography>
+      <Button size="small" variant="contained" onClick={() => onOpen(asking.href)}>
+        Open
+      </Button>
     </Box>
   );
 }
@@ -90,6 +103,8 @@ function NavRow({ to, label, count }: { to: string; label: string; count?: numbe
       fullWidth
       sx={{
         justifyContent: "space-between",
+        minHeight: 28,
+        py: 0,
         color: "text.primary",
         "&.active": { bgcolor: "action.selected", fontWeight: 600 },
       }}
