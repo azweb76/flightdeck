@@ -6,7 +6,7 @@ import { suggestions, tokenAt, type Suggest } from "./autocomplete.ts";
 import { loadDraft, saveDraft } from "./drafts.ts";
 import { MarkdownView } from "./MarkdownView.tsx";
 
-function useEditorState(id: string, value: string) {
+function useEditorState(id: string, value: string, readOnly?: boolean) {
   const [mode, setMode] = useState<"preview" | "edit">("preview");
   const [text, setText] = useState(value);
   const [focused, setFocused] = useState(false);
@@ -17,9 +17,11 @@ function useEditorState(id: string, value: string) {
     setText(loadDraft(id) ?? value);
   }, [id, value]);
   useEffect(() => {
+    if (readOnly) return;
     void api.issues({}).then((r) => setIssues(r.issues)).catch(() => undefined);
-  }, []);
+  }, [readOnly]);
   useEffect(() => {
+    if (readOnly) return;
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "p") {
         e.preventDefault();
@@ -28,7 +30,7 @@ function useEditorState(id: string, value: string) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [readOnly]);
   return { mode, setMode, text, setText, focused, setFocused, items, setItems, issues, area };
 }
 
@@ -48,6 +50,7 @@ export function MarkdownEditor({
   const { mode, setMode, text, setText, focused, setFocused, items, setItems, issues, area } = useEditorState(
     id,
     value,
+    readOnly,
   );
 
   if (readOnly) return <MarkdownView markdown={text} />;

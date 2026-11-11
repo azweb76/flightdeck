@@ -1,6 +1,7 @@
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { AgentDriver, AgentEvent, AgentRunOpts } from "./types.ts";
 import { allowTool } from "./permissions.ts";
+import { resultDetail, toolDetail, toolPath } from "./tool-meta.ts";
 
 type SdkQuery = (args: {
   prompt: string | AsyncIterable<SDKUserMessage>;
@@ -61,6 +62,10 @@ export function* mapSdkMessage(msg: Record<string, unknown>): Generator<AgentEve
     yield* mapAssistant(msg, sessionId);
     return;
   }
+  if (type === "user") {
+    yield* mapUser(msg, sessionId);
+    return;
+  }
   if (type === "result") {
     yield* mapResult(msg, sessionId);
   }
@@ -88,10 +93,25 @@ function* mapAssistant(msg: Record<string, unknown>, sessionId?: string): Genera
         kind: "tool",
         title: p.name ?? "tool",
         tool: p.name,
-        path: typeof p.input?.path === "string" ? p.input.path : undefined,
+        path: toolPath(p.input ?? {}),
+        detail: toolDetail(p.name, p.input ?? {}),
         sdkSessionId: sessionId,
       };
     }
+  }
+}
+
+function* mapUser(msg: Record<string, unknown>, sessionId?: string): Generator<AgentEvent> {
+  const content = (msg.message as { content?: unknown[] } | undefined)?.content ?? [];
+  for (const part of content) {
+    const p = part as { type?: string; content?: unknown; tool_use_id?: string };
+    if (p.type !== "tool_result") continue;
+    yield {
+      kind: "tool_result",
+      title: "result",
+      detail: resultDetail(p.content),
+      sdkSessionId: sessionId,
+    };
   }
 }
 

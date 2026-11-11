@@ -37,6 +37,32 @@ describe("mapSdkMessage", () => {
     expect(events[0]?.sdkSessionId).toBe("sess-1");
   });
 
+  it("stores Edit path, line counts, and a diff preview", () => {
+    const events = [
+      ...mapSdkMessage({
+        type: "assistant",
+        message: {
+          content: [
+            {
+              type: "tool_use",
+              name: "Edit",
+              input: {
+                path: "src/a.ts",
+                old_string: "a\nb",
+                new_string: "a\nc",
+              },
+            },
+          ],
+        },
+      }),
+    ];
+    expect(events[0]).toMatchObject({ kind: "tool", tool: "Edit", path: "src/a.ts" });
+    const detail = JSON.parse(events[0]?.detail ?? "{}") as { additions: number; deletions: number; output: string };
+    expect(detail.additions).toBe(1);
+    expect(detail.deletions).toBe(1);
+    expect(detail.output).toContain("+c");
+  });
+
   it("uses SDK total_cost_usd on the result usage event", () => {
     const events = [
       ...mapSdkMessage({
