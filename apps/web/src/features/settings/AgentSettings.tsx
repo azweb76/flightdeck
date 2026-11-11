@@ -30,9 +30,10 @@ export function AgentSettings({
         />
         <FormField
           type="number"
-          label="Max concurrent agents"
-          value={String(settings.maxConcurrency)}
-          onChange={(e) => void onSave({ maxConcurrency: Number(e.target.value) || 2 })}
+          label="Daily dollar cap"
+          value={String(settings.dailyDollarCapUsd)}
+          onChange={(e) => void onSave({ dailyDollarCapUsd: Number(e.target.value) || 50 })}
+          helperText="New starts pause when today's spend hits this cap. Running agents finish."
         />
         <FormControlLabel
           control={<Checkbox size="small" checked={settings.prDraft} onChange={(e) => void onSave({ prDraft: e.target.checked })} />}

@@ -2,15 +2,17 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 
+export { withRepoLock } from "./lock.ts";
+
 export type Worktree = { path: string; branch: string };
 
 export async function createWorktree(
   clonePath: string,
-  issueKey: string,
+  runKey: string,
   baseBranch: string,
   exec: ExecFn = defaultExec,
 ): Promise<Worktree> {
-  const safe = issueKey.replace(/[^A-Za-z0-9._-]+/g, "-");
+  const safe = runKey.replace(/[^A-Za-z0-9._-]+/g, "-");
   const branch = `agent/${safe}`;
   const path = join(clonePath, "..", "worktrees", safe);
   await exec("git", ["fetch", "origin", baseBranch], { cwd: clonePath });
@@ -31,7 +33,8 @@ export async function ensureNamedWorktree(
   exec: ExecFn = defaultExec,
 ): Promise<Worktree> {
   const safe = branch.replace(/[^A-Za-z0-9._-]+/g, "-");
-  const path = existingPath && existsSync(existingPath) ? existingPath : join(clonePath, "..", "worktrees", safe);
+  const path =
+    existingPath && existsSync(existingPath) ? existingPath : join(clonePath, "..", "worktrees", `run-${safe}`);
   await exec("git", ["fetch", "origin", branch], { cwd: clonePath });
   if (existingPath && existsSync(existingPath)) return { path: existingPath, branch };
   const add = await exec("git", ["worktree", "add", "-B", branch, path, `origin/${branch}`], { cwd: clonePath });
@@ -42,18 +45,18 @@ export async function ensureNamedWorktree(
 /** Reuse an existing worktree on resume/fix/answer; fetch then continue. */
 export async function ensureWorktree(
   clonePath: string,
-  issueKey: string,
+  runKey: string,
   baseBranch: string,
   existingPath?: string,
   exec: ExecFn = defaultExec,
 ): Promise<Worktree> {
-  const safe = issueKey.replace(/[^A-Za-z0-9._-]+/g, "-");
+  const safe = runKey.replace(/[^A-Za-z0-9._-]+/g, "-");
   const branch = `agent/${safe}`;
   if (existingPath && existsSync(existingPath)) {
     await exec("git", ["fetch", "origin", baseBranch], { cwd: clonePath });
     return { path: existingPath, branch };
   }
-  return createWorktree(clonePath, issueKey, baseBranch, exec);
+  return createWorktree(clonePath, runKey, baseBranch, exec);
 }
 
 export async function removeWorktree(

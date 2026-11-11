@@ -87,12 +87,40 @@ async function seedRuns(): Promise<void> {
   });
   updateRun(run.id, { questionId: q.id });
   seedPrOpenRun(now);
+  seedLiveRuns(now);
   await notify("Needs you", "PROJ-142 asked whether endpoints go under /v2.", `/runs/${run.id}`);
   startDemoReview();
   try {
     reviewSession(run.id);
   } catch {
     /* seed best-effort */
+  }
+}
+
+function seedLiveRuns(now: string): void {
+  const repoId = listRepos().find((r) => r.name === "web")?.id ?? listRepos()[0]!.id;
+  for (const [i, title] of ["CSV export", "Rate limit login"].entries()) {
+    insertRun({
+      issueId: "jira:PROJ-150",
+      issueKey: "PROJ-150",
+      issueTitle: title,
+      issueSource: "jira",
+      issueUrl: "",
+      repoId,
+      repoSlug: "acme/web",
+      branch: `agent/run-demo-${i}`,
+      worktreePath: `/tmp/worktrees/run-demo-${i}`,
+      phase: "implement",
+      round: 1,
+      maxRounds: 2,
+      status: "running",
+      costUsd: 0.2 + i * 0.1,
+      capUsd: 10,
+      prDraft: true,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+    });
   }
 }
 

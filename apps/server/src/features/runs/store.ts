@@ -51,6 +51,26 @@ export function activeRunCount(): number {
   return Number(row.n);
 }
 
+export function queuedRunIds(): number[] {
+  return (getDb().prepare("SELECT id FROM runs WHERE status = 'queued' ORDER BY id").all() as { id: number }[]).map(
+    (r) => r.id,
+  );
+}
+
+export function interruptLiveRuns(): number[] {
+  const rows = getDb()
+    .prepare("SELECT id FROM runs WHERE status IN ('queued','running','asking')")
+    .all() as { id: number }[];
+  const now = new Date().toISOString();
+  getDb()
+    .prepare(
+      `UPDATE runs SET status = 'interrupted', pause_reason = 'Server restarted', updated_at = ?
+       WHERE status IN ('queued','running','asking')`,
+    )
+    .run(now);
+  return rows.map((r) => r.id);
+}
+
 export function insertRun(input: Omit<Run, "id">): Run {
   const r = getDb()
     .prepare(
@@ -98,6 +118,7 @@ export function updateRun(
     round: number;
     costUsd: number;
     worktreePath: string;
+    branch: string;
     prUrl: string;
     prNumber: number;
     pauseReason: string | null;
@@ -112,7 +133,7 @@ export function updateRun(
   getDb()
     .prepare(
       `UPDATE runs SET phase=?, round=?, status=?, cost_usd=?, worktree_path=?,
-        pr_url=?, pr_number=?, pause_reason=?, question_id=?, updated_at=?,
+        branch=?, pr_url=?, pr_number=?, pause_reason=?, question_id=?, updated_at=?,
         started_at=?, finished_at=? WHERE id=?`,
     )
     .run(
@@ -121,6 +142,7 @@ export function updateRun(
       next.status,
       next.costUsd,
       next.worktreePath,
+      next.branch,
       next.prUrl ?? null,
       next.prNumber ?? null,
       next.pauseReason ?? null,

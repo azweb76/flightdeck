@@ -21,7 +21,7 @@ export function RunActions({
       </Typography>
       <ButtonGroup size="small" variant="outlined">
         <Button onClick={() => void api.cancelRun(run.id).then(onRun)}>Stop</Button>
-        {run.status === "paused" || run.status === "asking" ? (
+        {run.status === "paused" || run.status === "asking" || run.status === "interrupted" ? (
           <Button onClick={() => void api.resumeRun(run.id).then(onRun)}>Resume</Button>
         ) : null}
         <Button onClick={() => void api.fixRun(run.id).then(onRun)}>Fix</Button>

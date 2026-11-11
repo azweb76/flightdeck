@@ -1,9 +1,9 @@
 import { z } from "zod";
 import {
+  DEFAULT_DAILY_DOLLAR_CAP_USD,
   DEFAULT_DOLLAR_CAP_USD,
   DEFAULT_JIRA_JQL,
   DEFAULT_LABEL_PREFIX,
-  DEFAULT_MAX_CONCURRENCY,
   DEFAULT_MODEL,
   DEFAULT_PERMISSION_MODE,
   DEFAULT_PR_DRAFT,
@@ -28,7 +28,8 @@ export const SettingsSchema = z.object({
   reviewRounds: z.number().int().min(1).max(8).default(DEFAULT_REVIEW_ROUNDS),
   prDraft: z.boolean().default(DEFAULT_PR_DRAFT),
   dollarCapUsd: z.number().positive().default(DEFAULT_DOLLAR_CAP_USD),
-  maxConcurrency: z.number().int().min(1).max(8).default(DEFAULT_MAX_CONCURRENCY),
+  dailyDollarCapUsd: z.number().positive().default(DEFAULT_DAILY_DOLLAR_CAP_USD),
+  spendResumeAt: z.string().optional().default(""),
   permissionMode: PermissionModeSchema.default(DEFAULT_PERMISSION_MODE),
   modelRefiner: z.string().default(DEFAULT_MODEL),
   modelPlanner: z.string().default(DEFAULT_MODEL),

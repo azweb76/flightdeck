@@ -16,7 +16,7 @@ export function getSettings(): Settings {
   if (!row) return SettingsSchema.parse({});
   const raw = JSON.parse(row.value) as Record<string, unknown>;
   const parsed = SettingsSchema.parse(raw);
-  if (missingBoardToggles(raw)) upsert(KEY, parsed);
+  if (missingBoardToggles(raw) || raw.dailyDollarCapUsd === undefined || "maxConcurrency" in raw) upsert(KEY, parsed);
   return parsed;
 }
 

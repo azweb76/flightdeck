@@ -31,4 +31,13 @@ describe("settings board PR defaults", () => {
     expect(stored.boardAuthoredPrs).toBe(true);
     expect(stored.boardReviewPrs).toBe(true);
   });
+
+  it("drops the old maxConcurrency setting and defaults a daily cap", () => {
+    getDb()
+      .prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)")
+      .run("app", JSON.stringify({ setupComplete: true, maxConcurrency: 8, dollarCapUsd: 10 }));
+    const settings = getSettings();
+    expect("maxConcurrency" in settings).toBe(false);
+    expect(settings.dailyDollarCapUsd).toBe(50);
+  });
 });

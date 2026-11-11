@@ -6,7 +6,13 @@ import type { SyncState } from "./syncStatus.ts";
 
 export type { SyncState };
 
-export function TopBar({ sync }: { sync: SyncState }) {
+export function TopBar({
+  sync,
+  spend,
+}: {
+  sync: SyncState;
+  spend?: { todayUsd: number; capUsd: number; blocked?: boolean };
+}) {
   const loc = useLocation();
   const crumb = crumbFor(loc.pathname);
   return (
@@ -26,6 +32,14 @@ export function TopBar({ sync }: { sync: SyncState }) {
       <Typography sx={{ color: "text.secondary", minWidth: 120 }}>{crumb}</Typography>
       <Stack direction="row" spacing={1} sx={{ alignItems: "center", ml: "auto" }}>
         <SearchField />
+        {spend ? (
+          <Chip
+            size="small"
+            variant="outlined"
+            color={spend.blocked ? "warning" : "default"}
+            label={`$${spend.todayUsd.toFixed(2)} / $${spend.capUsd.toFixed(2)} today`}
+          />
+        ) : null}
         <Tooltip title={sync.detail}>
           <Chip size="small" label={sync.label} color={sync.tone === "default" ? "default" : sync.tone} variant="outlined" />
         </Tooltip>
@@ -72,6 +86,7 @@ function crumbFor(path: string): string {
   if (path.startsWith("/issues/")) return "Issues / Detail";
   if (path.startsWith("/issues")) return "Issues";
   if (path.startsWith("/runs/")) return "Runs / Detail";
+  if (path.startsWith("/prs")) return "Pull requests";
   if (path.startsWith("/runs")) return "Runs";
   if (path.startsWith("/reviews/")) return "Reviews / Diff";
   if (path.startsWith("/reviews")) return "Reviews";

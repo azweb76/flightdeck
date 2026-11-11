@@ -8,6 +8,7 @@ import { insertQuestion, answerQuestion } from "../questions/store.ts";
 import { getRepo } from "../repos/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { insertEvent, updateRun, activeRunCount, getRun, latestSdkSessionId } from "./store.ts";
+import { addDailySpend } from "./spend.ts";
 import { bindAbort, clearAbort } from "./abort.ts";
 import { takeMessages, type InjectMode } from "../messages/index.ts";
 import { MessageStream, userText } from "../agent/stream.ts";
@@ -91,8 +92,6 @@ async function handleEvent(
     await notify("Flightdeck needs you", ev.ask.prompt, `/runs/${run.id}`);
     publish("questions.updated", { runId: run.id });
     record(run.id, sessionId, role, ev);
-    const liveAsk = process.env.FLIGHTDECK_DEMO !== "1" && process.env.FLIGHTDECK_AGENT !== "fake";
-    if (!liveAsk) return "ask";
     try {
       const answer = await waitForAnswer(run.id);
       answerQuestion(q.id, answer);
@@ -127,6 +126,7 @@ async function handleUsage(
     }
     const nextCost = ev.usd != null ? roundUsd(Math.max(current.costUsd, ev.usd)) : roundUsd(current.costUsd + extraUsd);
     updateRun(run.id, { costUsd: nextCost });
+    if (extraUsd > 0) addDailySpend(extraUsd);
     if (nextCost >= run.capUsd) {
       record(run.id, sessionId, role, ev, extraUsd);
       updateRun(run.id, { status: "paused", pauseReason: `Hit $${run.capUsd} cap` });

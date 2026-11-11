@@ -107,7 +107,22 @@ export const api = {
   fixPr: (prId: string) => request<Run>(`/api/prs/${encodeURIComponent(prId)}/fix`, { method: "POST" }),
   draftPrReview: (prId: string) =>
     request<PrReviewSession>(`/api/prs/${encodeURIComponent(prId)}/draft-review`, { method: "POST" }),
-  runs: () => request<{ runs: Run[]; active: number }>("/api/runs"),
+  runs: () =>
+    request<{
+      runs: Run[];
+      active: number;
+      spend?: { todayUsd: number; capUsd: number; blocked: boolean; reason?: string };
+    }>("/api/runs"),
+  spend: () => request<{ todayUsd: number; capUsd: number; blocked: boolean; reason?: string }>("/api/runs/spend"),
+  raiseSpendCap: (dailyDollarCapUsd: number) =>
+    request<{ todayUsd: number; capUsd: number; blocked: boolean; reason?: string }>("/api/runs/spend/raise", {
+      method: "POST",
+      body: JSON.stringify({ dailyDollarCapUsd }),
+    }),
+  resumeSpendTomorrow: () =>
+    request<{ todayUsd: number; capUsd: number; blocked: boolean; reason?: string }>("/api/runs/spend/resume-tomorrow", {
+      method: "POST",
+    }),
   run: (id: number) => request<{ run: Run; events: TranscriptEvent[]; question?: Question | null }>(`/api/runs/${id}`),
   cancelRun: (id: number) => request<Run>(`/api/runs/${id}/cancel`, { method: "POST" }),
   resumeRun: (id: number) => request<Run>(`/api/runs/${id}/resume`, { method: "POST" }),

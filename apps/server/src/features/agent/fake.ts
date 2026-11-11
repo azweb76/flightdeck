@@ -1,6 +1,6 @@
 import type { AgentDriver, AgentEvent, AgentRunOpts } from "./types.ts";
 
-type FakeOpts = { ask?: boolean; fail?: boolean; majorFirst?: boolean };
+type FakeOpts = { ask?: boolean; fail?: boolean; majorFirst?: boolean; delayMs?: number };
 
 /** Deterministic driver for tests, demo, and Linux CI. Emits Zod-shaped JSON. */
 export function createFakeDriver(opts: FakeOpts = {}): AgentDriver {
@@ -8,7 +8,8 @@ export function createFakeDriver(opts: FakeOpts = {}): AgentDriver {
   return {
     async *run(req: AgentRunOpts): AsyncIterable<AgentEvent> {
       const step = async (): Promise<boolean> => {
-        await Promise.resolve();
+        if (opts.delayMs) await new Promise((r) => setTimeout(r, opts.delayMs));
+        else await Promise.resolve();
         return Boolean(req.abort?.aborted);
       };
       const promptText = await promptTextFrom(req.prompt);

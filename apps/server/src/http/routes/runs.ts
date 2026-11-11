@@ -1,20 +1,42 @@
 import { Hono } from "hono";
 import { MidRunMessageSchema, StartRunSchema, type Run } from "@flightdeck/shared";
 import { publish } from "../../features/events/index.ts";
-import { enqueue } from "../../features/runs/start.ts";
+import { enqueue, pump } from "../../features/runs/start.ts";
 import { abortRun } from "../../features/runs/abort.ts";
 import { insertMessage } from "../../features/messages/index.ts";
 import { answerQuestion, getQuestion, listQuestions } from "../../features/questions/store.ts";
 import { hasLiveSession, pushLiveInput, resolveLiveAnswer } from "../../features/runs/live.ts";
 import { runDiff } from "../../features/runs/diff.ts";
 import { insertEvent } from "../../features/runs/store.ts";
-import { activeRunCount, getRun, listEvents, listRuns, startRun, updateRun } from "../../features/runs/index.ts";
+import {
+  activeRunCount,
+  getRun,
+  listEvents,
+  listRuns,
+  raiseDailyCap,
+  resumeSpendTomorrow,
+  spendStatus,
+  startRun,
+  updateRun,
+} from "../../features/runs/index.ts";
 import { apiError } from "../errors.ts";
 import { NeedRepoError } from "../../features/discovery/index.ts";
 
 export function runRoutes(): Hono {
   const app = new Hono();
-  app.get("/", (c) => c.json({ runs: listRuns(), active: activeRunCount() }));
+  app.get("/", (c) => c.json({ runs: listRuns(), active: activeRunCount(), spend: spendStatus() }));
+  app.get("/spend", (c) => c.json(spendStatus()));
+  app.post("/spend/raise", async (c) => {
+    const body = (await c.req.json()) as { dailyDollarCapUsd?: number };
+    const status = raiseDailyCap(Number(body.dailyDollarCapUsd) || 50);
+    pump();
+    return c.json(status);
+  });
+  app.post("/spend/resume-tomorrow", (c) => {
+    const status = resumeSpendTomorrow();
+    pump();
+    return c.json(status);
+  });
   app.get("/:id", (c) => {
     const run = getRun(Number(c.req.param("id")));
     if (!run) throw apiError(404, "not_found", "Run not found");
