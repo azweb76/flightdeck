@@ -48,9 +48,9 @@ export function IssuesPage() {
         </IconButton>
       </Stack>
       <BoardFilters source={source} repo={repo} params={params} setSource={setSource} setParams={setParams} />
-      {offline ? <Alert severity="warning" sx={{ mb: 2 }}>Offline — showing cached issues. Start and write-backs are disabled.</Alert> : null}
-      {!offline && offlineSources.jira ? <Alert severity="warning" sx={{ mb: 2 }}>Jira sync failed. GitHub issues can still start.</Alert> : null}
-      {!offline && offlineSources.github ? <Alert severity="warning" sx={{ mb: 2 }}>GitHub sync failed. Jira issues can still start.</Alert> : null}
+      {offline ? <Alert severity="warning" sx={{ mb: 2 }}>Offline — showing cached issues. Start and write-backs are disabled until the network is back.</Alert> : null}
+      {!offline && offlineSources.jira ? <Alert severity="warning" sx={{ mb: 2 }}>Jira is unreachable. GitHub issues can still start and write back.</Alert> : null}
+      {!offline && offlineSources.github ? <Alert severity="warning" sx={{ mb: 2 }}>GitHub is unreachable. Jira issues can still start and write back.</Alert> : null}
       {prSync?.error && !errors.includes(prSync.error) ? (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {prSync.error}

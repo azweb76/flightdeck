@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Tooltip, Typography } from "@mui/material";
 import { api } from "../api/index.ts";
 import { MarkdownEditor } from "../../ui/components/markdown/index.ts";
+import { writeBackDisabledReason } from "./disableReasons.ts";
 import { RefineQuestions } from "./RefineQuestions.tsx";
 
 export function GoalEditor({
@@ -45,15 +46,26 @@ export function GoalEditor({
       <MarkdownEditor id={`goal-${issueId}`} value={markdown} onChange={setMarkdown} />
       <Stack direction="row" spacing={2} sx={{ mt: 3, alignItems: "center" }}>
         <Button onClick={() => void api.saveGoal(issueId, markdown)}>Save draft</Button>
-        <Button
-          variant="contained"
-          disabled={offline}
+        <WriteBackButton
+          why={writeBackDisabledReason(Boolean(offline))}
           onClick={() => void api.approveGoal(issueId).then((g) => setStatus(g.status))}
-        >
-          Approve and write back
-        </Button>
+        />
         {status ? <Typography color="text.secondary">{status}</Typography> : null}
       </Stack>
     </Box>
+  );
+}
+
+function WriteBackButton({ why, onClick }: { why?: string; onClick: () => void }) {
+  const btn = (
+    <Button variant="contained" disabled={Boolean(why)} onClick={onClick}>
+      Approve and write back
+    </Button>
+  );
+  if (!why) return btn;
+  return (
+    <Tooltip title={why}>
+      <span>{btn}</span>
+    </Tooltip>
   );
 }

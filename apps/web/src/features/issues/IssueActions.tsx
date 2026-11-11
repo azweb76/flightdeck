@@ -1,10 +1,11 @@
-import { Stack, Button } from "@mui/material";
+import { Stack, Button, Tooltip } from "@mui/material";
 import { useState } from "react";
 import { isPushable, slugOf, type CatalogRepo, type Issue } from "@flightdeck/shared";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/index.ts";
 import { useCatalog } from "../repos/index.ts";
 import { RepoPicker } from "../../ui/components/repo-picker/index.ts";
+import { refineDisabledReason, startDisabledReason } from "./disableReasons.ts";
 
 export function IssueActions({
   issue,
@@ -20,6 +21,8 @@ export function IssueActions({
   const oneRepo = issue.repos.length === 1;
   const [picked, setPicked] = useState<CatalogRepo | null>(null);
   const slug = picked ? slugOf(picked) : issue.repos[0] ? slugOf(issue.repos[0]) : undefined;
+  const refineWhy = refineDisabledReason(Boolean(offline));
+  const startWhy = startDisabledReason(issue, Boolean(offline), Boolean(picked));
 
   async function start() {
     const run = await api.startRun(issue.id, slug);
@@ -30,6 +33,7 @@ export function IssueActions({
     <Stack spacing={2} sx={{ mb: 3 }}>
       {!oneRepo ? (
         <RepoPicker
+          label="Repository"
           repos={catalog.repos}
           value={picked}
           filter={(r) => isPushable(r.permission)}
@@ -41,21 +45,16 @@ export function IssueActions({
         />
       ) : null}
       <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 1 }}>
-        <Button
-          disabled={offline}
-          onClick={() => {
-            void api.refine(issue.id).then(() => nav(`/issues/${encodeURIComponent(issue.id)}?tab=goal`));
-          }}
-        >
+        <WhyButton why={refineWhy} onClick={() => void api.refine(issue.id).then(() => nav(`/issues/${encodeURIComponent(issue.id)}?tab=goal`))}>
           Refine (R)
-        </Button>
-        <Button variant="contained" disabled={(!oneRepo && !picked) || offline} onClick={() => void start()}>
+        </WhyButton>
+        <WhyButton why={startWhy} variant="contained" onClick={() => void start()}>
           Start (S)
-        </Button>
+        </WhyButton>
         {issue.latestRunId ? (
-          <Button disabled={offline} onClick={() => void api.fixRun(issue.latestRunId!).then((run) => nav(`/runs/${run.id}`))}>
+          <WhyButton why={refineWhy} onClick={() => void api.fixRun(issue.latestRunId!).then((run) => nav(`/runs/${run.id}`))}>
             Fix
-          </Button>
+          </WhyButton>
         ) : null}
         {issue.prs?.some((p) => p.role === "mine") ? (
           <Button onClick={() => nav(`/issues/${encodeURIComponent(issue.id)}?tab=prs`)}>PR Open</Button>
@@ -65,5 +64,29 @@ export function IssueActions({
         ) : null}
       </Stack>
     </Stack>
+  );
+}
+
+function WhyButton({
+  why,
+  variant,
+  onClick,
+  children,
+}: {
+  why?: string;
+  variant?: "contained" | "text" | "outlined";
+  onClick: () => void;
+  children: string;
+}) {
+  const btn = (
+    <Button variant={variant} disabled={Boolean(why)} onClick={onClick}>
+      {children}
+    </Button>
+  );
+  if (!why) return btn;
+  return (
+    <Tooltip title={why}>
+      <span>{btn}</span>
+    </Tooltip>
   );
 }

@@ -7,6 +7,7 @@ export function useIssue(id: string | undefined) {
   const [error, setError] = useState<string>();
   const [offline, setOffline] = useState(false);
   const [offlineSources, setOfflineSources] = useState({ jira: false, github: false });
+  const [syncErrors, setSyncErrors] = useState<string[]>([]);
 
   function load() {
     if (!id) return;
@@ -15,10 +16,12 @@ export function useIssue(id: string | undefined) {
       .then((r) => {
         setOffline(r.offline);
         setOfflineSources(r.offlineSources ?? { jira: false, github: false });
+        setSyncErrors(r.errors);
       })
       .catch(() => {
         setOffline(true);
         setOfflineSources({ jira: true, github: true });
+        setSyncErrors(["Could not reach Flightdeck"]);
       });
     void api
       .issue(decodeURIComponent(id))
@@ -39,5 +42,5 @@ export function useIssue(id: string | undefined) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  return { issue, error, offline, offlineSources, load };
+  return { issue, error, offline, offlineSources, syncErrors, load };
 }

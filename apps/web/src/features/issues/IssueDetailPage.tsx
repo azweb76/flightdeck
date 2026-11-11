@@ -14,7 +14,7 @@ export function IssueDetailPage() {
   const { id } = useParams();
   const [params, setParams] = useSearchParams();
   const tab = params.get("tab") ?? "goal";
-  const { issue, error, offline, offlineSources, load } = useIssue(id);
+  const { issue, error, offline, offlineSources, syncErrors, load } = useIssue(id);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -57,6 +57,11 @@ export function IssueDetailPage() {
         {issue.needsYou ? <Chip color="warning" size="small" label="Needs you" /> : null}
         {issue.viaPr ? <Chip size="small" variant="outlined" label="via PR" /> : null}
       </Stack>
+      {syncErrors.map((e) => (
+        <Alert key={e} severity="warning" sx={{ mb: 2 }}>
+          {e}
+        </Alert>
+      ))}
       <IssueActions issue={issue} onChange={load} offline={sourceOffline} />
       {issue.comments?.length ? (
         <Box sx={{ mb: 3 }}>

@@ -1,5 +1,6 @@
 import type { Issue, VisibleRepo } from "@flightdeck/shared";
 import { jiraSearchJql } from "../jira/jql.ts";
+import { isNetworkFailure } from "./network.ts";
 import { createGithubClient, type GithubClient } from "../github/index.ts";
 import { createJiraClient, type JiraClient } from "../jira/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
@@ -156,15 +157,25 @@ export async function syncAssigned(
   const settings = getSettings();
   const jiraErrors: string[] = [];
   const githubErrors: string[] = [];
+  let jiraNetwork = false;
+  let githubNetwork = false;
   const source = query.source ?? "all";
   const visible = await hourCache("meta:repos", () => visibleRepos(deps), refreshMeta).catch(() => [] as VisibleRepo[]);
   const since = cacheGet("issues:last_sync")?.fetchedAt;
   const incremental = Boolean(since) && !refreshMeta;
   const [jira, github] = await Promise.all([
-    source === "github" ? Promise.resolve([]) : loadJira(settings, visible, deps, jiraErrors, incremental ? since : undefined),
-    source === "jira" ? Promise.resolve([]) : loadGithub(deps, githubErrors, incremental ? since : undefined),
+    source === "github"
+      ? Promise.resolve([])
+      : loadJira(settings, visible, deps, jiraErrors, (down) => {
+          jiraNetwork = down;
+        }, incremental ? since : undefined),
+    source === "jira"
+      ? Promise.resolve([])
+      : loadGithub(deps, githubErrors, (down) => {
+          githubNetwork = down;
+        }, incremental ? since : undefined),
   ]);
-  const sources: SourceOffline = { jira: jiraErrors.length > 0, github: githubErrors.length > 0 };
+  const sources: SourceOffline = { jira: jiraNetwork, github: githubNetwork };
   const errors = [...jiraErrors, ...githubErrors];
   const calledJira = source !== "github" && (jira.length > 0 || jiraErrors.length > 0);
   const calledGithub = source !== "jira";
@@ -215,6 +226,7 @@ async function loadJira(
   visible: VisibleRepo[],
   deps: IssueDeps,
   errors: string[],
+  onNetwork: (down: boolean) => void,
   since?: string,
 ): Promise<Issue[]> {
   if (!settings.jiraSiteUrl || !settings.jiraEmail) return [];
@@ -234,17 +246,24 @@ async function loadJira(
     );
   } catch (err) {
     errors.push(err instanceof Error ? err.message : "Jira fetch failed");
+    onNetwork(isNetworkFailure(err));
     return [];
   }
 }
 
-async function loadGithub(deps: IssueDeps, errors: string[], since?: string): Promise<Issue[]> {
+async function loadGithub(
+  deps: IssueDeps,
+  errors: string[],
+  onNetwork: (down: boolean) => void,
+  since?: string,
+): Promise<Issue[]> {
   const client = deps.github ?? createGithubClient();
   try {
     const raw = await client.listAssignedIssues(since);
     return raw.map((issue) => mapGithub(issue));
   } catch (err) {
     errors.push(err instanceof Error ? err.message : "GitHub assigned-issue search failed");
+    onNetwork(isNetworkFailure(err));
     return [];
   }
 }
