@@ -278,4 +278,16 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: "012_board_prs",
+    sql: `
+      ALTER TABLE issues ADD COLUMN via_pr INTEGER NOT NULL DEFAULT 0;
+      CREATE TABLE IF NOT EXISTS board_prs (
+        id TEXT PRIMARY KEY,
+        payload TEXT NOT NULL,
+        linked_issue_ids TEXT NOT NULL DEFAULT '[]',
+        fetched_at TEXT NOT NULL
+      );
+    `,
+  },
 ];

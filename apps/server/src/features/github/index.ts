@@ -1,4 +1,4 @@
-import type { GithubStatus } from "@flightdeck/shared";
+import type { BoardPr, GithubStatus } from "@flightdeck/shared";
 import { hourCache } from "../cache/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 import {
@@ -30,6 +30,7 @@ export type GithubClient = {
   listAssignedIssues(since?: string): Promise<AssignedIssue[]>;
   listVisibleRepos(): Promise<{ owner: string; name: string }[]>;
   getJson(path: string, etag?: string): Promise<{ status: number; etag?: string; body: string }>;
+  listOpenPrs(opts?: { since?: string }): Promise<BoardPr[]>;
 };
 
 export type { AssignedIssue };
@@ -72,7 +73,22 @@ export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
     listAssignedIssues: (since) => listAssignedIssues(exec, since),
     listVisibleRepos: () => cachedVisibleRepos(exec),
     getJson: (path, etag) => ghApiJson(exec, path, etag),
+    listOpenPrs: (opts) => listOpenPrs(exec, opts?.since),
   };
+}
+
+async function listOpenPrs(exec: ExecFn, since?: string): Promise<BoardPr[]> {
+  const { searchOpenPrs } = await import("../board-prs/search.ts");
+  const { prSearchQuery } = await import("../board-prs/query.ts");
+  const { getSettings } = await import("../settings/index.ts");
+  const settings = getSettings();
+  const query = prSearchQuery({
+    authored: settings.boardAuthoredPrs,
+    review: settings.boardReviewPrs,
+    since,
+  });
+  if (!query) return [];
+  return searchOpenPrs(exec, query, []);
 }
 
 async function prOut(exec: ExecFn, args: string[]): Promise<string> {
