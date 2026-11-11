@@ -47,8 +47,9 @@ export async function runSetupChecks(deps: SetupDeps = {}): Promise<SetupStatus>
   ];
   const settings = getSettings();
   const requiredOk = git.ok && checks[1]!.ok && checks[2]!.ok;
+  const demo = process.env.FLIGHTDECK_DEMO === "1";
   return {
-    complete: settings.setupComplete && requiredOk,
+    complete: settings.setupComplete && (requiredOk || demo),
     checks,
     claude,
     github,
