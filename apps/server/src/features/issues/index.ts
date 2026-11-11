@@ -81,9 +81,10 @@ export async function syncAssigned(
   let offline = false;
   const visible = await hourCache("meta:repos", () => visibleRepos(deps), refreshMeta).catch(() => [] as VisibleRepo[]);
   const since = cacheGet("issues:last_sync")?.fetchedAt;
+  const incremental = Boolean(since) && !refreshMeta;
   const [jira, github] = await Promise.all([
-    source === "github" ? Promise.resolve([]) : loadJira(settings, visible, deps, errors, since),
-    source === "jira" ? Promise.resolve([]) : loadGithub(deps, errors, since),
+    source === "github" ? Promise.resolve([]) : loadJira(settings, visible, deps, errors, incremental ? since : undefined),
+    source === "jira" ? Promise.resolve([]) : loadGithub(deps, errors, incremental ? since : undefined),
   ]);
   if (errors.length && jira.length === 0 && github.length === 0) offline = true;
   const live = [...jira, ...github];
@@ -93,7 +94,8 @@ export async function syncAssigned(
     return present(demo, query, { offline: false, fromCache: false, errors });
   }
   for (const issue of live) upsertIssue(issue, { assigned: true });
-  pruneIssues(live.map((i) => i.id));
+  // Incremental (since-filtered) lists are incomplete — never prune from them.
+  if (!incremental) pruneIssues(live.map((i) => i.id));
   cacheSet("issues:last_sync", new Date().toISOString());
   return present(loadIssues(), query, { offline, fromCache: false, errors, syncedAt: new Date().toISOString() });
 }

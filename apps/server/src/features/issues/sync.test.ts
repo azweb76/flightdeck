@@ -66,4 +66,65 @@ describe("assigned issue sync", () => {
     expect(second.fromCache).toBe(true);
     expect(second.issues.length).toBe(2);
   });
+
+  it("does not prune stale assigned issues on a since-filtered refresh", async () => {
+    const gh = {
+      listAssignedIssues: async (since?: string) =>
+        since
+          ? [
+              {
+                number: 1,
+                title: "Updated",
+                body: "",
+                url: "https://github.com/acme/web/issues/1",
+                updatedAt: "2026-11-11T01:00:00Z",
+                owner: "acme",
+                name: "web",
+              },
+            ]
+          : [
+              {
+                number: 1,
+                title: "Assigned GH",
+                body: "",
+                url: "https://github.com/acme/web/issues/1",
+                updatedAt: "2026-11-11T00:00:00Z",
+                owner: "acme",
+                name: "web",
+              },
+              {
+                number: 2,
+                title: "Older assigned",
+                body: "",
+                url: "https://github.com/acme/web/issues/2",
+                updatedAt: "2026-11-10T00:00:00Z",
+                owner: "acme",
+                name: "web",
+              },
+            ],
+      listVisibleRepos: async () => [{ owner: "acme", name: "web" }],
+      getJson: async () => ({ status: 200, body: "[]" }),
+    };
+    const jira = {
+      search: async (opts: { jql: string }) =>
+        opts.jql.includes("updated >=")
+          ? []
+          : [
+              {
+                key: "PROJ-9",
+                title: "Assigned Jira",
+                body: "",
+                url: "https://ex/browse/PROJ-9",
+                labels: ["gh:acme/web"],
+                updatedAt: "2026-11-11T00:00:00Z",
+              },
+            ],
+    };
+    const d = { github: gh, jira } as unknown as IssueDeps;
+    await listIssues({ refresh: "1" }, d);
+    expect(loadIssues()).toHaveLength(3);
+    const { syncAssigned } = await import("./index.ts");
+    await syncAssigned({}, d, false);
+    expect(loadIssues().map((i) => i.key).sort()).toEqual(["PROJ-9", "acme/web#1", "acme/web#2"]);
+  });
 });
