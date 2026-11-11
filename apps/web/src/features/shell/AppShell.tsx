@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import type { Repo } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { api, subscribeEvents } from "../api/index.ts";
 import { Palette } from "../palette/index.ts";
 import { NeedsYouBanner } from "./NeedsYouBanner.tsx";
@@ -9,6 +9,7 @@ import { SideNav } from "./SideNav.tsx";
 import { TopBar } from "./TopBar.tsx";
 
 export function AppShell({ repos }: { repos: Repo[] }) {
+  const loc = useLocation();
   const [counts, setCounts] = useState({ issues: 0, runs: 0, reviews: 0 });
   const [asking, setAsking] = useState<{ prompt: string; href: string }>();
   const [syncLabel, setSyncLabel] = useState("Synced");
@@ -16,27 +17,37 @@ export function AppShell({ repos }: { repos: Repo[] }) {
 
   useEffect(() => {
     function load() {
-      void Promise.all([api.issues({}), api.runs(), api.reviews(), api.notifications()]).then(
-        ([iss, runs, revs, n]) => {
-          setCounts({ issues: iss.issues.length, runs: runs.active, reviews: revs.reviews.length });
-          const q = n.questions[0];
-          setAsking(q ? { prompt: q.prompt, href: `/runs/${q.runId}` } : undefined);
-          if (iss.offline) {
-            setSyncLabel("Offline");
-            setSyncTone("warning");
-          } else if (iss.errors.length) {
-            setSyncLabel("Sync warning");
-            setSyncTone("warning");
-          } else {
-            setSyncLabel("Synced");
-            setSyncTone("success");
-          }
-        },
-      );
+      void api.issues({}).then((iss) => {
+        setCounts((c) => ({ ...c, issues: iss.issues.length }));
+        if (iss.offline) {
+          setSyncLabel("Offline");
+          setSyncTone("warning");
+        } else if (iss.errors.length) {
+          setSyncLabel("Sync warning");
+          setSyncTone("warning");
+        } else {
+          setSyncLabel("Synced");
+          setSyncTone("success");
+        }
+      }).catch(() => {
+        setSyncLabel("Offline");
+        setSyncTone("warning");
+      });
+      void api.runs().then((r) => setCounts((c) => ({ ...c, runs: r.runs.length }))).catch(() => undefined);
+      void api.reviews().then((r) => setCounts((c) => ({ ...c, reviews: r.reviews.length }))).catch(() => undefined);
+      void api.notifications().then((n) => {
+        const q = n.questions[0];
+        setAsking(q ? { prompt: q.prompt, href: `/runs/${q.runId}` } : undefined);
+      }).catch(() => undefined);
     }
     load();
-    return subscribeEvents(load);
-  }, []);
+    const tick = window.setInterval(load, 15_000);
+    const off = subscribeEvents(load);
+    return () => {
+      window.clearInterval(tick);
+      off();
+    };
+  }, [loc.pathname]);
 
   return (
     <Box sx={{ display: "flex", height: "100%", bgcolor: "background.default" }}>
