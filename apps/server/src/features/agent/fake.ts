@@ -27,8 +27,8 @@ export function createFakeDriver(opts: FakeOpts = {}): AgentDriver {
       }
       if (req.role === "reviewer") reviews += 1;
       yield jsonEvent(payload(req, reviews, opts.majorFirst === true));
-      yield { kind: "usage", title: "usage", tokensIn: 1200, tokensOut: 400 };
-      yield { kind: "done", title: `${req.role} finished`, sdkSessionId: "fake-session" };
+      yield { kind: "usage", title: "usage", tokensIn: 1200, tokensOut: 400, usd: 0.012 };
+      yield { kind: "done", title: `${req.role} finished`, sdkSessionId: req.resumeSessionId ?? "fake-session" };
     },
   };
 }

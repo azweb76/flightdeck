@@ -72,6 +72,9 @@ async function handleEvent(
   if (ev.kind === "ask" && ev.ask) {
     const q = insertQuestion({ runId: run.id, prompt: ev.ask.prompt, options: ev.ask.options });
     updateRun(run.id, { status: "asking", questionId: q.id, pauseReason: ev.ask.prompt });
+    if (ev.sdkSessionId) {
+      getDb().prepare("UPDATE sessions SET sdk_session_id = ? WHERE id = ?").run(ev.sdkSessionId, sessionId);
+    }
     await notify("Flightdeck needs you", ev.ask.prompt, `/runs/${run.id}`);
     publish("questions.updated", { runId: run.id });
     record(run.id, sessionId, role, ev);
@@ -95,7 +98,9 @@ async function handleUsage(
 ): Promise<"error" | undefined> {
   let extraUsd = 0;
   if (ev.kind === "usage") {
-    extraUsd = roundUsd(usageUsd(ev.tokensIn ?? 0, ev.tokensOut ?? 0));
+    extraUsd = roundUsd(
+      ev.usd != null ? ev.usd : usageUsd(ev.tokensIn ?? 0, ev.tokensOut ?? 0),
+    );
     const nextCost = roundUsd(current.costUsd + extraUsd);
     updateRun(run.id, { costUsd: nextCost });
     if (nextCost >= run.capUsd) {

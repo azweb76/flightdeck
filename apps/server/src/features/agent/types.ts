@@ -8,6 +8,7 @@ export type AgentEvent = {
   path?: string;
   tokensIn?: number;
   tokensOut?: number;
+  usd?: number;
   ask?: { prompt: string; options: { id: string; label: string }[] };
   sdkSessionId?: string;
 };
