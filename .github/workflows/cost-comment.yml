@@ -1,8 +1,11 @@
 name: cost-comment
 on:
+  workflow_dispatch:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
 jobs:
   cost:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'cost-comment')
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
