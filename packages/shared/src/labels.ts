@@ -24,10 +24,11 @@ export function parseRepoLabels(labels: readonly string[], prefix: string): Pars
 
 function parseOne(label: string, prefix: string): ParsedRepoRef | undefined {
   if (!prefix || !label.toLowerCase().startsWith(prefix.toLowerCase())) return undefined;
-  const spec = label.slice(prefix.length);
+  const spec = label.slice(prefix.length).trim();
   const m = spec.match(REPO_SPEC);
-  if (!m?.[1] || !m[2]) return undefined;
-  return { owner: m[1], name: m[2], label };
+  if (m?.[1] && m[2]) return { owner: m[1], name: m[2], label };
+  if (spec && !spec.includes("/")) return { owner: "", name: spec, label };
+  return undefined;
 }
 
 export function repoLinkWarning(repos: readonly ParsedRepoRef[]): RepoLinkWarning {

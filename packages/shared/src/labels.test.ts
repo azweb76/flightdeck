@@ -31,10 +31,12 @@ describe("parseRepoLabels", () => {
     expect(parseRepoLabels(["gh:acme/web", "gh:acme/web"], prefix)).toHaveLength(1);
   });
 
-  it("ignores a prefix match that is not owner/name", () => {
-    expect(parseRepoLabels(["gh:not-a-repo", "gh:/oops", "gh:acme/web/extra"], prefix)).toEqual(
-      [],
-    );
+  it("parses a bare repo name after the prefix", () => {
+    expect(parseRepoLabels(["gh:web"], prefix)).toEqual([{ owner: "", name: "web", label: "gh:web" }]);
+  });
+
+  it("ignores a prefix match that is not a repo name", () => {
+    expect(parseRepoLabels(["gh:/oops", "gh:acme/web/extra"], prefix)).toEqual([]);
   });
 
   it("honors a custom prefix", () => {

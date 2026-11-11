@@ -5,6 +5,7 @@ export * from "./pr-body.ts";
 export * from "./parse-json.ts";
 export * from "./severity.ts";
 export * from "./eval-replay.ts";
+export * from "./resolve-repo.ts";
 export * from "./schemas/common.ts";
 export * from "./schemas/settings.ts";
 export * from "./schemas/repos.ts";
