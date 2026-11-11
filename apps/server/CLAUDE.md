@@ -10,5 +10,5 @@ Localhost-only HTTP API (`127.0.0.1`) plus SSE. Electron and `pnpm dev` both sta
 - Storage: SQLite via `node:sqlite` under `~/.flightdeck/` (override with `FLIGHTDECK_DATA_DIR`).
 - Jira token: Keychain service `flightdeck` (Linux: `~/.flightdeck/secrets/`).
 - Runner: `src/features/runs/` (start, orchestrate, execute, PR).
-- Agent drivers: `src/features/agent/` (`fake` vs `sdk`, Auto permission mode).
+- Agent drivers: `src/features/agent/` (Claude Agent SDK by default; fake only when `FLIGHTDECK_AGENT=fake` or `FLIGHTDECK_DEMO=1`).
 - Do not import `apps/web` or `apps/desktop`.
