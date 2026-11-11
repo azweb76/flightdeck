@@ -1,6 +1,7 @@
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { APP_NAME, type Repo } from "@flightdeck/shared";
-import { NavLink, useNavigate, useSearchParams } from "react-router-dom";
+import { NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { hideAskingFooter } from "./askingFooter.ts";
 
 export function SideNav({
   repos,
@@ -15,6 +16,8 @@ export function SideNav({
   const [params] = useSearchParams();
   const activeRepo = params.get("repo");
   const nav = useNavigate();
+  const loc = useLocation();
+  const hideFooter = hideAskingFooter(loc.pathname, asking?.href);
   const items = [
     { to: "/issues", label: "Issues", count: counts.issues },
     { to: "/runs", label: "Runs", count: counts.runs },
@@ -39,7 +42,7 @@ export function SideNav({
       <Typography sx={{ fontWeight: 600, px: 3, py: 3, fontSize: 15 }}>{APP_NAME}</Typography>
       <Stack sx={{ px: 1, gap: 0.5 }}>
         {items.map((item) => (
-          <NavRow key={item.to} to={item.to} label={item.label} count={item.count} />
+          <NavRow key={item.to} to={item.to} label={item.label} count={item.count} askingDot={item.to === "/runs" && hideFooter} />
         ))}
       </Stack>
       <Typography sx={{ mt: 4, px: 3, fontSize: 11, fontWeight: 600, color: "text.secondary", letterSpacing: "0.04em" }}>
@@ -71,7 +74,7 @@ export function SideNav({
         ) : null}
       </Stack>
       <Box sx={{ flex: 1 }} />
-      <AskingFooter asking={asking} onOpen={(href) => nav(href)} />
+      <AskingFooter asking={hideFooter ? undefined : asking} onOpen={(href) => nav(href)} />
     </Box>
   );
 }
@@ -95,7 +98,7 @@ function AskingFooter({
   );
 }
 
-function NavRow({ to, label, count }: { to: string; label: string; count?: number }) {
+function NavRow({ to, label, count, askingDot }: { to: string; label: string; count?: number; askingDot?: boolean }) {
   return (
     <Button
       component={NavLink}
@@ -110,7 +113,10 @@ function NavRow({ to, label, count }: { to: string; label: string; count?: numbe
       }}
     >
       <span>{label}</span>
-      {count != null ? <Typography component="span">{count}</Typography> : null}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        {askingDot ? <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "warning.main" }} /> : null}
+        {count != null ? <Typography component="span">{count}</Typography> : null}
+      </Box>
     </Button>
   );
 }
