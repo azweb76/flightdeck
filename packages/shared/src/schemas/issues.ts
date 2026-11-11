@@ -22,6 +22,9 @@ export const IssueSchema = z.object({
   repos: z.array(LinkedRepoSchema),
   repoWarning: RepoLinkWarningSchema,
   updatedAt: z.string(),
+  needsYou: z.boolean().optional(),
+  statusNote: z.string().optional(),
+  latestRunId: z.number().optional(),
 });
 export type Issue = z.infer<typeof IssueSchema>;
 

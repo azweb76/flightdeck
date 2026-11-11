@@ -3,7 +3,7 @@ import { z } from "zod";
 export const ThemeModeSchema = z.enum(["system", "light", "dark"]);
 export type ThemeMode = z.infer<typeof ThemeModeSchema>;
 
-export const IssueSourceSchema = z.enum(["jira", "github"]);
+export const IssueSourceSchema = z.enum(["jira", "github", "adhoc"]);
 export type IssueSource = z.infer<typeof IssueSourceSchema>;
 
 export const IssueStageSchema = z.enum(["new", "refined", "running", "pr_open"]);
