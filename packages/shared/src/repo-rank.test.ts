@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fuzzyScore, rankRepos, type RankableRepo } from "./repo-rank.ts";
+import { flattenRanked, fuzzyScore, rankRepos, type RankableRepo } from "./repo-rank.ts";
 
 function repo(partial: Partial<RankableRepo> & Pick<RankableRepo, "owner" | "name">): RankableRepo {
   return { description: "", ...partial };
@@ -56,5 +56,12 @@ describe("rankRepos", () => {
 
   it("hides non-matching rows when there is a query", () => {
     expect(rankRepos(catalog, "zzz")).toEqual([]);
+  });
+
+  it("flattens group headers ahead of each section", () => {
+    const flat = flattenRanked(rankRepos(catalog, ""));
+    expect(flat.filter((i) => i.kind === "header").map((i) => i.group)).toEqual(["favorites", "recent", "all"]);
+    expect(flat[0]).toMatchObject({ kind: "header", group: "favorites" });
+    expect(flat[1]).toMatchObject({ kind: "row", id: "acme/web" });
   });
 });

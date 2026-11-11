@@ -1,7 +1,16 @@
-import { Autocomplete, Box, Chip, IconButton, Stack, TextField, Typography } from "@mui/material";
-import { useMemo, useState, type HTMLAttributes } from "react";
-import { isPushable, rankRepos, slugOf, type CatalogRepo, type RankedGroup, type RankedRepo } from "@flightdeck/shared";
-import { RefreshIcon, StarIcon } from "../../../features/ui/icons.tsx";
+import { Autocomplete, Box, IconButton, Stack, TextField } from "@mui/material";
+import { useMemo, useState } from "react";
+import {
+  flattenRanked,
+  rankRepos,
+  slugOf,
+  type CatalogRepo,
+  type FlatPickerItem,
+  type RankedGroup,
+} from "@flightdeck/shared";
+import { RefreshIcon } from "../../../features/ui/icons.tsx";
+import { VirtualListbox } from "./listbox.tsx";
+import { OptionRow } from "./option-row.tsx";
 
 const GROUP_LABEL: Record<RankedGroup, string> = {
   favorites: "Favorites",
@@ -22,11 +31,13 @@ export type RepoPickerProps = {
   onToggleFavorite?: (repo: CatalogRepo) => void;
 };
 
+type Item = FlatPickerItem<CatalogRepo>;
+
 export function RepoPicker(props: RepoPickerProps) {
   const [query, setQuery] = useState("");
   const options = useMemo(() => {
     const source = props.filter ? props.repos.filter(props.filter) : props.repos;
-    return rankRepos(source, query);
+    return flattenRanked(rankRepos(source, query));
   }, [props.repos, props.filter, query]);
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start", width: "100%" }}>
@@ -35,9 +46,9 @@ export function RepoPicker(props: RepoPickerProps) {
           multiple={props.multiple}
           autoHighlight
           options={options}
-          groupBy={(o) => GROUP_LABEL[o.group]}
-          getOptionLabel={(o) => slugOf(o.repo)}
-          isOptionEqualToValue={(a, b) => slugOf(a.repo) === slugOf(b.repo)}
+          getOptionLabel={(o) => (o.kind === "row" ? slugOf(o.repo) : GROUP_LABEL[o.group])}
+          getOptionDisabled={(o) => o.kind === "header"}
+          isOptionEqualToValue={(a, b) => a.id === b.id}
           filterOptions={(rows) => rows}
           value={selected(options, props.value, props.multiple)}
           inputValue={query}
@@ -45,13 +56,25 @@ export function RepoPicker(props: RepoPickerProps) {
             if (reason !== "reset") setQuery(next);
           }}
           onChange={(_, next) => emitChange(props, next)}
-          slotProps={{ listbox: { sx: { maxHeight: 320, overflow: "auto", py: 0 } } }}
+          slots={{ listbox: VirtualListbox }}
           renderInput={(params) => (
             <TextField {...params} autoFocus={props.autoFocus} placeholder={props.placeholder ?? "Search repos"} />
           )}
-          renderOption={(li, option) => (
-            <OptionRow key={slugOf(option.repo)} li={li} option={option} onToggleFavorite={props.onToggleFavorite} />
-          )}
+          renderOption={(li, option) =>
+            option.kind === "header" ? (
+              <Box
+                component="li"
+                {...li}
+                key={option.id}
+                onMouseDown={(e) => e.preventDefault()}
+                sx={{ fontSize: 11, fontWeight: 600, color: "text.secondary", letterSpacing: 0.4, minHeight: 44 }}
+              >
+                {GROUP_LABEL[option.group]}
+              </Box>
+            ) : (
+              <OptionRow key={option.id} li={li} repo={option.repo} onToggleFavorite={props.onToggleFavorite} />
+            )
+          }
         />
       </Box>
       {props.onRefresh ? (
@@ -63,63 +86,25 @@ export function RepoPicker(props: RepoPickerProps) {
   );
 }
 
-function emitChange(
-  props: RepoPickerProps,
-  next: RankedRepo<CatalogRepo> | RankedRepo<CatalogRepo>[] | null,
-) {
+function emitChange(props: RepoPickerProps, next: Item | Item[] | null) {
+  const rows = (Array.isArray(next) ? next : next ? [next] : []).filter((i): i is Item & { kind: "row" } => i.kind === "row");
   if (props.multiple) {
-    props.onChange(((next as RankedRepo<CatalogRepo>[]) ?? []).map((row) => row.repo));
+    props.onChange(rows.map((row) => row.repo));
     return;
   }
-  props.onChange((next as RankedRepo<CatalogRepo> | null)?.repo ?? null);
+  props.onChange(rows[0]?.repo ?? null);
 }
 
-function selected(
-  options: RankedRepo<CatalogRepo>[],
-  value: CatalogRepo | CatalogRepo[] | null,
-  multiple?: boolean,
-): RankedRepo<CatalogRepo> | RankedRepo<CatalogRepo>[] | null {
-  const asOption = (repo: CatalogRepo) =>
-    options.find((o) => slugOf(o.repo) === slugOf(repo)) ?? { repo, group: "all" as const, score: 0 };
-  if (multiple) return Array.isArray(value) ? value.map(asOption) : [];
+function selected(options: Item[], value: CatalogRepo | CatalogRepo[] | null, multiple?: boolean): Item | Item[] | null {
+  const asItem = (repo: CatalogRepo): Item =>
+    options.find((o) => o.kind === "row" && slugOf(o.repo) === slugOf(repo)) ?? {
+      kind: "row",
+      group: "all",
+      id: slugOf(repo),
+      repo,
+      score: 0,
+    };
+  if (multiple) return Array.isArray(value) ? value.map(asItem) : [];
   if (!value || Array.isArray(value)) return null;
-  return asOption(value);
-}
-
-function OptionRow({
-  li,
-  option,
-  onToggleFavorite,
-}: {
-  li: HTMLAttributes<HTMLLIElement>;
-  option: RankedRepo<CatalogRepo>;
-  onToggleFavorite?: (repo: CatalogRepo) => void;
-}) {
-  return (
-    <Box component="li" {...li} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12 }}>
-          {slugOf(option.repo)}
-        </Typography>
-        {option.repo.description ? (
-          <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
-            {option.repo.description}
-          </Typography>
-        ) : null}
-      </Box>
-      {option.repo.private ? <Chip label="private" size="small" /> : null}
-      {!isPushable(option.repo.permission) ? <Chip label="read-only" size="small" /> : null}
-      <IconButton
-        size="small"
-        aria-label={option.repo.favorite ? "Unstar" : "Star"}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onToggleFavorite?.(option.repo);
-        }}
-      >
-        <StarIcon filled={option.repo.favorite} />
-      </IconButton>
-    </Box>
-  );
+  return asItem(value);
 }

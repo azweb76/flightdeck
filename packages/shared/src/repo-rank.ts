@@ -63,6 +63,24 @@ export function rankRepos<T extends RankableRepo>(
   ];
 }
 
+export type FlatPickerItem<T extends RankableRepo = RankableRepo> =
+  | { kind: "header"; group: RankedGroup; id: string }
+  | { kind: "row"; group: RankedGroup; id: string; repo: T; score: number };
+
+/** Headers + rows so a virtual listbox can keep Favorites / Recent / All. */
+export function flattenRanked<T extends RankableRepo>(ranked: readonly RankedRepo<T>[]): FlatPickerItem<T>[] {
+  const out: FlatPickerItem<T>[] = [];
+  let last: RankedGroup | undefined;
+  for (const row of ranked) {
+    if (row.group !== last) {
+      out.push({ kind: "header", group: row.group, id: `header:${row.group}` });
+      last = row.group;
+    }
+    out.push({ kind: "row", group: row.group, id: slugOf(row.repo), repo: row.repo, score: row.score });
+  }
+  return out;
+}
+
 function scored<T extends RankableRepo>(
   repos: readonly T[],
   group: RankedGroup,
