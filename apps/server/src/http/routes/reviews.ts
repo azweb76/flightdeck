@@ -1,11 +1,15 @@
 import { Hono } from "hono";
-import { getReview, listReviews, patchDraft, startDemoReview, submitReview } from "../../features/pr-review/index.ts";
+import { getReview, listReviews, patchDraft, startDemoReview, startReview, submitReview } from "../../features/pr-review/index.ts";
 import { apiError } from "../errors.ts";
 
 export function reviewRoutes(): Hono {
   const app = new Hono();
   app.get("/", (c) => c.json({ reviews: listReviews() }));
-  app.post("/", (c) => c.json(startDemoReview(), 201));
+  app.post("/", async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { repoSlug?: string; prNumber?: number };
+    if (body.repoSlug && body.prNumber) return c.json(await startReview(body.repoSlug, body.prNumber), 201);
+    return c.json(startDemoReview(), 201);
+  });
   app.get("/:id", (c) => {
     const review = getReview(Number(c.req.param("id")));
     if (!review) throw apiError(404, "not_found", "Review not found");

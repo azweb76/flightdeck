@@ -28,27 +28,32 @@ export function getReview(id: number): PrReviewSession | undefined {
 }
 
 export function startDemoReview(): PrReviewSession {
-  const files = [
-    {
-      path: "src/routes/export.ts",
-      patch: "+router.get(\"/export\", ...)\n+  const rows = await db.invoices.findAll();",
-      additions: 8,
-      deletions: 0,
-    },
-  ];
-  const createdAt = new Date().toISOString();
-  const r = getDb()
-    .prepare(
-      `INSERT INTO pr_reviews (repo_slug, pr_number, title, files_json, status, created_at)
-       VALUES (?,?,?,?,?,?)`,
-    )
-    .run("acme/web", 431, "Add CSV export endpoint", JSON.stringify(files), "drafting", createdAt);
-  const id = Number(r.lastInsertRowid);
-  getDb()
-    .prepare("INSERT INTO review_drafts (review_id, path, line, body, state) VALUES (?,?,?,?,?)")
-    .run(id, "src/routes/export.ts", 12, "findAll() loads every invoice; stream with a cursor.", "pending");
-  publish("reviews.updated");
-  return getReview(id)!;
+  return insertReview(
+    "acme/web",
+    431,
+    "Add CSV export endpoint",
+    [
+      {
+        path: "src/routes/export.ts",
+        patch: "+router.get(\"/export\", ...)\n+  const rows = await db.invoices.findAll();",
+        additions: 8,
+        deletions: 0,
+      },
+    ],
+    ["findAll() loads every invoice; stream with a cursor."],
+  );
+}
+
+export async function startReview(repoSlug: string, prNumber: number): Promise<PrReviewSession> {
+  if (process.env.FLIGHTDECK_DEMO === "1") return startDemoReview();
+  const [owner, name] = repoSlug.split("/");
+  const gh = createGithubClient();
+  const view = await gh.prView(owner ?? "", name ?? "", prNumber);
+  const diff = await gh.prDiff(owner ?? "", name ?? "", prNumber);
+  const files = [{ path: "diff.patch", patch: diff.slice(0, 8000), additions: 0, deletions: 0 }];
+  return insertReview(repoSlug, prNumber, view.title || `PR #${prNumber}`, files, [
+    "Draft a comment on the riskiest change.",
+  ]);
 }
 
 export function patchDraft(id: number, state: ReviewDraft["state"], body?: string): void {
@@ -75,6 +80,31 @@ export async function submitReview(id: number): Promise<void> {
   }
   getDb().prepare("UPDATE pr_reviews SET status = 'submitted' WHERE id = ?").run(id);
   publish("reviews.updated");
+}
+
+function insertReview(
+  repoSlug: string,
+  prNumber: number,
+  title: string,
+  files: PrReviewSession["files"],
+  draftBodies: string[],
+): PrReviewSession {
+  const createdAt = new Date().toISOString();
+  const r = getDb()
+    .prepare(
+      `INSERT INTO pr_reviews (repo_slug, pr_number, title, files_json, status, created_at)
+       VALUES (?,?,?,?,?,?)`,
+    )
+    .run(repoSlug, prNumber, title, JSON.stringify(files), "drafting", createdAt);
+  const id = Number(r.lastInsertRowid);
+  const path = files[0]?.path ?? "file";
+  for (const body of draftBodies) {
+    getDb()
+      .prepare("INSERT INTO review_drafts (review_id, path, line, body, state) VALUES (?,?,?,?,?)")
+      .run(id, path, 1, body, "pending");
+  }
+  publish("reviews.updated");
+  return getReview(id)!;
 }
 
 function draftsFor(reviewId: number): ReviewDraft[] {
