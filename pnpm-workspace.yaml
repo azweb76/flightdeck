@@ -1,3 +1,14 @@
 packages:
   - apps/*
   - packages/*
+
+# Only install versions published more than 24 hours ago (pnpm 12.18 docs).
+minimumReleaseAge: 1440
+
+engineStrict: true
+strictPeerDependencies: false
+
+# Native binaries for Electron and Vite's esbuild.
+allowBuilds:
+  electron: true
+  esbuild: true

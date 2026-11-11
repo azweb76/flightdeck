@@ -25,6 +25,8 @@ Canonical examples:
 
 Rules: feature folders expose `index.ts`; files ≤300 lines; functions ≤80; web never imports server; share only `@flightdeck/shared`. `pnpm check` prints failures only. ADRs live in `docs/adr`.
 
+Tooling: `packageManager` pins pnpm 12.18.0. `pnpm-workspace.yaml` sets `minimumReleaseAge: 1440`, so installs only resolve versions published more than 24 hours ago.
+
 Identifiers: product **Flightdeck**, slug `flightdeck`, bundle `dev.flightdeck.app`, data `~/.flightdeck/`, Keychain service `flightdeck`.
 
 Defaults: label `gh:owner/repo`, draft PRs, 2 review rounds, $10 run cap, 2 concurrent agents, SDK `permissionMode: "auto"`. Demo: `FLIGHTDECK_DEMO=1`. Real SDK: `FLIGHTDECK_AGENT=sdk`.
