@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { formatError } from "./errors.ts";
+import { apiTiming } from "./timing.ts";
 import { eventRoutes } from "./routes/events.ts";
 import { goalRoutes } from "./routes/goals.ts";
 import { issueRoutes } from "./routes/issues.ts";
@@ -26,6 +27,7 @@ export function createApp(): Hono {
       allowHeaders: ["Content-Type"],
     }),
   );
+  app.use("/api/*", apiTiming());
   app.onError((err, c) => {
     const { status, body } = formatError(err);
     return c.json(body, status as never);
