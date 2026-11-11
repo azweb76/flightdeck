@@ -13,9 +13,11 @@ export function issueRoutes(): Hono {
     const query = IssueListQuerySchema.parse({
       source: c.req.query("source") ?? "all",
       repo: c.req.query("repo"),
+      refresh: c.req.query("refresh"),
     });
     return c.json(await listIssues(query));
   });
+  app.post("/sync", async (c) => c.json(await listIssues({ refresh: "1" })));
   app.post("/adhoc", async (c) => {
     const body = (await c.req.json()) as { repoId: number; title: string; body: string };
     return c.json(await startAdhoc(body.repoId, body.title, body.body), 201);
@@ -35,6 +37,21 @@ export function issueRoutes(): Hono {
     const repo = getRepo(body.repoId ?? 0);
     if (!repo) throw apiError(404, "not_found", "Repo not found");
     return c.json(await draftGithubIssue(repo, body.title, body.body), 201);
+  });
+  app.post("/:id/repo", async (c) => {
+    const body = (await c.req.json()) as { owner: string; name: string };
+    const { rememberPick } = await import("../../features/discovery/index.ts");
+    const { jiraProjectKey } = await import("@flightdeck/shared");
+    const { rememberIssue } = await import("../../features/issues/index.ts");
+    const issue = await getIssue(decodeURIComponent(c.req.param("id")));
+    if (!issue) throw apiError(404, "not_found", "Issue not found");
+    rememberPick(jiraProjectKey(issue.key), body.owner, body.name);
+    rememberIssue({
+      ...issue,
+      repos: [{ owner: body.owner, name: body.name, registered: true }],
+      repoWarning: "none",
+    });
+    return c.json(await getIssue(issue.id));
   });
   app.get("/:id", async (c) => {
     const issue = await getIssue(decodeURIComponent(c.req.param("id")));

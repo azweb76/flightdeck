@@ -1,5 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 import { ZodError } from "zod";
+import { NeedRepoError } from "../features/discovery/index.ts";
 
 export function apiError(status: number, code: string, message: string): HTTPException {
   return new HTTPException(status as never, { message: JSON.stringify({ error: { code, message } }) });
@@ -12,6 +13,19 @@ export function formatError(err: unknown): { status: number; body: unknown } {
     } catch {
       return { status: err.status, body: { error: { code: "http", message: err.message } } };
     }
+  }
+  if (err instanceof NeedRepoError) {
+    return {
+      status: 409,
+      body: {
+        error: {
+          code: "pick_repo",
+          message: err.message,
+          guesses: err.guesses,
+          projectKey: err.projectKey,
+        },
+      },
+    };
   }
   if (err instanceof ZodError) {
     return {

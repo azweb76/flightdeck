@@ -1,9 +1,11 @@
-import type { Issue, Run, StartRun } from "@flightdeck/shared";
+import { jiraProjectKey, type Issue, type Run, type StartRun } from "@flightdeck/shared";
 import { getSettings } from "../settings/index.ts";
-import { getRepo, getRepoBySlug, listRepos } from "../repos/index.ts";
+import { getRepo } from "../repos/index.ts";
 import { getIssue } from "../issues/index.ts";
 import { latestGoal } from "../goals/store.ts";
 import { ensureWorktree } from "../worktree/index.ts";
+import { NeedRepoError, ensureRepoRow } from "../discovery/index.ts";
+import { ensureClone } from "../clone/index.ts";
 import { publish } from "../events/index.ts";
 import { notify } from "../notify/index.ts";
 import { activeRunCount, insertRun, updateRun, getRun } from "./store.ts";
@@ -19,6 +21,7 @@ export async function startRun(input: StartRun): Promise<Run> {
   const issue = await getIssue(input.issueId);
   if (!issue) throw new Error("Issue not found");
   const repo = pickRepo(issue, input.repoId);
+  if (process.env.FLIGHTDECK_DEMO !== "1") await ensureClone(repo.owner, repo.name);
   const settings = getSettings();
   const now = new Date().toISOString();
   const run = insertRun({
@@ -27,7 +30,7 @@ export async function startRun(input: StartRun): Promise<Run> {
     issueTitle: issue.title,
     issueSource: issue.source,
     issueUrl: issue.url,
-    repoId: repo.id,
+    repoId: getRepo(repo.id)?.id ?? repo.id,
     repoSlug: `${repo.owner}/${repo.name}`,
     branch: `agent/${issue.key.replace(/[^A-Za-z0-9._-]+/g, "-")}`,
     worktreePath: "",
@@ -143,8 +146,9 @@ function pickRepo(issue: Issue, repoId?: number) {
     if (!r) throw new Error("Repo not found");
     return r;
   }
-  const linked = issue.repos.filter((r) => r.registered);
-  if (linked.length !== 1) throw new Error("Pick a single registered repo for this issue");
-  const slug = `${linked[0]!.owner}/${linked[0]!.name}`;
-  return getRepoBySlug(slug) ?? listRepos()[0]!;
+  if (issue.repos.length === 1 && issue.repos[0]) {
+    return ensureRepoRow(issue.repos[0].owner, issue.repos[0].name);
+  }
+  const guesses = (issue.repoGuesses ?? issue.repos).map((r) => ({ owner: r.owner, name: r.name }));
+  throw new NeedRepoError(guesses, jiraProjectKey(issue.key));
 }

@@ -8,6 +8,7 @@ import { insertMessage } from "../../features/messages/index.ts";
 import { runDiff } from "../../features/runs/diff.ts";
 import { activeRunCount, getRun, listEvents, listRuns, startRun, updateRun } from "../../features/runs/index.ts";
 import { apiError } from "../errors.ts";
+import { NeedRepoError } from "../../features/discovery/index.ts";
 
 export function runRoutes(): Hono {
   const app = new Hono();
@@ -35,6 +36,7 @@ async function create(body: unknown) {
   try {
     return await startRun(StartRunSchema.parse(body));
   } catch (err) {
+    if (err instanceof NeedRepoError) throw err;
     throw apiError(400, "start_failed", err instanceof Error ? err.message : "start failed");
   }
 }
