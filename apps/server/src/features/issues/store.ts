@@ -15,19 +15,21 @@ type Row = {
   assigned?: number;
   closed?: number;
   comments_json?: string;
+  via_pr?: number;
 };
 
-export function upsertIssue(issue: Issue, flags?: { assigned?: boolean; closed?: boolean }): void {
+export function upsertIssue(issue: Issue, flags?: { assigned?: boolean; closed?: boolean; viaPr?: boolean }): void {
   getDb()
     .prepare(
-      `INSERT INTO issues (id, source, key, title, body, url, parent_id, repos_json, repo_warning, updated_at, assigned, closed, comments_json)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+      `INSERT INTO issues (id, source, key, title, body, url, parent_id, repos_json, repo_warning, updated_at, assigned, closed, comments_json, via_pr)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET
          title=excluded.title, body=excluded.body, url=excluded.url,
          parent_id=excluded.parent_id, repos_json=excluded.repos_json,
          repo_warning=excluded.repo_warning, updated_at=excluded.updated_at,
          assigned=excluded.assigned, closed=excluded.closed,
-         comments_json=COALESCE(excluded.comments_json, issues.comments_json)`,
+         comments_json=COALESCE(excluded.comments_json, issues.comments_json),
+         via_pr=CASE WHEN excluded.via_pr=1 OR issues.via_pr=1 THEN 1 ELSE 0 END`,
     )
     .run(
       issue.id,
@@ -43,6 +45,7 @@ export function upsertIssue(issue: Issue, flags?: { assigned?: boolean; closed?:
       (flags?.assigned ?? true) ? 1 : 0,
       flags?.closed ? 1 : 0,
       JSON.stringify(issue.comments ?? []),
+      (flags?.viaPr ?? issue.viaPr) ? 1 : 0,
     );
 }
 
@@ -105,5 +108,6 @@ function fromRow(row: Row): Issue {
     updatedAt: row.updated_at,
     parentId: row.parent_id ?? undefined,
     comments: comments?.length ? comments : undefined,
+    viaPr: row.via_pr === 1,
   };
 }

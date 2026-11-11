@@ -23,6 +23,22 @@ export async function createWorktree(
   return { path, branch };
 }
 
+/** Worktree on an existing PR head branch (authored Fix). */
+export async function ensureNamedWorktree(
+  clonePath: string,
+  branch: string,
+  existingPath?: string,
+  exec: ExecFn = defaultExec,
+): Promise<Worktree> {
+  const safe = branch.replace(/[^A-Za-z0-9._-]+/g, "-");
+  const path = existingPath && existsSync(existingPath) ? existingPath : join(clonePath, "..", "worktrees", safe);
+  await exec("git", ["fetch", "origin", branch], { cwd: clonePath });
+  if (existingPath && existsSync(existingPath)) return { path: existingPath, branch };
+  const add = await exec("git", ["worktree", "add", "-B", branch, path, `origin/${branch}`], { cwd: clonePath });
+  if (add.code !== 0) throw new Error(add.stderr || "git worktree add failed");
+  return { path, branch };
+}
+
 /** Reuse an existing worktree on resume/fix/answer; fetch then continue. */
 export async function ensureWorktree(
   clonePath: string,

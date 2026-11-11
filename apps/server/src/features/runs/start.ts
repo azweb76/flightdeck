@@ -3,7 +3,7 @@ import { getSettings } from "../settings/index.ts";
 import { getRepo } from "../repos/index.ts";
 import { getIssue, isOffline, OfflineError } from "../issues/index.ts";
 import { latestGoal } from "../goals/store.ts";
-import { ensureWorktree } from "../worktree/index.ts";
+import { ensureNamedWorktree, ensureWorktree } from "../worktree/index.ts";
 import { NeedRepoError, ensureRepoRow } from "../discovery/index.ts";
 import { ensureClone } from "../clone/index.ts";
 import { publish } from "../events/index.ts";
@@ -87,12 +87,15 @@ async function executeQueued(id: number): Promise<void> {
   const resuming = Boolean(run.startedAt);
   try {
     if (repo.localPath) {
-      const wt = await ensureWorktree(
-        repo.localPath,
-        run.issueKey,
-        repo.defaultBranch,
-        run.worktreePath || undefined,
-      );
+      const onPrHead = run.phase === "fix" && Boolean(run.prNumber) && !run.branch.startsWith("agent/");
+      const wt = onPrHead
+        ? await ensureNamedWorktree(repo.localPath, run.branch, run.worktreePath || undefined)
+        : await ensureWorktree(
+            repo.localPath,
+            run.issueKey,
+            repo.defaultBranch,
+            run.worktreePath || undefined,
+          );
       updateRun(id, {
         worktreePath: wt.path,
         status: "running",

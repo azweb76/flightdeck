@@ -10,8 +10,9 @@ export function overlayIssue(issue: Issue): Issue {
   const approved = goals.find((g) => g.status === "approved" || g.status === "written_back");
   const openQ = latest ? listQuestions(latest.id).find((q) => q.status === "open") : undefined;
   let stage = issue.stage;
-  if (latest?.prUrl) stage = "pr_open";
-  else if (latest && ["queued", "running", "paused", "asking"].includes(latest.status)) stage = "running";
+  const liveRun = latest && ["queued", "running", "paused", "asking"].includes(latest.status) && !latest.prUrl;
+  if (liveRun) stage = "running";
+  else if ((issue.prs?.length ?? 0) > 0 || latest?.prUrl) stage = "pr_open";
   else if (approved) stage = "refined";
   return {
     ...issue,

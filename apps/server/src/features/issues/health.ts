@@ -1,5 +1,8 @@
 import type { Issue } from "@flightdeck/shared";
 import { cacheGet, cacheSet } from "../cache/index.ts";
+import { nestPrs } from "../board-prs/nest.ts";
+import { listBoardPrs } from "../board-prs/store.ts";
+import { getSettings } from "../settings/index.ts";
 import { overlayIssue } from "../runs/overlay.ts";
 import { loadComments } from "./store.ts";
 
@@ -61,7 +64,9 @@ export function present(
     syncedAt?: string;
   },
 ): IssueListResult {
-  let next = issues.map((i) => overlayIssue({ ...i, comments: i.comments ?? loadComments(i.id) }));
+  const withComments = issues.map((i) => ({ ...i, comments: i.comments ?? loadComments(i.id) }));
+  const nested = nestPrs(withComments, listBoardPrs(), getSettings().boardLinkedIssues);
+  let next = nested.map((i) => overlayIssue(i));
   if (query.source && query.source !== "all") {
     next = next.filter((i) => i.source === query.source);
   }

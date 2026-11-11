@@ -13,7 +13,11 @@ import {
   type IssueListResult,
   type SourceOffline,
 } from "./health.ts";
-import { loadComments, loadIssue, loadIssues, pruneIssues, replaceComments, upsertIssue } from "./store.ts";
+import { loadComments, loadIssue, loadIssues, replaceComments, upsertIssue } from "./store.ts";
+import { applyBoardPrs, syncBoardPrs } from "../board-prs/index.ts";
+import { nestPrs } from "../board-prs/nest.ts";
+import { listBoardPrs } from "../board-prs/store.ts";
+import { seedBoardPrs } from "../demo/seed-prs.ts";
 import { cacheGet, cacheSet, hourCache } from "../cache/index.ts";
 import { rememberedPicks } from "../discovery/index.ts";
 import { publish } from "../events/index.ts";
@@ -113,11 +117,16 @@ export async function getIssue(id: string, deps: IssueDeps = {}): Promise<Issue 
   const stored = loadIssue(id);
   if (stored) {
     void refreshIssue(stored, deps).catch(() => undefined);
-    return overlayIssue({ ...stored, comments: loadComments(id) });
+    return overlayOne(stored);
   }
   await syncAssigned({}, deps, false).catch(() => undefined);
   const next = loadIssue(id);
-  return next ? overlayIssue({ ...next, comments: loadComments(id) }) : undefined;
+  return next ? overlayOne(next) : undefined;
+}
+
+function overlayOne(issue: Issue): Issue {
+  const nested = nestPrs([{ ...issue, comments: loadComments(issue.id) }], listBoardPrs(), getSettings().boardLinkedIssues);
+  return overlayIssue(nested[0] ?? issue);
 }
 
 export async function syncAssigned(
@@ -128,9 +137,11 @@ export async function syncAssigned(
   if (process.env.FLIGHTDECK_DEMO === "1" && !deps.github && !deps.jira) {
     const demo = demoIssues();
     for (const issue of demo) upsertIssue(issue);
+    seedBoardPrs();
+    applyBoardPrs(loadIssues(), listBoardPrs(), true, true);
     const syncedAt = new Date().toISOString();
     writeSyncStatus({ offline: false, sources: { jira: false, github: false }, errors: [], syncedAt });
-    return present(demo, query, {
+    return present(loadIssues(), query, {
       offline: false,
       offlineSources: { jira: false, github: false },
       fromCache: false,
@@ -157,21 +168,30 @@ export async function syncAssigned(
   if (live.length === 0 && process.env.FLIGHTDECK_DEMO === "1") {
     const demo = demoIssues();
     for (const issue of demo) upsertIssue(issue);
+    seedBoardPrs();
+    applyBoardPrs(loadIssues(), listBoardPrs(), true, true);
     const syncedAt = new Date().toISOString();
     writeSyncStatus({ offline, sources, errors, syncedAt });
-    return present(demo, query, { offline, offlineSources: sources, fromCache: false, errors });
+    return present(loadIssues(), query, { offline, offlineSources: sources, fromCache: false, errors });
   }
   for (const issue of live) upsertIssue(issue, { assigned: true });
-  // Incremental (since-filtered) lists are incomplete — never prune from them.
-  if (!incremental) pruneIssues(live.map((i) => i.id));
+  const projectKeys = [...new Set(live.filter((i) => i.source === "jira").map((i) => i.key.split("-")[0] ?? ""))].filter(Boolean);
+  const prs = await syncBoardPrs(deps, { incremental, projectKeys, since });
+  const assignedComplete = !incremental && jiraErrors.length === 0 && githubErrors.length === 0;
+  applyBoardPrs(live, prs.prs, prs.complete, assignedComplete);
   const syncedAt = new Date().toISOString();
-  if (!offline) cacheSet("issues:last_sync", syncedAt);
-  writeSyncStatus({ offline, sources, errors, syncedAt: offline ? since : syncedAt });
+  if (!offline && prs.ok) cacheSet("issues:last_sync", syncedAt);
+  writeSyncStatus({
+    offline,
+    sources,
+    errors: [...errors, ...prs.errors],
+    syncedAt: offline ? since : syncedAt,
+  });
   return present(loadIssues(), query, {
     offline,
     offlineSources: sources,
     fromCache: false,
-    errors,
+    errors: [...errors, ...prs.errors],
     syncedAt: offline ? since : syncedAt,
   });
 }
