@@ -43,13 +43,21 @@ export const api = {
     request<Repo>(`/api/repos/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   deleteRepo: (id: number) => request<{ ok: boolean }>(`/api/repos/${id}`, { method: "DELETE" }),
   cloneRepo: (id: number) => request<Repo>(`/api/repos/${id}/clone`, { method: "POST" }),
-  issues: (query: { source?: string; repo?: string } = {}) => {
+  issues: (query: { source?: string; repo?: string; refresh?: string } = {}) => {
     const q = new URLSearchParams();
     if (query.source) q.set("source", query.source);
     if (query.repo) q.set("repo", query.repo);
+    if (query.refresh) q.set("refresh", query.refresh);
     const s = q.toString();
-    return request<{ issues: Issue[]; errors: string[] }>(`/api/issues${s ? `?${s}` : ""}`);
+    return request<{ issues: Issue[]; errors: string[]; offline: boolean; fromCache: boolean }>(
+      `/api/issues${s ? `?${s}` : ""}`,
+    );
   },
+  pickIssueRepo: (id: string, owner: string, name: string) =>
+    request<Issue>(`/api/issues/${encodeURIComponent(id)}/repo`, {
+      method: "POST",
+      body: JSON.stringify({ owner, name }),
+    }),
   issue: (id: string) => request<Issue>(`/api/issues/${encodeURIComponent(id)}`),
   startRun: (issueId: string, repoId?: number) =>
     request<Run>("/api/runs", { method: "POST", body: JSON.stringify({ issueId, repoId }) }),

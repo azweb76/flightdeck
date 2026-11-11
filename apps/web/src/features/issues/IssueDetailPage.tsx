@@ -57,7 +57,17 @@ export function IssueDetailPage() {
         ))}
         {issue.needsYou ? <Label variant="attention">Needs you</Label> : null}
       </Box>
-      <IssueActions issue={issue} onChange={load} />
+      <IssueActions issue={issue} onChange={load} offline={!navigator.onLine} />
+      {issue.comments?.length ? (
+        <Box sx={{ mb: 3 }}>
+          <Text sx={{ fontWeight: 600, display: "block", mb: 2 }}>Comments</Text>
+          {issue.comments.map((c) => (
+            <Text key={c.id} sx={{ display: "block", mb: 2 }}>
+              {c.author}: {c.body}
+            </Text>
+          ))}
+        </Box>
+      ) : null}
       <TabBar tab={tab} onTab={(t) => setParams({ tab: t })} />
       {tab === "goal" ? <GoalEditor issueId={issue.id} fallback={issue.body} /> : null}
       {tab === "runs" ? <IssueRunsTab issueId={issue.id} /> : null}

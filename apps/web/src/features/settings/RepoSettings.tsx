@@ -39,7 +39,7 @@ export function RepoSettings({
         Repositories
       </Text>
       <FormControl sx={{ mb: 3 }}>
-        <FormControl.Label>Workspace folder for clones</FormControl.Label>
+        <FormControl.Label>Clone folder</FormControl.Label>
         <TextInput
           value={folder}
           onChange={(e) => setFolder(e.target.value)}

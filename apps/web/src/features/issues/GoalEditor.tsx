@@ -41,8 +41,14 @@ export function GoalEditor({ issueId, fallback }: { issueId: string; fallback: s
         </Box>
       </Box>
       <Box sx={{ display: "flex", gap: 2, mt: 3 }}>
-        <Button onClick={() => void api.saveGoal(issueId, markdown)}>Save draft</Button>
-        <Button variant="primary" onClick={() => void api.approveGoal(issueId).then((g) => setStatus(g.status))}>
+        <Button disabled={!navigator.onLine} onClick={() => void api.saveGoal(issueId, markdown)}>
+          Save draft
+        </Button>
+        <Button
+          variant="primary"
+          disabled={!navigator.onLine}
+          onClick={() => void api.approveGoal(issueId).then((g) => setStatus(g.status))}
+        >
           Approve and write back
         </Button>
         {status ? <Text sx={{ color: "fg.muted", alignSelf: "center" }}>{status}</Text> : null}

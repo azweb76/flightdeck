@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
 import { Box, Button, Heading, Label, Spinner, Text } from "@primer/react";
-import { Link } from "react-router-dom";
-import type { Issue, IssueStage } from "@flightdeck/shared";
-import { useSearchParams } from "react-router-dom";
-import { api } from "../api/index.ts";
+import { Link, useSearchParams } from "react-router-dom";
+import type { IssueStage } from "@flightdeck/shared";
 import { BoardColumn } from "./BoardColumn.tsx";
+import { useAssignedIssues } from "./useAssignedIssues.ts";
 
 const STAGES: IssueStage[] = ["new", "refined", "running", "pr_open"];
 
@@ -12,25 +10,7 @@ export function IssuesPage() {
   const [params, setParams] = useSearchParams();
   const source = params.get("source") ?? "all";
   const repo = params.get("repo") ?? undefined;
-  const [issues, setIssues] = useState<Issue[] | undefined>();
-  const [errors, setErrors] = useState<string[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void api
-      .issues({ source, repo })
-      .then((r) => {
-        if (cancelled) return;
-        setIssues(r.issues);
-        setErrors(r.errors);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setErrors([err instanceof Error ? err.message : "Failed to load issues"]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [source, repo]);
+  const { issues, errors, offline, load } = useAssignedIssues(source, repo);
 
   function setSource(next: string) {
     const p = new URLSearchParams(params);
@@ -60,7 +40,15 @@ export function IssuesPage() {
         <Button as={Link} to="/issues/new?kind=adhoc" size="small">
           Ad-hoc task
         </Button>
+        <Button size="small" onClick={() => load(true)}>
+          Refresh
+        </Button>
       </Box>
+      {offline ? (
+        <Text sx={{ color: "attention.fg", display: "block", mb: 2 }}>
+          Offline — showing cached issues. Start and write-backs are disabled.
+        </Text>
+      ) : null}
       {errors.length ? (
         <Text sx={{ color: "danger.fg", display: "block", mb: 3 }}>{errors.join(" · ")}</Text>
       ) : null}
@@ -69,11 +57,7 @@ export function IssuesPage() {
       ) : (
         <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", overflowX: "auto", pb: 3 }}>
           {STAGES.map((stage) => (
-            <BoardColumn
-              key={stage}
-              stage={stage}
-              issues={issues.filter((i) => i.stage === stage)}
-            />
+            <BoardColumn key={stage} stage={stage} issues={issues.filter((i) => i.stage === stage)} />
           ))}
         </Box>
       )}
