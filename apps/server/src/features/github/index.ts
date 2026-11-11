@@ -1,5 +1,11 @@
 import type { GithubStatus } from "@flightdeck/shared";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
+import {
+  ghApiJson,
+  listAssignedIssues,
+  listVisibleRepos,
+  type AssignedIssue,
+} from "./assigned.ts";
 
 export type GithubClient = {
   status(): Promise<GithubStatus>;
@@ -20,7 +26,12 @@ export type GithubClient = {
   ): Promise<void>;
   createIssue(owner: string, name: string, title: string, body: string): Promise<{ number: number; url: string }>;
   writeIssue(owner: string, name: string, number: number, body: string): Promise<void>;
+  listAssignedIssues(since?: string): Promise<AssignedIssue[]>;
+  listVisibleRepos(): Promise<{ owner: string; name: string }[]>;
+  getJson(path: string, etag?: string): Promise<{ status: number; etag?: string; body: string }>;
 };
+
+export type { AssignedIssue };
 
 export type CreatePrOpts = {
   owner: string;
@@ -49,74 +60,65 @@ export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
       ghJson(exec, ["issue", "comment", String(number), "--repo", `${owner}/${name}`, "--body", body]),
     commentPr: (owner, name, number, body) =>
       ghJson(exec, ["pr", "comment", String(number), "--repo", `${owner}/${name}`, "--body", body]),
-    prChecks: async (owner, name, number) => {
-      const r = await exec("gh", ["pr", "checks", String(number), "--repo", `${owner}/${name}`]);
-      return r.stdout + r.stderr;
-    },
-    prComments: async (owner, name, number) => {
-      const r = await exec("gh", [
-        "api",
-        `repos/${owner}/${name}/pulls/${number}/comments`,
-      ]);
-      return r.stdout;
-    },
-    prDiff: async (owner, name, number) => {
-      const r = await exec("gh", ["pr", "diff", String(number), "--repo", `${owner}/${name}`]);
-      return r.stdout;
-    },
-    prView: async (owner, name, number) => {
-      const r = await exec("gh", [
-        "pr",
-        "view",
-        String(number),
-        "--repo",
-        `${owner}/${name}`,
-        "--json",
-        "title,files",
-      ]);
-      const parsed = JSON.parse(r.stdout || "{}") as { title?: string; files?: unknown };
-      return { title: parsed.title ?? "", files: JSON.stringify(parsed.files ?? []) };
-    },
-    submitReview: async (owner, name, number, comments) => {
-      await exec("gh", [
-        "api",
-        `repos/${owner}/${name}/pulls/${number}/reviews`,
-        "-f",
-        `event=COMMENT`,
-        "-f",
-        `body=Flightdeck review`,
-        "-f",
-        `comments=${JSON.stringify(comments)}`,
-      ]);
-    },
-    createIssue: async (owner, name, title, body) => {
-      const r = await exec("gh", [
-        "issue",
-        "create",
-        "--repo",
-        `${owner}/${name}`,
-        "--title",
-        title,
-        "--body",
-        body,
-        "--json",
-        "number,url",
-      ]);
-      if (r.code !== 0) throw new Error(r.stderr || "issue create failed");
-      return JSON.parse(r.stdout) as { number: number; url: string };
-    },
-    writeIssue: async (owner, name, number, body) => {
-      await ghJson(exec, [
-        "issue",
-        "edit",
-        String(number),
-        "--repo",
-        `${owner}/${name}`,
-        "--body",
-        body,
-      ]);
-    },
+    prChecks: (owner, name, number) => prOut(exec, ["pr", "checks", String(number), "--repo", `${owner}/${name}`]),
+    prComments: (owner, name, number) => prOut(exec, ["api", `repos/${owner}/${name}/pulls/${number}/comments`]),
+    prDiff: (owner, name, number) => prOut(exec, ["pr", "diff", String(number), "--repo", `${owner}/${name}`]),
+    prView: (owner, name, number) => prView(exec, owner, name, number),
+    submitReview: (owner, name, number, comments) => submitReview(exec, owner, name, number, comments),
+    createIssue: (owner, name, title, body) => createIssue(exec, owner, name, title, body),
+    writeIssue: (owner, name, number, body) =>
+      ghJson(exec, ["issue", "edit", String(number), "--repo", `${owner}/${name}`, "--body", body]),
+    listAssignedIssues: (since) => listAssignedIssues(exec, since),
+    listVisibleRepos: () => listVisibleRepos(exec),
+    getJson: (path, etag) => ghApiJson(exec, path, etag),
   };
+}
+
+async function prOut(exec: ExecFn, args: string[]): Promise<string> {
+  const r = await exec("gh", args);
+  return r.stdout + r.stderr;
+}
+
+async function prView(exec: ExecFn, owner: string, name: string, number: number) {
+  const r = await exec("gh", ["pr", "view", String(number), "--repo", `${owner}/${name}`, "--json", "title,files"]);
+  const parsed = JSON.parse(r.stdout || "{}") as { title?: string; files?: unknown };
+  return { title: parsed.title ?? "", files: JSON.stringify(parsed.files ?? []) };
+}
+
+async function submitReview(
+  exec: ExecFn,
+  owner: string,
+  name: string,
+  number: number,
+  comments: { path: string; line: number; body: string }[],
+) {
+  await exec("gh", [
+    "api",
+    `repos/${owner}/${name}/pulls/${number}/reviews`,
+    "-f",
+    "event=COMMENT",
+    "-f",
+    "body=Flightdeck review",
+    "-f",
+    `comments=${JSON.stringify(comments)}`,
+  ]);
+}
+
+async function createIssue(exec: ExecFn, owner: string, name: string, title: string, body: string) {
+  const r = await exec("gh", [
+    "issue",
+    "create",
+    "--repo",
+    `${owner}/${name}`,
+    "--title",
+    title,
+    "--body",
+    body,
+    "--json",
+    "number,url",
+  ]);
+  if (r.code !== 0) throw new Error(r.stderr || "issue create failed");
+  return JSON.parse(r.stdout) as { number: number; url: string };
 }
 
 async function ghJson(exec: ExecFn, args: string[]): Promise<void> {

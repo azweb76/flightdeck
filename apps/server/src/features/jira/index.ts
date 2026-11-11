@@ -15,6 +15,12 @@ export type JiraClient = {
     token: string;
     jql: string;
   }): Promise<JiraIssue[]>;
+  listComments(opts: {
+    siteUrl: string;
+    email: string;
+    token: string;
+    key: string;
+  }): Promise<{ id: string; author: string; body: string; createdAt: string }[]>;
   comment(opts: { siteUrl: string; email: string; token: string; key: string; body: string }): Promise<void>;
   writeDescription(opts: {
     siteUrl: string;
@@ -48,6 +54,7 @@ export function createJiraClient(fetchFn: FetchFn = fetch): JiraClient {
   return {
     test: (siteUrl, email, token) => testJira(fetchFn, siteUrl, email, token),
     search: (opts) => searchJira(fetchFn, opts),
+    listComments: (opts) => jiraComments(fetchFn, opts),
     comment: (opts) => jiraComment(fetchFn, opts),
     writeDescription: (opts) => jiraWriteDesc(fetchFn, opts),
     createIssue: (opts) => jiraCreateIssue(fetchFn, opts),
@@ -152,6 +159,26 @@ async function jiraSubtask(
   });
   if (!res.ok) throw new Error(`Jira subtask failed (${res.status})`);
   return (await res.json()) as { key: string };
+}
+
+async function jiraComments(
+  fetchFn: FetchFn,
+  opts: { siteUrl: string; email: string; token: string; key: string },
+): Promise<{ id: string; author: string; body: string; createdAt: string }[]> {
+  const base = opts.siteUrl.replace(/\/$/, "");
+  const res = await fetchFn(`${base}/rest/api/3/issue/${opts.key}/comment`, {
+    headers: authHeaders(opts.email, opts.token),
+  });
+  if (!res.ok) throw new Error(`Jira comments failed (${res.status})`);
+  const data = (await res.json()) as {
+    comments?: { id?: string; author?: { displayName?: string }; body?: unknown; created?: string }[];
+  };
+  return (data.comments ?? []).map((c) => ({
+    id: String(c.id ?? ""),
+    author: c.author?.displayName ?? "",
+    body: adfToText(c.body),
+    createdAt: c.created ?? "",
+  }));
 }
 
 async function testJira(
