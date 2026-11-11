@@ -20,6 +20,19 @@ export type PrCi = z.infer<typeof PrCiSchema>;
 export const PrReviewStateSchema = z.enum(["approved", "changes_requested", "pending"]);
 export type PrReviewState = z.infer<typeof PrReviewStateSchema>;
 
+export const PrLifecycleSchema = z.enum(["open", "merged", "closed"]);
+export type PrLifecycle = z.infer<typeof PrLifecycleSchema>;
+
+export const PrColumnSchema = z.enum([
+  "draft",
+  "ci_failing",
+  "changes_requested",
+  "needs_review",
+  "approved",
+  "merged_closed",
+]);
+export type PrColumn = z.infer<typeof PrColumnSchema>;
+
 export const BoardPrSchema = z.object({
   id: z.string(),
   number: z.number().int(),
@@ -40,6 +53,7 @@ export const BoardPrSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   linkedIssueIds: z.array(z.string()).default([]),
+  state: PrLifecycleSchema.default("open"),
 });
 export type BoardPr = z.infer<typeof BoardPrSchema>;
 
@@ -81,6 +95,7 @@ export const PrSyncDiagSchema = z.object({
   authored: z.number().int().nonnegative().default(0),
   reviewRequested: z.number().int().nonnegative().default(0),
   total: z.number().int().nonnegative().default(0),
+  mergedClosed: z.number().int().nonnegative().default(0),
   error: z.string().optional(),
 });
 export type PrSyncDiag = z.infer<typeof PrSyncDiagSchema>;

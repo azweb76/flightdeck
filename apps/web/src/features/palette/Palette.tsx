@@ -138,6 +138,7 @@ async function loadItems(): Promise<Item[]> {
       to: `/issues?repo=${encodeURIComponent(`${r.owner}/${r.name}`)}`,
       group: "Go to repo",
     })),
+    { label: "Pull requests", to: "/prs", group: "Go to" },
     { label: "Settings", to: "/settings", group: "Go to" },
     { label: "Stats", to: "/stats", group: "Go to" },
     { label: "Reviews", to: "/reviews", group: "Go to" },

@@ -23,6 +23,7 @@ function pr(partial: Partial<BoardPr> & Pick<BoardPr, "id" | "linkedIssueIds">):
     body: "",
     createdAt: "2026-11-01T00:00:00Z",
     updatedAt: "2026-11-11T00:00:00Z",
+    state: "open",
     ...partial,
   };
 }
@@ -63,10 +64,10 @@ describe("nestPrs", () => {
     expect(board[0]?.prs?.[0]?.id).toBe("acme/docs#91");
   });
 
-  it("keeps a PR with no links as its own card", () => {
+  it("does not put unlinked PRs on the Issues board", () => {
     const p = pr({ id: "acme/api#88", number: 88, repo: "acme/api", linkedIssueIds: [] });
     const board = nestPrs([issue("jira:PROJ-9")], [p], true);
-    expect(board.map((i) => i.id).sort()).toEqual(["jira:PROJ-9", "pr:acme/api#88"]);
+    expect(board.map((i) => i.id)).toEqual(["jira:PROJ-9"]);
     expect(prAsIssue(p).key).toBe("acme/api#88");
   });
 });

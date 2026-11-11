@@ -39,18 +39,14 @@ export function prAsIssue(pr: BoardPr): Issue {
   };
 }
 
-/** One card per issue; PRs nest. A PR with no links is its own card. */
+/** One card per assigned/stub issue; PRs nest. Unlinked PRs live on /prs, not here. */
 export function nestPrs(issues: Issue[], prs: BoardPr[], linkedIssues: boolean): Issue[] {
   const byId = new Map(issues.map((i) => [i.id, { ...i, prs: [...(i.prs ?? [])] as BoardPr[] }]));
-  const extras: Issue[] = [];
   for (const pr of prs) {
     const links = linkedIssues ? pr.linkedIssueIds : [];
     const hits = links.filter((id) => byId.has(id));
     const missing = links.filter((id) => !byId.has(id));
-    if (hits.length === 0 && missing.length === 0) {
-      extras.push(prAsIssue(pr));
-      continue;
-    }
+    if (hits.length === 0 && missing.length === 0) continue;
     for (const id of missing) {
       const stub = stubFromLink(id, pr);
       byId.set(id, { ...stub, prs: [pr], viaPr: true });
@@ -63,7 +59,7 @@ export function nestPrs(issues: Issue[], prs: BoardPr[], linkedIssues: boolean):
       byId.set(id, cur);
     }
   }
-  return dedupe([...byId.values(), ...extras]);
+  return dedupe([...byId.values()]);
 }
 
 function dedupe(issues: Issue[]): Issue[] {

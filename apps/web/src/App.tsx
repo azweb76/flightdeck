@@ -27,6 +27,7 @@ const SettingsPage = lazy(() =>
   import("./features/settings/SettingsPage.tsx").then((m) => ({ default: m.SettingsPage })),
 );
 const StatsPage = lazy(() => import("./features/stats/StatsPage.tsx").then((m) => ({ default: m.StatsPage })));
+const PrsPage = lazy(() => import("./features/prs/PrsPage.tsx").then((m) => ({ default: m.PrsPage })));
 const SetupWizard = lazy(() =>
   import("./features/wizard/SetupWizard.tsx").then((m) => ({ default: m.SetupWizard })),
 );
@@ -80,6 +81,7 @@ export function App() {
             <Route path="/issues" element={<IssuesPage />} />
             <Route path="/issues/new" element={<NewIssuePage />} />
             <Route path="/issues/:id" element={<IssueDetailPage />} />
+            <Route path="/prs" element={<PrsPage />} />
             <Route path="/runs" element={<RunsPage />} />
             <Route path="/runs/:id" element={<RunView />} />
             <Route path="/reviews" element={<ReviewsPage />} />

@@ -18,7 +18,7 @@ export async function syncBoardPrs(
 ): Promise<PrSyncResult> {
   const settings = getSettings();
   if (!settings.boardAuthoredPrs && !settings.boardReviewPrs) {
-    record({ query: "(board PR toggles off)", authored: 0, reviewRequested: 0, total: 0 });
+    record({ query: "(board PR toggles off)", authored: 0, reviewRequested: 0, total: 0, mergedClosed: 0 });
     return { ok: true, prs: listBoardPrs(), errors: [], complete: true };
   }
   try {
@@ -35,7 +35,14 @@ export async function syncBoardPrs(
     const message = err instanceof Error ? err.message : "PR search failed";
     const shown = `PR sync: ${message}`;
     console.error(shown);
-    record({ query: "is:pr is:open archived:false author:<login>", authored: 0, reviewRequested: 0, total: 0, error: shown });
+    record({
+      query: "is:pr is:open archived:false author:<login>",
+      authored: 0,
+      reviewRequested: 0,
+      total: 0,
+      mergedClosed: 0,
+      error: shown,
+    });
     return { ok: false, prs: listBoardPrs(), errors: [shown], complete: false };
   }
 }

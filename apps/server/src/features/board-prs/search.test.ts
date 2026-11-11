@@ -35,6 +35,8 @@ describe("searchOpenPrs against a recorded GraphQL payload", () => {
     expect(queries.every((q) => !q.includes("@me"))).toBe(true);
     expect(queries.some((q) => q.includes("author:azweb76"))).toBe(true);
     expect(queries.some((q) => q.includes("review-requested:azweb76"))).toBe(true);
+    expect(queries.some((q) => q.includes("reviewed-by:azweb76"))).toBe(true);
+    expect(queries.some((q) => q.includes("is:merged"))).toBe(true);
     expect(prs.map((p) => p.id).sort()).toEqual(["acme/api#88", "acme/web#431"]);
     expect(prs.find((p) => p.id === "acme/web#431")).toMatchObject({
       role: "mine",

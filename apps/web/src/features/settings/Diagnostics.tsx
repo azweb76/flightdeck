@@ -18,7 +18,7 @@ export function Diagnostics() {
     void api.prDiagnostics().then(setDiag).catch(() => undefined);
     void api.syncStatus().then(setSync).catch(() => undefined);
   }, []);
-  const row: PrSyncDiag = diag ?? { authored: 0, reviewRequested: 0, total: 0 };
+  const row: PrSyncDiag = diag ?? { authored: 0, reviewRequested: 0, total: 0, mergedClosed: 0 };
   return (
     <SettingsCard title="Diagnostics">
       <Typography variant="body2" sx={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 12 }}>
@@ -34,7 +34,9 @@ export function Diagnostics() {
         PR sync {row.syncedAt ?? "never"}
       </Typography>
       <Typography variant="body2" sx={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 12 }}>
-        viewer {row.viewerLogin ?? "—"} · authored {row.authored} · review-requested {row.reviewRequested} · total {row.total}
+        viewer {row.viewerLogin ?? "—"} · authored {row.authored} · review-requested {row.reviewRequested} · total{" "}
+        {row.total}
+        {row.mergedClosed != null ? ` · merged/closed ${row.mergedClosed}` : ""}
       </Typography>
       {row.query ? (
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12, wordBreak: "break-word" }}>

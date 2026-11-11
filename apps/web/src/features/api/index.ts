@@ -2,6 +2,7 @@ import type {
   AppNotification,
   Goal,
   Improvement,
+  BoardPr,
   Issue,
   PrReviewSession,
   PrSyncDiag,
@@ -78,6 +79,15 @@ export const api = {
       `/api/issues${s ? `?${s}` : ""}`,
     );
   },
+  prs: () => request<{ prs: BoardPr[]; badge: number }>("/api/prs"),
+  prDetail: (id: string) =>
+    request<{
+      pr: BoardPr;
+      checks: { name: string; conclusion: string; url: string }[];
+      reviews: { author: string; state: string; body: string }[];
+      comments: { id: string; author: string; body: string }[];
+      linked: { id: string; key: string; title: string }[];
+    }>(`/api/prs/${encodeURIComponent(id)}`),
   prDiagnostics: () => request<PrSyncDiag>("/api/prs/diagnostics"),
   syncStatus: () =>
     request<{

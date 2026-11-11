@@ -9,99 +9,75 @@ export function seedBoardPrs(): void {
 export function demoPrs(): BoardPr[] {
   const now = "2026-11-11T12:00:00.000Z";
   const day = (n: number) => new Date(Date.parse(now) - n * 86_400_000).toISOString();
-  return [...authored(now, day), ...reviewRequested(now, day)];
-}
-
-function authored(now: string, day: (n: number) => string): BoardPr[] {
   return [
-    {
-      id: "acme/docs#91",
-      number: 91,
-      title: "Fix broken links in docs",
-      url: "https://github.com/acme/docs/pull/91",
-      repo: "acme/docs",
-      role: "mine",
-      ci: "failing",
-      review: "pending",
-      unresolvedThreads: 0,
-      draft: true,
-      ageDays: 2,
-      headRef: "agent/docs-88",
-      headRepo: "acme/docs",
-      viewerCanPush: true,
-      isFork: false,
-      body: "Closes #88",
-      createdAt: day(2),
-      updatedAt: now,
-      linkedIssueIds: ["github:acme/docs#88"],
-    },
-    {
-      id: "acme/web#431",
-      number: 431,
-      title: "CSV export of invoices",
-      url: "https://github.com/acme/web/pull/431",
-      repo: "acme/web",
-      role: "mine",
-      ci: "passing",
+    mine("acme/docs#91", 91, "Fix broken links in docs", { draft: true, ci: "failing", linked: ["github:acme/docs#88"], age: 2, now, day }),
+    mine("acme/web#401", 401, "Retry flaky invoice test", { ci: "failing", age: 1, now, day }),
+    mine("acme/web#431", 431, "CSV export of invoices", {
       review: "changes_requested",
       unresolvedThreads: 3,
-      draft: false,
-      ageDays: 4,
-      headRef: "agent/PROJ-150",
-      headRepo: "acme/web",
-      viewerCanPush: true,
-      isFork: false,
-      body: "PROJ-150 export invoices as CSV.",
-      createdAt: day(4),
-      updatedAt: now,
-      linkedIssueIds: ["jira:PROJ-150"],
-    },
+      linked: ["jira:PROJ-150"],
+      age: 4,
+      now,
+      day,
+    }),
+    mine("acme/api#77", 77, "Rate-limit login", { ci: "pending", age: 3, now, day }),
+    mine("acme/web#450", 450, "Dark mode polish", { review: "approved", age: 5, now, day }),
+    mine("acme/docs#100", 100, "Ship changelog", { state: "merged", age: 1, now, day }),
+    review("acme/web#460", 460, "Draft: telemetry opt-in", { draft: true, age: 2, now, day }),
+    review("acme/api#90", 90, "CI red on auth tests", { ci: "failing", age: 1, now, day }),
+    review("acme/web#441", 441, "Please revert the cache bust", { review: "changes_requested", unresolvedThreads: 2, age: 3, now, day }),
+    review("acme/api#88", 88, "Tighten auth middleware", { ci: "pending", unresolvedThreads: 1, age: 1, now, day }),
+    review("acme/web#440", 440, "Fork: locale fallback", { isFork: true, viewerCanPush: false, headRepo: "ada/web", age: 6, now, day }),
+    review("acme/api#95", 95, "Approved health probe", { review: "approved", age: 2, now, day }),
+    review("acme/web#399", 399, "Closed leftover experiment", { state: "closed", age: 2, now, day }),
   ];
 }
 
-function reviewRequested(now: string, day: (n: number) => string): BoardPr[] {
-  return [
-    {
-      id: "acme/api#88",
-      number: 88,
-      title: "Tighten auth middleware",
-      url: "https://github.com/acme/api/pull/88",
-      repo: "acme/api",
-      role: "review",
-      ci: "pending",
-      review: "pending",
-      unresolvedThreads: 1,
-      draft: false,
-      ageDays: 1,
-      headRef: "feat/auth",
-      headRepo: "acme/api",
-      viewerCanPush: true,
-      isFork: false,
-      body: "Please review the JWT allowlist.",
-      createdAt: day(1),
-      updatedAt: now,
-      linkedIssueIds: [],
-    },
-    {
-      id: "acme/web#440",
-      number: 440,
-      title: "Fork: locale fallback",
-      url: "https://github.com/acme/web/pull/440",
-      repo: "acme/web",
-      role: "review",
-      ci: "passing",
-      review: "pending",
-      unresolvedThreads: 0,
-      draft: false,
-      ageDays: 6,
-      headRef: "locale-fallback",
-      headRepo: "ada/web",
-      viewerCanPush: false,
-      isFork: true,
-      body: "From a fork. WEB-9 is unrelated.",
-      createdAt: day(6),
-      updatedAt: now,
-      linkedIssueIds: [],
-    },
-  ];
+function mine(id: string, number: number, title: string, extra: Extra): BoardPr {
+  return base(id, number, title, "mine", extra);
+}
+
+function review(id: string, number: number, title: string, extra: Extra): BoardPr {
+  return base(id, number, title, "review", extra);
+}
+
+type Extra = {
+  ci?: BoardPr["ci"];
+  review?: BoardPr["review"];
+  draft?: boolean;
+  unresolvedThreads?: number;
+  linked?: string[];
+  state?: BoardPr["state"];
+  isFork?: boolean;
+  viewerCanPush?: boolean;
+  headRepo?: string;
+  age: number;
+  now: string;
+  day: (n: number) => string;
+};
+
+function base(id: string, number: number, title: string, role: BoardPr["role"], extra: Extra): BoardPr {
+  const repo = id.split("#")[0] ?? "acme/web";
+  return {
+    id,
+    number,
+    title,
+    url: `https://github.com/${repo}/pull/${number}`,
+    repo,
+    role,
+    ci: extra.ci ?? "passing",
+    review: extra.review ?? "pending",
+    unresolvedThreads: extra.unresolvedThreads ?? 0,
+    draft: extra.draft ?? false,
+    ageDays: extra.age,
+    headRef: `agent/${number}`,
+    headRepo: extra.headRepo ?? repo,
+    viewerCanPush: extra.viewerCanPush ?? true,
+    isFork: extra.isFork ?? false,
+    body: title,
+    createdAt: extra.day(extra.age),
+    updatedAt: extra.now,
+    linkedIssueIds: extra.linked ?? [],
+    state: extra.state ?? "open",
+  };
 }

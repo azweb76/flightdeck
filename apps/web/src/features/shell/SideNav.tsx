@@ -9,7 +9,7 @@ export function SideNav({
   asking,
 }: {
   repos: CatalogRepo[];
-  counts: { issues: number; runs: number; reviews: number };
+  counts: { issues: number; runs: number; reviews: number; prs?: number };
   asking?: { prompt: string; href: string };
 }) {
   const favorites = repos.filter((r) => r.favorite);
@@ -20,6 +20,7 @@ export function SideNav({
   const hideFooter = hideAskingFooter(loc.pathname, asking?.href);
   const items = [
     { to: "/issues", label: "Issues", count: counts.issues },
+    { to: "/prs", label: "Pull requests", count: counts.prs },
     { to: "/runs", label: "Runs", count: counts.runs },
     { to: "/reviews", label: "Reviews", count: counts.reviews },
     { to: "/stats", label: "Stats" },

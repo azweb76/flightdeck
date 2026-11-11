@@ -1,14 +1,24 @@
 import { Hono } from "hono";
+import { prsNeedingMe } from "@flightdeck/shared";
 import { startPrFix } from "../../features/board-prs/fix-run.ts";
 import { startReview } from "../../features/pr-review/index.ts";
 import { readPrDiag } from "../../features/board-prs/index.ts";
+import { loadPrDetail } from "../../features/board-prs/detail.ts";
 import { listBoardPrs } from "../../features/board-prs/store.ts";
 import { apiError } from "../errors.ts";
 
 export function prRoutes(): Hono {
   const app = new Hono();
-  app.get("/", (c) => c.json({ prs: listBoardPrs() }));
+  app.get("/", (c) => {
+    const prs = listBoardPrs();
+    return c.json({ prs, badge: prsNeedingMe(prs) });
+  });
   app.get("/diagnostics", (c) => c.json(readPrDiag()));
+  app.get("/:id", async (c) => {
+    const detail = await loadPrDetail(decodeURIComponent(c.req.param("id")));
+    if (!detail) throw apiError(404, "not_found", "PR not found");
+    return c.json(detail);
+  });
   app.post("/:id/fix", async (c) => {
     try {
       return c.json(await startPrFix(decodeURIComponent(c.req.param("id"))), 201);

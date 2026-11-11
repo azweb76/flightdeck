@@ -79,8 +79,16 @@ function toPr(node: Node, viewer: string, projectKeys: string[]): BoardPr | unde
     createdAt,
     updatedAt: String(node.updatedAt ?? createdAt),
     linkedIssueIds: linkIds(closing, title, headRef, body, projectKeys),
+    state: lifecycleOf(node),
   };
   return pr;
+}
+
+function lifecycleOf(node: Node): BoardPr["state"] {
+  const raw = String(node.state ?? "OPEN").toUpperCase();
+  if (raw === "MERGED") return "merged";
+  if (raw === "CLOSED") return "closed";
+  return "open";
 }
 
 export function linkIds(
