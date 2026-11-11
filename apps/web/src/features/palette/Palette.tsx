@@ -34,6 +34,8 @@ export function Palette() {
         ...runs.runs.map((r) => ({ label: `Run ${r.issueKey} ${r.repoSlug}`, to: `/runs/${r.id}` })),
         { label: "Settings", to: "/settings" },
         { label: "Stats", to: "/stats" },
+        { label: "Reviews", to: "/reviews" },
+        { label: "New issue (draft)", to: "/issues" },
       ]);
     });
   }, [open]);

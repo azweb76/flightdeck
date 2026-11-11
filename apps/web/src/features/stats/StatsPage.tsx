@@ -16,6 +16,7 @@ export function StatsPage() {
     [stats.avgTimeToPrMs ? `${Math.round(stats.avgTimeToPrMs / 60000)} min` : "—", "Avg time to PR"],
   ];
   const max = Math.max(1, ...stats.costByRepo.map((r) => r.usd));
+  const dayMax = Math.max(1, ...(stats.costByDay ?? []).map((d) => d.usd));
   return (
     <Box sx={{ p: [3, 4] }}>
       <Heading as="h2">Stats</Heading>
@@ -27,6 +28,14 @@ export function StatsPage() {
           </Box>
         ))}
       </Box>
+      <Heading as="h3" sx={{ fontSize: 2 }}>Spend by day</Heading>
+      {(stats.costByDay ?? []).map((d) => (
+        <Box key={d.day} sx={{ display: "flex", alignItems: "center", gap: 2, my: 2 }}>
+          <Text sx={{ width: 140, fontFamily: "mono", fontSize: 1 }}>{d.day}</Text>
+          <Box sx={{ height: 12, bg: "success.emphasis", width: `${(d.usd / dayMax) * 60}%`, borderRadius: 1 }} />
+          <Text>${d.usd.toFixed(2)}</Text>
+        </Box>
+      ))}
       <Heading as="h3" sx={{ fontSize: 2 }}>Cost by repo</Heading>
       {stats.costByRepo.map((r) => (
         <Box key={r.repo} sx={{ display: "flex", alignItems: "center", gap: 2, my: 2 }}>

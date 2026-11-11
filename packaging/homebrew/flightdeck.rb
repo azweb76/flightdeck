@@ -7,6 +7,14 @@ cask "flightdeck" do
   desc "Turn Jira and GitHub issues into pull requests"
   homepage "https://github.com/azweb76/flightdeck"
 
+  livecheck do
+    url :homepage
+    strategy :github_latest
+  end
+
+  auto_updates true
+  depends_on macos: ">= :sonoma"
+
   app "Flightdeck.app"
   binary "#{appdir}/Flightdeck.app/Contents/MacOS/Flightdeck", target: "flightdeck"
 
