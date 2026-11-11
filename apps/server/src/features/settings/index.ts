@@ -14,7 +14,18 @@ export function getSettings(): Settings {
     | { value: string }
     | undefined;
   if (!row) return SettingsSchema.parse({});
-  return SettingsSchema.parse(JSON.parse(row.value) as unknown);
+  const raw = JSON.parse(row.value) as Record<string, unknown>;
+  const parsed = SettingsSchema.parse(raw);
+  if (missingBoardToggles(raw)) upsert(KEY, parsed);
+  return parsed;
+}
+
+function missingBoardToggles(raw: Record<string, unknown>): boolean {
+  return (
+    raw.boardAuthoredPrs === undefined ||
+    raw.boardReviewPrs === undefined ||
+    raw.boardLinkedIssues === undefined
+  );
 }
 
 export function patchSettings(patch: SettingsPatch): Settings {

@@ -3,46 +3,70 @@ import type { GithubClient } from "../github/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { loadIssue, loadIssues, pruneIssues, upsertIssue } from "../issues/store.ts";
 import { defaultExec } from "../exec/index.ts";
+import { countsFrom, writePrDiag } from "./diag.ts";
 import { nestPrs } from "./nest.ts";
 import { prunePlan } from "./prune.ts";
-import { prSearchQuery } from "./query.ts";
-import { searchOpenPrs } from "./search.ts";
+import { prSearchQueries } from "./query.ts";
+import { fetchViewerLogin, searchOpenPrs } from "./search.ts";
 import { deleteBoardPrs, linkedByPrMap, listBoardPrs, upsertBoardPr } from "./store.ts";
 
 export type PrSyncResult = { ok: boolean; prs: BoardPr[]; errors: string[]; complete: boolean };
 
 export async function syncBoardPrs(
   deps: { github?: GithubClient } = {},
-  opts: { incremental?: boolean; projectKeys: string[]; since?: string },
+  opts: { projectKeys: string[] },
 ): Promise<PrSyncResult> {
   const settings = getSettings();
-  const incremental = Boolean(opts.incremental && opts.since);
-  const query = prSearchQuery({
-    authored: settings.boardAuthoredPrs,
-    review: settings.boardReviewPrs,
-    since: incremental ? opts.since : undefined,
-  });
-  if (!query) return { ok: true, prs: listBoardPrs(), errors: [], complete: true };
+  if (!settings.boardAuthoredPrs && !settings.boardReviewPrs) {
+    record({ query: "(board PR toggles off)", authored: 0, reviewRequested: 0, total: 0 });
+    return { ok: true, prs: listBoardPrs(), errors: [], complete: true };
+  }
   try {
-    const fetched = deps.github
-      ? deps.github.listOpenPrs
-        ? await deps.github.listOpenPrs({ since: incremental ? opts.since : undefined })
-        : []
-      : await searchOpenPrs(defaultExec, query, opts.projectKeys);
-    const prs = fetched;
+    const { prs, login, query } = await loadPrs(deps, settings, opts.projectKeys);
     for (const pr of prs) {
       pr.linkedIssueIds = settings.boardLinkedIssues ? pr.linkedIssueIds : [];
       upsertBoardPr(pr);
     }
-    return { ok: true, prs: incremental ? listBoardPrs() : prs, errors: [], complete: !incremental };
+    const counts = countsFrom(prs);
+    record({ viewerLogin: login, query, ...counts });
+    console.info(`pr sync ok total=${counts.total} authored=${counts.authored} review=${counts.reviewRequested}`);
+    return { ok: true, prs, errors: [], complete: true };
   } catch (err) {
-    return {
-      ok: false,
-      prs: listBoardPrs(),
-      errors: [err instanceof Error ? err.message : "PR search failed"],
-      complete: false,
-    };
+    const message = err instanceof Error ? err.message : "PR search failed";
+    const shown = `PR sync: ${message}`;
+    console.error(shown);
+    record({ query: "is:pr is:open archived:false author:<login>", authored: 0, reviewRequested: 0, total: 0, error: shown });
+    return { ok: false, prs: listBoardPrs(), errors: [shown], complete: false };
   }
+}
+
+async function loadPrs(
+  deps: { github?: GithubClient },
+  settings: ReturnType<typeof getSettings>,
+  projectKeys: string[],
+): Promise<{ prs: BoardPr[]; login?: string; query: string }> {
+  if (deps.github) {
+    const list = deps.github.listOpenPrs;
+    if (!list) return { prs: [], query: "github-client-without-prs" };
+    return { prs: await list.call(deps.github), query: "injected" };
+  }
+  const login = await fetchViewerLogin(defaultExec);
+  const query = prSearchQueries({
+    authored: settings.boardAuthoredPrs,
+    review: settings.boardReviewPrs,
+    login,
+  }).join(" | ");
+  const prs = await searchOpenPrs(defaultExec, {
+    authored: settings.boardAuthoredPrs,
+    review: settings.boardReviewPrs,
+    login,
+    projectKeys,
+  });
+  return { prs, login, query };
+}
+
+function record(partial: Parameters<typeof writePrDiag>[0]): void {
+  writePrDiag({ syncedAt: new Date().toISOString(), ...partial });
 }
 
 export function applyBoardPrs(

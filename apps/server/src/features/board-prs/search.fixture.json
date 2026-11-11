@@ -1,0 +1,60 @@
+{
+  "data": {
+    "viewer": { "login": "azweb76" },
+    "search": {
+      "pageInfo": { "hasNextPage": false, "endCursor": null },
+      "nodes": [
+        {
+          "number": 431,
+          "title": "CSV export of invoices",
+          "body": "PROJ-150",
+          "url": "https://github.com/acme/web/pull/431",
+          "createdAt": "2026-11-07T00:00:00Z",
+          "updatedAt": "2026-11-11T12:00:00Z",
+          "isDraft": false,
+          "headRefName": "agent/PROJ-150",
+          "author": { "login": "azweb76" },
+          "repository": { "nameWithOwner": "acme/web" },
+          "headRepository": {
+            "nameWithOwner": "acme/web",
+            "isFork": false,
+            "viewerPermission": "WRITE"
+          },
+          "reviewDecision": "CHANGES_REQUESTED",
+          "reviewRequests": { "nodes": [] },
+          "reviewThreads": { "nodes": [{ "isResolved": false }] },
+          "closingIssuesReferences": { "nodes": [] },
+          "commits": {
+            "nodes": [{ "commit": { "statusCheckRollup": { "state": "SUCCESS" } } }]
+          }
+        },
+        {
+          "number": 88,
+          "title": "Tighten auth middleware",
+          "body": "Please review.",
+          "url": "https://github.com/acme/api/pull/88",
+          "createdAt": "2026-11-10T00:00:00Z",
+          "updatedAt": "2026-11-11T12:00:00Z",
+          "isDraft": false,
+          "headRefName": "feat/auth",
+          "author": { "login": "teammate" },
+          "repository": { "nameWithOwner": "acme/api" },
+          "headRepository": {
+            "nameWithOwner": "acme/api",
+            "isFork": false,
+            "viewerPermission": "WRITE"
+          },
+          "reviewDecision": null,
+          "reviewRequests": {
+            "nodes": [{ "requestedReviewer": { "login": "azweb76" } }]
+          },
+          "reviewThreads": { "nodes": [] },
+          "closingIssuesReferences": { "nodes": [] },
+          "commits": {
+            "nodes": [{ "commit": { "statusCheckRollup": { "state": "PENDING" } } }]
+          }
+        }
+      ]
+    }
+  }
+}

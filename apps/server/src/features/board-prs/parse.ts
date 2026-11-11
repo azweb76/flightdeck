@@ -10,6 +10,16 @@ export function parseSearchPayload(raw: string, viewerLogin: string, projectKeys
   return nodes.map((n) => toPr(n as Node, login, projectKeys)).filter((p): p is BoardPr => Boolean(p));
 }
 
+export function parseGraphqlErrors(raw: string): string | undefined {
+  try {
+    const body = JSON.parse(raw) as { errors?: { message?: string }[] };
+    const msg = body.errors?.[0]?.message?.trim();
+    return msg || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function parseViewerLogin(raw: string): string {
   try {
     const body = JSON.parse(raw) as { data?: { viewer?: { login?: string } } };

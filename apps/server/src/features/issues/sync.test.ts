@@ -58,6 +58,8 @@ describe("assigned issue sync", () => {
     expect(result.issues.map((i) => i.key).sort()).toEqual(["PROJ-9", "acme/web#1"]);
     expect(result.fromCache).toBe(false);
     expect(loadIssues()).toHaveLength(2);
+    expect(result.prSync?.total).toBe(0);
+    expect(result.prSync?.error).toBeUndefined();
   });
 
   it("returns the cache instantly on a later list", async () => {

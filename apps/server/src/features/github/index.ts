@@ -32,7 +32,7 @@ export type GithubClient = {
   listVisibleRepos(): Promise<{ owner: string; name: string }[]>;
   listAccessibleRepos(): Promise<Omit<CatalogRepo, "favorite" | "lastUsedAt">[]>;
   getJson(path: string, etag?: string): Promise<{ status: number; etag?: string; body: string }>;
-  listOpenPrs(opts?: { since?: string }): Promise<BoardPr[]>;
+  listOpenPrs?(opts?: { since?: string }): Promise<BoardPr[]>;
 };
 
 export type { AssignedIssue };
@@ -80,18 +80,18 @@ export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
   };
 }
 
-async function listOpenPrs(exec: ExecFn, since?: string): Promise<BoardPr[]> {
-  const { searchOpenPrs } = await import("../board-prs/search.ts");
-  const { prSearchQuery } = await import("../board-prs/query.ts");
+async function listOpenPrs(exec: ExecFn, _since?: string): Promise<BoardPr[]> {
+  const { searchOpenPrs, fetchViewerLogin } = await import("../board-prs/search.ts");
   const { getSettings } = await import("../settings/index.ts");
   const settings = getSettings();
-  const query = prSearchQuery({
+  if (!settings.boardAuthoredPrs && !settings.boardReviewPrs) return [];
+  const login = await fetchViewerLogin(exec);
+  return searchOpenPrs(exec, {
     authored: settings.boardAuthoredPrs,
     review: settings.boardReviewPrs,
-    since,
+    login,
+    projectKeys: [],
   });
-  if (!query) return [];
-  return searchOpenPrs(exec, query, []);
 }
 
 async function prOut(exec: ExecFn, args: string[]): Promise<string> {

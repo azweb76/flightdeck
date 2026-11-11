@@ -15,6 +15,7 @@ import {
 } from "./health.ts";
 import { loadComments, loadIssue, loadIssues, replaceComments, upsertIssue } from "./store.ts";
 import { applyBoardPrs, syncBoardPrs } from "../board-prs/index.ts";
+import { countsFrom, writePrDiag } from "../board-prs/diag.ts";
 import { nestPrs } from "../board-prs/nest.ts";
 import { listBoardPrs } from "../board-prs/store.ts";
 import { seedBoardPrs } from "../demo/seed-prs.ts";
@@ -140,6 +141,8 @@ export async function syncAssigned(
     for (const issue of demo) upsertIssue(issue);
     seedBoardPrs();
     applyBoardPrs(loadIssues(), listBoardPrs(), true, true);
+    const demoPrs = listBoardPrs();
+    writePrDiag({ syncedAt: new Date().toISOString(), viewerLogin: "demo", query: "demo seed", ...countsFrom(demoPrs) });
     const syncedAt = new Date().toISOString();
     writeSyncStatus({ offline: false, sources: { jira: false, github: false }, errors: [], syncedAt });
     return present(loadIssues(), query, {
@@ -171,13 +174,15 @@ export async function syncAssigned(
     for (const issue of demo) upsertIssue(issue);
     seedBoardPrs();
     applyBoardPrs(loadIssues(), listBoardPrs(), true, true);
+    const demoPrs = listBoardPrs();
+    writePrDiag({ syncedAt: new Date().toISOString(), viewerLogin: "demo", query: "demo seed", ...countsFrom(demoPrs) });
     const syncedAt = new Date().toISOString();
     writeSyncStatus({ offline, sources, errors, syncedAt });
     return present(loadIssues(), query, { offline, offlineSources: sources, fromCache: false, errors });
   }
   for (const issue of live) upsertIssue(issue, { assigned: true });
   const projectKeys = [...new Set(live.filter((i) => i.source === "jira").map((i) => i.key.split("-")[0] ?? ""))].filter(Boolean);
-  const prs = await syncBoardPrs(deps, { incremental, projectKeys, since });
+  const prs = await syncBoardPrs(deps, { projectKeys });
   const assignedComplete = !incremental && jiraErrors.length === 0 && githubErrors.length === 0;
   applyBoardPrs(live, prs.prs, prs.complete, assignedComplete);
   const syncedAt = new Date().toISOString();
