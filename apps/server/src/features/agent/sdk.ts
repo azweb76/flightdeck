@@ -1,9 +1,10 @@
+import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { AgentDriver, AgentEvent, AgentRunOpts } from "./types.ts";
 import { allowTool } from "./permissions.ts";
 
 type SdkQuery = (args: {
-  prompt: string | AsyncIterable<unknown>;
-  options: Record<string, unknown>;
+  prompt: string | AsyncIterable<SDKUserMessage>;
+  options?: Record<string, unknown>;
 }) => AsyncIterable<Record<string, unknown>>;
 
 /** Real Claude Agent SDK driver. Uses permissionMode auto when the SDK supports it. */
@@ -12,7 +13,7 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
     async *run(opts: AgentRunOpts): AsyncIterable<AgentEvent> {
       const query = queryFn ?? (await loadQuery());
       const handle = query({
-        prompt: opts.prompt,
+        prompt: opts.prompt as string | AsyncIterable<SDKUserMessage>,
         options: {
           cwd: opts.cwd,
           model: opts.model,

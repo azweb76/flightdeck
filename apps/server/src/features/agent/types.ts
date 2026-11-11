@@ -1,3 +1,4 @@
+import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { AgentRole, PermissionMode } from "@flightdeck/shared";
 
 export type AgentEvent = {
@@ -14,7 +15,7 @@ export type AgentEvent = {
 };
 
 export type AgentRunOpts = {
-  prompt: string | AsyncIterable<unknown>;
+  prompt: string | AsyncIterable<SDKUserMessage>;
   cwd: string;
   role: AgentRole;
   model: string;

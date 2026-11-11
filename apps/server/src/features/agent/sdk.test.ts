@@ -56,7 +56,7 @@ describe("createSdkDriver", () => {
   it("passes resume into the SDK query options", async () => {
     const seen: Record<string, unknown>[] = [];
     const driver = createSdkDriver(async function* (args) {
-      seen.push(args.options);
+      seen.push(args.options ?? {});
       yield { type: "result", session_id: "sess-9", total_cost_usd: 0.01, result: "" };
     });
     const events = [];
