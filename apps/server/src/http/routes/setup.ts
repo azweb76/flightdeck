@@ -5,7 +5,7 @@ import { createJiraClient } from "../../features/jira/index.ts";
 import { createSecretStore } from "../../features/secrets/index.ts";
 import { patchSettings } from "../../features/settings/index.ts";
 import { runSetupChecks } from "../../features/setup/checks.ts";
-import { applyTeamConfig, parseTeamConfig } from "../../features/setup/import-config.ts";
+import { applyTeamConfig, exportTeamConfig, parseTeamConfig } from "../../features/setup/import-config.ts";
 import { apiError } from "../errors.ts";
 
 /** Canonical route: setup status, Jira connect, team-config import. */
@@ -41,6 +41,8 @@ export function setupRoutes(): Hono {
     publish("settings.updated");
     return c.json({ ok: true, ...result });
   });
+
+  app.get("/export", (c) => c.json(exportTeamConfig()));
 
   app.post("/complete", async (c) => {
     const status = await runSetupChecks();

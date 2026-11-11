@@ -10,7 +10,14 @@ import { createJiraClient, type JiraClient } from "../jira/index.ts";
 import { listRepos } from "../repos/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
 import { getSettings } from "../settings/index.ts";
+import { overlayIssue } from "../runs/overlay.ts";
 import { demoIssues } from "./demo.ts";
+
+const extras = new Map<string, Issue>();
+
+export function rememberIssue(issue: Issue): void {
+  extras.set(issue.id, issue);
+}
 
 export type IssueDeps = {
   github?: GithubClient;
@@ -29,17 +36,18 @@ export async function listIssues(
     source === "github" ? Promise.resolve([]) : loadJira(settings, repos, deps, errors),
     source === "jira" ? Promise.resolve([]) : loadGithub(repos, deps, errors),
   ]);
-  let issues = [...jira, ...github];
+  let issues = [...jira, ...github, ...extras.values()];
   if (issues.length === 0 && process.env.FLIGHTDECK_DEMO === "1") issues = demoIssues();
   if (query.repo) {
     const want = query.repo.toLowerCase();
     issues = issues.filter((i) => i.repos.some((r) => `${r.owner}/${r.name}`.toLowerCase() === want));
   }
   issues.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  return { issues, errors };
+  return { issues: issues.map(overlayIssue), errors };
 }
 
 export async function getIssue(id: string, deps: IssueDeps = {}): Promise<Issue | undefined> {
+  if (extras.has(id)) return overlayIssue(extras.get(id)!);
   const { issues } = await listIssues({}, deps);
   return issues.find((i) => i.id === id);
 }

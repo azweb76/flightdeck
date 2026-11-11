@@ -4,8 +4,8 @@ type Listener = (event: AppEvent) => void;
 
 const listeners = new Set<Listener>();
 
-export function publish(type: AppEvent["type"]): void {
-  const event: AppEvent = { type, at: new Date().toISOString() };
+export function publish(type: AppEvent["type"], payload?: unknown): void {
+  const event: AppEvent = { type, at: new Date().toISOString(), payload };
   for (const l of listeners) l(event);
 }
 

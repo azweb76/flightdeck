@@ -9,6 +9,11 @@ type Row = {
   default_branch: string;
   pinned: number;
   created_at: string;
+  instructions?: string;
+  setup_command?: string;
+  test_command?: string;
+  commit_convention?: string;
+  model_override?: string;
 };
 
 export function listRepos(): Repo[] {
@@ -51,12 +56,29 @@ export function patchRepo(id: number, patch: PatchRepo): Repo | undefined {
     localPath: patch.localPath ?? current.localPath,
     defaultBranch: patch.defaultBranch ?? current.defaultBranch,
     pinned: patch.pinned ?? current.pinned,
+    instructions: patch.instructions ?? current.instructions,
+    setupCommand: patch.setupCommand ?? current.setupCommand,
+    testCommand: patch.testCommand ?? current.testCommand,
+    commitConvention: patch.commitConvention ?? current.commitConvention,
+    modelOverride: patch.modelOverride ?? current.modelOverride,
   };
   getDb()
     .prepare(
-      `UPDATE repos SET local_path = ?, default_branch = ?, pinned = ? WHERE id = ?`,
+      `UPDATE repos SET local_path = ?, default_branch = ?, pinned = ?,
+        instructions = ?, setup_command = ?, test_command = ?,
+        commit_convention = ?, model_override = ? WHERE id = ?`,
     )
-    .run(next.localPath, next.defaultBranch, next.pinned ? 1 : 0, id);
+    .run(
+      next.localPath,
+      next.defaultBranch,
+      next.pinned ? 1 : 0,
+      next.instructions,
+      next.setupCommand,
+      next.testCommand,
+      next.commitConvention,
+      next.modelOverride,
+      id,
+    );
   return getRepo(id);
 }
 
@@ -74,5 +96,19 @@ function toRepo(row: Row): Repo {
     defaultBranch: row.default_branch,
     pinned: row.pinned === 1,
     createdAt: row.created_at,
+    instructions: row.instructions ?? "",
+    setupCommand: row.setup_command ?? "",
+    testCommand: row.test_command ?? "",
+    commitConvention: row.commit_convention ?? "fix",
+    modelOverride: row.model_override ?? "",
   };
+}
+
+export function getRepoBySlug(slug: string): Repo | undefined {
+  const [owner, name] = slug.split("/");
+  if (!owner || !name) return undefined;
+  const row = getDb()
+    .prepare("SELECT * FROM repos WHERE owner = ? AND name = ?")
+    .get(owner, name) as Row | undefined;
+  return row ? toRepo(row) : undefined;
 }

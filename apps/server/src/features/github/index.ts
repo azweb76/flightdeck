@@ -5,6 +5,29 @@ export type GithubClient = {
   status(): Promise<GithubStatus>;
   listIssues(owner: string, name: string): Promise<GhIssue[]>;
   cloneRepo(owner: string, name: string, dest: string): Promise<{ ok: boolean; detail: string }>;
+  createPr(opts: CreatePrOpts): Promise<{ url: string; number: number }>;
+  commentIssue(owner: string, name: string, number: number, body: string): Promise<void>;
+  commentPr(owner: string, name: string, number: number, body: string): Promise<void>;
+  prChecks(owner: string, name: string, number: number): Promise<string>;
+  prComments(owner: string, name: string, number: number): Promise<string>;
+  prDiff(owner: string, name: string, number: number): Promise<string>;
+  prView(owner: string, name: string, number: number): Promise<{ title: string; files: string }>;
+  submitReview(
+    owner: string,
+    name: string,
+    number: number,
+    comments: { path: string; line: number; body: string }[],
+  ): Promise<void>;
+  createIssue(owner: string, name: string, title: string, body: string): Promise<{ number: number; url: string }>;
+};
+
+export type CreatePrOpts = {
+  owner: string;
+  name: string;
+  title: string;
+  body: string;
+  draft: boolean;
+  cwd?: string;
 };
 
 export type GhIssue = {
@@ -20,7 +43,92 @@ export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
     status: () => githubStatus(exec),
     listIssues: (owner, name) => listIssues(exec, owner, name),
     cloneRepo: (owner, name, dest) => cloneRepo(exec, owner, name, dest),
+    createPr: (opts) => createPr(exec, opts),
+    commentIssue: (owner, name, number, body) =>
+      ghJson(exec, ["issue", "comment", String(number), "--repo", `${owner}/${name}`, "--body", body]),
+    commentPr: (owner, name, number, body) =>
+      ghJson(exec, ["pr", "comment", String(number), "--repo", `${owner}/${name}`, "--body", body]),
+    prChecks: async (owner, name, number) => {
+      const r = await exec("gh", ["pr", "checks", String(number), "--repo", `${owner}/${name}`]);
+      return r.stdout + r.stderr;
+    },
+    prComments: async (owner, name, number) => {
+      const r = await exec("gh", [
+        "api",
+        `repos/${owner}/${name}/pulls/${number}/comments`,
+      ]);
+      return r.stdout;
+    },
+    prDiff: async (owner, name, number) => {
+      const r = await exec("gh", ["pr", "diff", String(number), "--repo", `${owner}/${name}`]);
+      return r.stdout;
+    },
+    prView: async (owner, name, number) => {
+      const r = await exec("gh", [
+        "pr",
+        "view",
+        String(number),
+        "--repo",
+        `${owner}/${name}`,
+        "--json",
+        "title,files",
+      ]);
+      const parsed = JSON.parse(r.stdout || "{}") as { title?: string; files?: unknown };
+      return { title: parsed.title ?? "", files: JSON.stringify(parsed.files ?? []) };
+    },
+    submitReview: async (owner, name, number, comments) => {
+      await exec("gh", [
+        "api",
+        `repos/${owner}/${name}/pulls/${number}/reviews`,
+        "-f",
+        `event=COMMENT`,
+        "-f",
+        `body=Flightdeck review`,
+        "-f",
+        `comments=${JSON.stringify(comments)}`,
+      ]);
+    },
+    createIssue: async (owner, name, title, body) => {
+      const r = await exec("gh", [
+        "issue",
+        "create",
+        "--repo",
+        `${owner}/${name}`,
+        "--title",
+        title,
+        "--body",
+        body,
+        "--json",
+        "number,url",
+      ]);
+      if (r.code !== 0) throw new Error(r.stderr || "issue create failed");
+      return JSON.parse(r.stdout) as { number: number; url: string };
+    },
   };
+}
+
+async function ghJson(exec: ExecFn, args: string[]): Promise<void> {
+  const r = await exec("gh", args);
+  if (r.code !== 0) throw new Error(r.stderr || args.join(" "));
+}
+
+async function createPr(exec: ExecFn, opts: CreatePrOpts): Promise<{ url: string; number: number }> {
+  const args = [
+    "pr",
+    "create",
+    "--repo",
+    `${opts.owner}/${opts.name}`,
+    "--title",
+    opts.title,
+    "--body",
+    opts.body,
+  ];
+  if (opts.draft) args.push("--draft");
+  const r = await exec("gh", args, { cwd: opts.cwd, timeoutMs: 60_000 });
+  if (r.code !== 0) throw new Error(r.stderr || "gh pr create failed");
+  const url = r.stdout.trim().split("\n").at(-1) ?? "";
+  const num = Number(url.split("/").at(-1));
+  return { url, number: Number.isFinite(num) ? num : 0 };
 }
 
 export async function githubStatus(exec: ExecFn = defaultExec): Promise<GithubStatus> {

@@ -10,6 +10,11 @@ const repos = [
     defaultBranch: "main",
     pinned: false,
     createdAt: "t",
+    instructions: "",
+    setupCommand: "",
+    testCommand: "",
+    commitConvention: "fix",
+    modelOverride: "",
   },
 ];
 
