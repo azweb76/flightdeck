@@ -10,7 +10,7 @@ export function IssuesPage() {
   const [params, setParams] = useSearchParams();
   const source = params.get("source") ?? "all";
   const repo = params.get("repo") ?? undefined;
-  const { issues, errors, offline, load } = useAssignedIssues(source, repo);
+  const { issues, errors, offline, offlineSources, load } = useAssignedIssues(source, repo);
 
   function setSource(next: string) {
     const p = new URLSearchParams(params);
@@ -48,6 +48,12 @@ export function IssuesPage() {
         <Text sx={{ color: "attention.fg", display: "block", mb: 2 }}>
           Offline — showing cached issues. Start and write-backs are disabled.
         </Text>
+      ) : null}
+      {!offline && offlineSources.jira ? (
+        <Text sx={{ color: "attention.fg", display: "block", mb: 2 }}>Jira is unavailable. GitHub issues can still start.</Text>
+      ) : null}
+      {!offline && offlineSources.github ? (
+        <Text sx={{ color: "attention.fg", display: "block", mb: 2 }}>GitHub is unavailable. Jira issues can still start.</Text>
       ) : null}
       {errors.length ? (
         <Text sx={{ color: "danger.fg", display: "block", mb: 3 }}>{errors.join(" · ")}</Text>

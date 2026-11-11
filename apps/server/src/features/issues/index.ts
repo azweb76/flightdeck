@@ -12,10 +12,20 @@ import { createSecretStore } from "../secrets/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { overlayIssue } from "../runs/overlay.ts";
 import { demoIssues } from "./demo.ts";
+import {
+  present,
+  readSyncStatus,
+  wholeOffline,
+  writeSyncStatus,
+  type IssueListResult,
+  type SourceOffline,
+} from "./health.ts";
 import { loadComments, loadIssue, loadIssues, pruneIssues, replaceComments, upsertIssue } from "./store.ts";
 import { cacheGet, cacheSet, hourCache } from "../cache/index.ts";
-import { rememberedPicks } from "../discovery/index.ts";
+import { rememberedIssuePick, rememberedPicks } from "../discovery/index.ts";
 import { publish } from "../events/index.ts";
+
+export type { IssueListResult, SourceOffline } from "./health.ts";
 
 export function rememberIssue(issue: Issue): void {
   upsertIssue(issue);
@@ -33,14 +43,6 @@ export type IssueDeps = {
   jira?: JiraClient;
 };
 
-export type IssueListResult = {
-  issues: Issue[];
-  errors: string[];
-  offline: boolean;
-  fromCache: boolean;
-  syncedAt?: string;
-};
-
 export async function listIssues(
   query: { source?: "all" | "jira" | "github"; repo?: string; refresh?: string },
   deps: IssueDeps = {},
@@ -55,15 +57,19 @@ export async function listIssues(
   if (!refresh && cached.length > 0) {
     const last = readSyncStatus();
     void syncAssigned(query, deps, false)
-      .then((next) => {
-        if (next.offline !== last.offline) publish("issues.updated");
-      })
+      .then(() => publish("issues.updated"))
       .catch(() => {
-        writeSyncStatus({ offline: true, errors: ["offline"], syncedAt: last.syncedAt });
+        writeSyncStatus({
+          offline: true,
+          sources: { jira: true, github: true },
+          errors: ["offline"],
+          syncedAt: last.syncedAt,
+        });
         publish("issues.updated");
       });
     return present(cached, query, {
       offline: last.offline,
+      offlineSources: last.sources,
       fromCache: true,
       errors: last.errors,
       syncedAt: last.syncedAt ?? cacheGet("issues:last_sync")?.fetchedAt,
@@ -72,18 +78,28 @@ export async function listIssues(
   try {
     return await syncAssigned(query, deps, refresh);
   } catch {
-    writeSyncStatus({ offline: true, errors: ["offline"], syncedAt: cacheGet("issues:last_sync")?.fetchedAt });
+    const syncedAt = cacheGet("issues:last_sync")?.fetchedAt;
+    writeSyncStatus({
+      offline: true,
+      sources: { jira: true, github: true },
+      errors: ["offline"],
+      syncedAt,
+    });
     return present(cached, query, {
       offline: true,
+      offlineSources: { jira: true, github: true },
       fromCache: true,
       errors: ["offline"],
-      syncedAt: cacheGet("issues:last_sync")?.fetchedAt,
+      syncedAt,
     });
   }
 }
 
-export function isOffline(): boolean {
-  return readSyncStatus().offline;
+export function isOffline(source?: string): boolean {
+  const last = readSyncStatus();
+  if (source === "jira") return last.sources.jira;
+  if (source === "github") return last.sources.github;
+  return last.offline;
 }
 
 export async function getIssue(id: string, deps: IssueDeps = {}): Promise<Issue | undefined> {
@@ -104,63 +120,52 @@ export async function syncAssigned(
   if (process.env.FLIGHTDECK_DEMO === "1" && !deps.github && !deps.jira) {
     const demo = demoIssues();
     for (const issue of demo) upsertIssue(issue);
-    writeSyncStatus({ offline: false, errors: [], syncedAt: new Date().toISOString() });
-    return present(demo, query, { offline: false, fromCache: false, errors: [] });
+    const syncedAt = new Date().toISOString();
+    writeSyncStatus({ offline: false, sources: { jira: false, github: false }, errors: [], syncedAt });
+    return present(demo, query, {
+      offline: false,
+      offlineSources: { jira: false, github: false },
+      fromCache: false,
+      errors: [],
+    });
   }
   const settings = getSettings();
-  const errors: string[] = [];
+  const jiraErrors: string[] = [];
+  const githubErrors: string[] = [];
   const source = query.source ?? "all";
   const visible = await hourCache("meta:repos", () => visibleRepos(deps), refreshMeta).catch(() => [] as VisibleRepo[]);
   const since = cacheGet("issues:last_sync")?.fetchedAt;
   const incremental = Boolean(since) && !refreshMeta;
   const [jira, github] = await Promise.all([
-    source === "github" ? Promise.resolve([]) : loadJira(settings, visible, deps, errors, incremental ? since : undefined),
-    source === "jira" ? Promise.resolve([]) : loadGithub(deps, errors, incremental ? since : undefined),
+    source === "github" ? Promise.resolve([]) : loadJira(settings, visible, deps, jiraErrors, incremental ? since : undefined),
+    source === "jira" ? Promise.resolve([]) : loadGithub(deps, githubErrors, incremental ? since : undefined),
   ]);
-  const offline = errors.length > 0;
+  const sources: SourceOffline = { jira: jiraErrors.length > 0, github: githubErrors.length > 0 };
+  const errors = [...jiraErrors, ...githubErrors];
+  const calledJira = source !== "github" && (jira.length > 0 || jiraErrors.length > 0);
+  const calledGithub = source !== "jira";
+  const offline = wholeOffline(calledJira, calledGithub, sources);
   const live = [...jira, ...github];
   if (live.length === 0 && process.env.FLIGHTDECK_DEMO === "1") {
     const demo = demoIssues();
     for (const issue of demo) upsertIssue(issue);
-    writeSyncStatus({ offline, errors, syncedAt: new Date().toISOString() });
-    return present(demo, query, { offline, fromCache: false, errors });
+    const syncedAt = new Date().toISOString();
+    writeSyncStatus({ offline, sources, errors, syncedAt });
+    return present(demo, query, { offline, offlineSources: sources, fromCache: false, errors });
   }
   for (const issue of live) upsertIssue(issue, { assigned: true });
   // Incremental (since-filtered) lists are incomplete — never prune from them.
   if (!incremental) pruneIssues(live.map((i) => i.id));
   const syncedAt = new Date().toISOString();
   if (!offline) cacheSet("issues:last_sync", syncedAt);
-  writeSyncStatus({ offline, errors, syncedAt: offline ? since : syncedAt });
-  return present(loadIssues(), query, { offline, fromCache: false, errors, syncedAt: offline ? since : syncedAt });
-}
-
-function readSyncStatus(): { offline: boolean; errors: string[]; syncedAt?: string } {
-  const raw = cacheGet("issues:sync_status")?.body;
-  if (!raw) return { offline: false, errors: [] };
-  try {
-    const parsed = JSON.parse(raw) as { offline?: boolean; errors?: string[]; syncedAt?: string };
-    return { offline: Boolean(parsed.offline), errors: parsed.errors ?? [], syncedAt: parsed.syncedAt };
-  } catch {
-    return { offline: false, errors: [] };
-  }
-}
-
-function writeSyncStatus(status: { offline: boolean; errors: string[]; syncedAt?: string }): void {
-  cacheSet("issues:sync_status", JSON.stringify(status));
-}
-
-function present(
-  issues: Issue[],
-  query: { repo?: string },
-  extra: { offline: boolean; fromCache: boolean; errors: string[]; syncedAt?: string },
-): IssueListResult {
-  let next = issues.map((i) => overlayIssue({ ...i, comments: i.comments ?? loadComments(i.id) }));
-  if (query.repo) {
-    const want = query.repo.toLowerCase();
-    next = next.filter((i) => i.repos.some((r) => `${r.owner}/${r.name}`.toLowerCase() === want));
-  }
-  next.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-  return { issues: next, ...extra };
+  writeSyncStatus({ offline, sources, errors, syncedAt: offline ? since : syncedAt });
+  return present(loadIssues(), query, {
+    offline,
+    offlineSources: sources,
+    fromCache: false,
+    errors,
+    syncedAt: offline ? since : syncedAt,
+  });
 }
 
 async function visibleRepos(deps: IssueDeps): Promise<VisibleRepo[]> {
@@ -221,7 +226,10 @@ export function mapJira(
   rememberedByLabel: Record<string, VisibleRepo> = {},
 ): Issue {
   const parsed = parseRepoLabels(issue.labels, prefix);
-  const resolution = resolveRepos(parsed, visible, rememberedByLabel);
+  const resolution = withIssuePick(
+    `jira:${issue.key}`,
+    resolveRepos(parsed, visible, rememberedByLabel),
+  );
   const withLabel = (p: VisibleRepo): LinkedRepo => ({
     owner: p.owner,
     name: p.name,
@@ -241,6 +249,18 @@ export function mapJira(
     repoGuesses: resolution.guesses.map(withLabel),
     updatedAt: issue.updatedAt,
   };
+}
+
+function withIssuePick(
+  issueId: string,
+  resolution: ReturnType<typeof resolveRepos>,
+): ReturnType<typeof resolveRepos> {
+  const pick = rememberedIssuePick(issueId);
+  if (!pick) return resolution;
+  if (resolution.warning === "missing" || resolution.resolved.length === 0) {
+    return { resolved: [pick], warning: "none", guesses: resolution.guesses };
+  }
+  return resolution;
 }
 
 function mapGithub(issue: {

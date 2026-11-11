@@ -267,4 +267,15 @@ export const MIGRATIONS: { id: string; sql: string }[] = [
       );
     `,
   },
+  {
+    id: "011_issue_repo_picks",
+    sql: `
+      CREATE TABLE IF NOT EXISTS issue_repo_picks (
+        issue_id TEXT PRIMARY KEY,
+        owner TEXT NOT NULL,
+        name TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `,
+  },
 ];

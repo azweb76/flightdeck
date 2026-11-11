@@ -40,13 +40,14 @@ export function issueRoutes(): Hono {
   });
   app.post("/:id/repo", async (c) => {
     const body = (await c.req.json()) as { owner: string; name: string; label?: string };
-    const { rememberPick } = await import("../../features/discovery/index.ts");
+    const { rememberIssuePick, rememberPick } = await import("../../features/discovery/index.ts");
     const { jiraProjectKey } = await import("@flightdeck/shared");
     const { rememberIssue } = await import("../../features/issues/index.ts");
     const issue = await getIssue(decodeURIComponent(c.req.param("id")));
     if (!issue) throw apiError(404, "not_found", "Issue not found");
     const label = body.label ?? `${body.owner}/${body.name}`;
     rememberPick(jiraProjectKey(issue.key), label, body.owner, body.name);
+    rememberIssuePick(issue.id, body.owner, body.name);
     rememberIssue({
       ...issue,
       repos: [{ owner: body.owner, name: body.name, registered: true }],

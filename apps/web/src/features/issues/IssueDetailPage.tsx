@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Box, Heading, Label, Spinner, Text } from "@primer/react";
 import type { Issue } from "@flightdeck/shared";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { api } from "../api/index.ts";
+import { api, subscribeEvents } from "../api/index.ts";
 import { GoalEditor } from "./GoalEditor.tsx";
 import { IssueActions } from "./IssueActions.tsx";
 import { IssueRunsTab } from "./IssueRunsTab.tsx";
@@ -14,10 +14,20 @@ export function IssueDetailPage() {
   const [issue, setIssue] = useState<Issue | undefined>();
   const [error, setError] = useState<string>();
   const [offline, setOffline] = useState(false);
+  const [offlineSources, setOfflineSources] = useState({ jira: false, github: false });
 
   function load() {
     if (!id) return;
-    void api.issues({}).then((r) => setOffline(r.offline)).catch(() => setOffline(true));
+    void api
+      .issues({})
+      .then((r) => {
+        setOffline(r.offline);
+        setOfflineSources(r.offlineSources ?? { jira: false, github: false });
+      })
+      .catch(() => {
+        setOffline(true);
+        setOfflineSources({ jira: true, github: true });
+      });
     void api.issue(decodeURIComponent(id)).then(setIssue).catch((err: unknown) => {
       setError(err instanceof Error ? err.message : "Not found");
     });
@@ -25,23 +35,28 @@ export function IssueDetailPage() {
 
   useEffect(() => {
     load();
+    return subscribeEvents(() => load());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (!issue) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (offline) return;
+      const blocked =
+        issue.source === "jira" ? offlineSources.jira : issue.source === "github" ? offlineSources.github : offline;
+      if (blocked) return;
       if (e.key.toLowerCase() === "r") void api.refine(issue.id).then(load);
       if (e.key.toLowerCase() === "s") void api.startRun(issue.id);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [issue, offline]);
+  }, [issue, offlineSources, offline]);
 
   if (error) return <Box sx={{ p: 4 }}>{error}</Box>;
   if (!issue) return <Box sx={{ p: 4 }}><Spinner /></Box>;
+  const sourceOffline =
+    issue.source === "jira" ? offlineSources.jira : issue.source === "github" ? offlineSources.github : offline;
 
   return (
     <Box sx={{ p: [3, 4] }}>
@@ -60,7 +75,7 @@ export function IssueDetailPage() {
         ))}
         {issue.needsYou ? <Label variant="attention">Needs you</Label> : null}
       </Box>
-      <IssueActions issue={issue} onChange={load} offline={offline} />
+      <IssueActions issue={issue} onChange={load} offline={sourceOffline} />
       {issue.comments?.length ? (
         <Box sx={{ mb: 3 }}>
           <Text sx={{ fontWeight: 600, display: "block", mb: 2 }}>Comments</Text>
@@ -72,7 +87,7 @@ export function IssueDetailPage() {
         </Box>
       ) : null}
       <TabBar tab={tab} onTab={(t) => setParams({ tab: t })} />
-      {tab === "goal" ? <GoalEditor issueId={issue.id} fallback={issue.body} offline={offline} /> : null}
+      {tab === "goal" ? <GoalEditor issueId={issue.id} fallback={issue.body} offline={sourceOffline} /> : null}
       {tab === "runs" ? <IssueRunsTab issueId={issue.id} /> : null}
       {tab === "prs" ? <Text sx={{ color: "fg.muted" }}>Open a run to see the PR link.</Text> : null}
     </Box>

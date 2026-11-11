@@ -189,4 +189,67 @@ describe("assigned issue sync", () => {
     expect(cached.fromCache).toBe(true);
     expect(cached.offline).toBe(true);
   });
+
+  it("does not mark the whole app offline when only GitHub fails", async () => {
+    const mixed = {
+      github: {
+        listAssignedIssues: async () => {
+          throw new Error("ENOTFOUND");
+        },
+        listVisibleRepos: async () => [{ owner: "acme", name: "web" }],
+        getJson: async () => ({ status: 200, body: "[]" }),
+      },
+      jira: {
+        search: async () => [
+          {
+            key: "PROJ-9",
+            title: "Assigned Jira",
+            body: "",
+            url: "https://ex/browse/PROJ-9",
+            labels: ["gh:acme/web"],
+            updatedAt: "2026-11-11T00:00:00Z",
+          },
+        ],
+      },
+    } as unknown as IssueDeps;
+    const result = await listIssues({ refresh: "1" }, mixed);
+    expect(result.offline).toBe(false);
+    expect(result.offlineSources.github).toBe(true);
+    expect(result.offlineSources.jira).toBe(false);
+    expect(result.issues.some((i) => i.key === "PROJ-9")).toBe(true);
+  });
+
+  it("keeps an unlabeled Jira chip pick across a full Refresh", async () => {
+    const unlabeled = {
+      github: {
+        listAssignedIssues: async () => [],
+        listVisibleRepos: async () => [
+          { owner: "acme", name: "web" },
+          { owner: "acme", name: "api" },
+        ],
+        getJson: async () => ({ status: 200, body: "[]" }),
+      },
+      jira: {
+        search: async () => [
+          {
+            key: "PROJ-1",
+            title: "No labels",
+            body: "",
+            url: "https://ex/browse/PROJ-1",
+            labels: ["bug"],
+            updatedAt: "2026-11-11T00:00:00Z",
+          },
+        ],
+      },
+    } as unknown as IssueDeps;
+    const first = await listIssues({ refresh: "1" }, unlabeled);
+    expect(first.issues[0]?.repoWarning).toBe("missing");
+    const { rememberIssuePick } = await import("../discovery/index.ts");
+    rememberIssuePick("jira:PROJ-1", "acme", "web");
+    const again = await listIssues({ refresh: "1" }, unlabeled);
+    expect(again.issues[0]?.repos).toEqual([
+      expect.objectContaining({ owner: "acme", name: "web", registered: true }),
+    ]);
+    expect(again.issues[0]?.repoWarning).toBe("none");
+  });
 });

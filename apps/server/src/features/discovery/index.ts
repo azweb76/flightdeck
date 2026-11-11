@@ -13,6 +13,21 @@ export function rememberedPick(projectKey: string, label: string): VisibleRepo |
   return rememberedPicks(projectKey)[label];
 }
 
+export function rememberIssuePick(issueId: string, owner: string, name: string): void {
+  getDb()
+    .prepare(
+      `INSERT INTO issue_repo_picks (issue_id, owner, name, updated_at) VALUES (?,?,?,?)
+       ON CONFLICT(issue_id) DO UPDATE SET owner=excluded.owner, name=excluded.name, updated_at=excluded.updated_at`,
+    )
+    .run(issueId, owner, name, new Date().toISOString());
+}
+
+export function rememberedIssuePick(issueId: string): VisibleRepo | undefined {
+  return getDb()
+    .prepare("SELECT owner, name FROM issue_repo_picks WHERE issue_id = ?")
+    .get(issueId) as VisibleRepo | undefined;
+}
+
 export function rememberPick(projectKey: string, label: string, owner: string, name: string): void {
   getDb()
     .prepare(

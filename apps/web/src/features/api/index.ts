@@ -49,7 +49,13 @@ export const api = {
     if (query.repo) q.set("repo", query.repo);
     if (query.refresh) q.set("refresh", query.refresh);
     const s = q.toString();
-    return request<{ issues: Issue[]; errors: string[]; offline: boolean; fromCache: boolean }>(
+    return request<{
+      issues: Issue[];
+      errors: string[];
+      offline: boolean;
+      offlineSources?: { jira: boolean; github: boolean };
+      fromCache: boolean;
+    }>(
       `/api/issues${s ? `?${s}` : ""}`,
     );
   },

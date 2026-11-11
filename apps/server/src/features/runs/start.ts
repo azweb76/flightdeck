@@ -18,9 +18,9 @@ const queue: number[] = [];
 let pumping = false;
 
 export async function startRun(input: StartRun): Promise<Run> {
-  if (isOffline() && process.env.FLIGHTDECK_DEMO !== "1") throw new OfflineError();
   const issue = await getIssue(input.issueId);
   if (!issue) throw new Error("Issue not found");
+  if (isOffline(issue.source) && process.env.FLIGHTDECK_DEMO !== "1") throw new OfflineError();
   const repo = pickRepo(issue, input.repoId);
   if (process.env.FLIGHTDECK_DEMO !== "1") await ensureClone(repo.owner, repo.name);
   const settings = getSettings();

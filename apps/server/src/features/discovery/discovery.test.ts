@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
-import { rememberPick, rememberedPick, rememberedPicks } from "./index.ts";
+import { rememberIssuePick, rememberedIssuePick, rememberPick, rememberedPick, rememberedPicks } from "./index.ts";
 
 describe("label repo picks", () => {
   beforeEach(() => {
@@ -19,5 +19,10 @@ describe("label repo picks", () => {
       "gh:web": { owner: "acme", name: "web" },
       "gh:api": { owner: "acme", name: "api" },
     });
+  });
+
+  it("remembers a chip pick on an unlabeled issue", () => {
+    rememberIssuePick("jira:PROJ-1", "acme", "web");
+    expect(rememberedIssuePick("jira:PROJ-1")).toEqual({ owner: "acme", name: "web" });
   });
 });
