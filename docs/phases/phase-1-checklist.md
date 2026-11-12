@@ -1,0 +1,41 @@
+# Phase 1 checklist
+
+From `docs/DESIGN.md` (Goal shaping). Each line is marked **Done** with proof or **Missing** with why.
+
+- [x] **Done** Local web app; Node server bound to 127.0.0.1 — `apps/server/src/index.ts`; `apps/e2e/phase1.spec.ts`; `GET /api/health` `{ host: "127.0.0.1" }`; `issues-light.png`
+- [x] **Done** TypeScript Node backend with the Claude Agent SDK — `apps/server/src/features/agent/sdk.ts`; `sdk.test.ts`
+- [x] **Done** React frontend with MUI — `apps/web`; `issues-light.png`
+- [x] **Done** Claude auth reads `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json` — `apps/server/src/features/claude/claude.test.ts`; Settings card `settings-light.png`
+- [x] **Done** Claude OAuth login fallback when no `apiKeyHelper` is set — `detectClaudeConfig` detail `"No apiKeyHelper. Fall back to Claude OAuth login."`; `claude.test.ts`
+- [x] **Done** GitHub via the `gh` CLI login — `apps/server/src/features/github/github.test.ts`; `settings-light.png` GitHub card
+- [x] **Done** Jira Cloud via email + API token — `apps/server/src/features/jira`; Settings Jira form `settings-light.png`
+- [x] **Done** Per-run dollar cap in Settings — `settings.test.ts`; e2e `cap-run`; `settings-light.png`
+- [x] **Done** Daily dollar cap in Settings — `settings.test.ts`; e2e `cap-daily`; `settings-light.png`
+- [x] **Done** Max-concurrent-agents in Settings — `settings.test.ts`; e2e `cap-concurrent`; `settings-light.png`
+- [x] **Done** Home is My issues, ready to shape or start — `phase1.spec.ts`; `issues-light.png`
+- [x] **Done** Nav pages: Issues, Runs, My PRs, Reviews, Settings — `phase1.spec.ts`; `runs-light.png` `prs-light.png` `reviews-light.png` `settings-light.png`
+- [x] **Done** Goal shaping is a full-page chat with the issue draft live beside it — `phase1.spec.ts` live draft; `shape-draft-light.png`
+- [x] **Done** Roomier layout with generous whitespace — `shape-draft-light.png` `settings-light.png`
+- [x] **Done** Follows macOS light and dark — `issues-light.png` `issues-dark.png` `shape-draft-dark.png` `settings-dark.png`
+- [x] **Done** Form inputs use a small static label above the field (never MUI floating/notched labels) — eslint `no-floating-input-label`; `settings-light.png` `new-idea-dialog-light.png`
+- [x] **Done** Settings shows Claude auth status — e2e; `settings-light.png`
+- [x] **Done** Settings shows GitHub status — e2e; `settings-light.png`
+- [x] **Done** Settings shows Jira connection — e2e; `settings-light.png`
+- [x] **Done** Settings lists repos — e2e `acme/web`; `settings-light.png`
+- [x] **Done** Clone/fetch a chosen repo into the app folder for read-only context — `clone.test.ts` (demo records path); `ensureClone` git fetch/clone when not demo
+- [x] **Done** Shaping chat: Claude reads the repo and asks questions — fake driver first-turn ask; `phase1.spec.ts`; `shape-asking-light.png`
+- [x] **Done** Live draft has six sections (goal and background, acceptance criteria, relevant files, approach, out of scope, test plan) — `draft.test.ts`; e2e section asserts; `shape-draft-light.png`
+- [x] **Done** Start from a new idea (pick a repo) — `phase1.spec.ts`; `new-idea-dialog-light.png`
+- [x] **Done** Start from an existing Jira or GitHub issue — `phase1.spec.ts` Shape PROJ-150
+- [x] **Done** Save as a new Jira or GitHub issue; Dan chooses the tracker each time — `phase1.spec.ts` save GitHub/Jira; `save-dialog-light.png` `save-github-light.png`
+- [x] **Done** Save can update an existing issue — `shape.test.ts` save after existing Jira id; demo reuses key
+- [x] **Done** Nothing is created on the tracker until Save — shaping does not call create until `/api/shape/:id/save`; e2e save tests
+- [x] **Done** After saving, the issue waits (Start is a disabled placeholder) — e2e `start-run` disabled; `shape-saved-light.png`
+- [x] **Done** Issues home lists my issues — `phase1.spec.ts`; `issues-light.png`
+- [x] **Done** Empty issues home has a clear empty state — `phase1.spec.ts`; `issues-empty-light.png` `issues-empty-dark.png`
+- [x] **Done** Error states are visible (failed save, missing tracker, failed connection) — e2e save without tracker; Jira connect fail; `settings-jira-error-dark.png`
+- [x] **Done** Demo/fake adapters for tests and screenshots — `FLIGHTDECK_DEMO=1`; `features/agent/fake.ts`; `features/demo/index.ts`
+- [x] **Done** Real `gh` adapter — `features/github/index.ts`; `github.test.ts`
+- [x] **Done** Real Jira REST adapter (`POST /rest/api/3/search/jql`, ADF for descriptions) — `features/jira/search.ts`; `jira.test.ts`
+- [x] **Done** Real Agent SDK adapter with read-only tools — `features/agent/sdk.ts` allowedTools Read/Glob/Grep; `sdk.test.ts`
+- [x] **Done** README how to run it on a Mac — `README.md`
