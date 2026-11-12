@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../features/db/index.ts";
 import { seedDemo } from "../features/demo/index.ts";
+import { upsertIssue } from "../features/issues/store.ts";
 import { createApp } from "./app.ts";
 
 describe("http", () => {
@@ -54,6 +55,30 @@ describe("http", () => {
       body: JSON.stringify({ tracker: "github", repoSlug: "acme/web" }),
     });
     expect((await saved.json() as { saved: boolean }).saved).toBe(true);
+  });
+
+  it("PATCH repo survives a later Jira upsert without repoSlug", async () => {
+    const app = createApp();
+    const patched = await app.request("http://127.0.0.1/api/issues/jira%3APROJ-150/repo", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ repoSlug: "acme/web" }),
+    });
+    expect(patched.status).toBe(200);
+    expect(await patched.json()).toMatchObject({ id: "jira:PROJ-150", repoSlug: "acme/web" });
+    upsertIssue({
+      id: "jira:PROJ-150",
+      source: "jira",
+      key: "PROJ-150",
+      title: "Invoice CSV on the web app",
+      body: "Need an export for finance.",
+      url: "https://example.atlassian.net/browse/PROJ-150",
+      updatedAt: "2026-11-12T13:00:00.000Z",
+      saved: true,
+    });
+    const issues = await app.request("http://127.0.0.1/api/issues");
+    const body = (await issues.json()) as { issues: { id: string; repoSlug?: string }[] };
+    expect(body.issues.find((i) => i.id === "jira:PROJ-150")?.repoSlug).toBe("acme/web");
   });
 
   it("rejects a Jira connect with a bad token", async () => {

@@ -8,7 +8,8 @@ export function upsertIssue(issue: Issue): void {
        VALUES (?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET
          title=excluded.title, body=excluded.body, url=excluded.url,
-         repo_slug=excluded.repo_slug, updated_at=excluded.updated_at, saved=excluded.saved`,
+         repo_slug=COALESCE(excluded.repo_slug, issues.repo_slug),
+         updated_at=excluded.updated_at, saved=excluded.saved`,
     )
     .run(
       issue.id,
