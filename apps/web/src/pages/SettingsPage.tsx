@@ -25,13 +25,23 @@ export function SettingsPage() {
   }, [reload]);
 
   if (!settings || !status) {
-    return error ? <Alert severity="error">{error}</Alert> : <Typography color="text.secondary">Loading…</Typography>;
+    return error ? (
+      <Alert severity="error" data-testid="page-error">
+        {error}
+      </Alert>
+    ) : (
+      <Typography color="text.secondary">Loading…</Typography>
+    );
   }
 
   return (
     <Stack spacing={4}>
       <Typography variant="h4">Settings</Typography>
-      {error ? <Alert severity="error">{error}</Alert> : null}
+      {error ? (
+        <Alert severity="error" data-testid="page-error">
+          {error}
+        </Alert>
+      ) : null}
       <StatusCards status={status} repos={repos} onClaudeHint={() => void api.claudeLogin().then((r) => setError(r.detail))} />
       <CapsForm
         settings={settings}
@@ -44,11 +54,10 @@ export function SettingsPage() {
       <JiraForm
         settings={settings}
         hasToken={status.jira.hasToken}
-        onDone={async (msg, next) => {
+        onDone={async (next) => {
           setSettings(next);
           setError("");
           await reload();
-          setError(msg.startsWith("Jira") ? "" : msg);
         }}
         onFail={reload}
       />
@@ -117,6 +126,12 @@ function CapsForm(props: { settings: Settings; onSaved: (p: Partial<Settings>) =
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
 
+  function editCap(setValue: (v: string) => void, raw: string) {
+    setValue(raw);
+    setErr("");
+    setOk("");
+  }
+
   async function saveNum(key: "dollarCapUsd" | "dailyDollarCapUsd" | "maxConcurrentAgents", raw: string) {
     const n = Number(raw);
     if (!Number.isFinite(n) || n <= 0) {
@@ -134,24 +149,20 @@ function CapsForm(props: { settings: Settings; onSaved: (p: Partial<Settings>) =
       <Typography variant="h6" sx={{ mb: 3 }}>
         Spend and concurrency
       </Typography>
-      {err ? <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert> : null}
-      {ok ? <Alert severity="success" sx={{ mb: 2 }}>{ok}</Alert> : null}
+      {err ? (
+        <Alert severity="error" sx={{ mb: 2 }} data-testid="cap-error">
+          {err}
+        </Alert>
+      ) : null}
+      {ok ? (
+        <Alert severity="success" sx={{ mb: 2 }} data-testid="cap-saved">
+          {ok}
+        </Alert>
+      ) : null}
       <Stack direction={{ xs: "column", sm: "row" }} gap={2} sx={{ mb: 2 }}>
-        <Box sx={{ width: { sm: 180 } }}>
-          <FormField label="Per-run cap (USD)">
-            <TextField type="number" value={run} onChange={(e) => setRun(e.target.value)} onBlur={() => void saveNum("dollarCapUsd", run)} inputProps={{ "data-testid": "cap-run" }} />
-          </FormField>
-        </Box>
-        <Box sx={{ width: { sm: 180 } }}>
-          <FormField label="Daily cap (USD)">
-            <TextField type="number" value={daily} onChange={(e) => setDaily(e.target.value)} onBlur={() => void saveNum("dailyDollarCapUsd", daily)} inputProps={{ "data-testid": "cap-daily" }} />
-          </FormField>
-        </Box>
-        <Box sx={{ width: { sm: 180 } }}>
-          <FormField label="Max concurrent">
-            <TextField type="number" value={max} onChange={(e) => setMax(e.target.value)} onBlur={() => void saveNum("maxConcurrentAgents", max)} inputProps={{ "data-testid": "cap-concurrent" }} />
-          </FormField>
-        </Box>
+        <CapField label="Per-run cap (USD)" value={run} testId="cap-run" onChange={(v) => editCap(setRun, v)} onBlur={() => void saveNum("dollarCapUsd", run)} />
+        <CapField label="Daily cap (USD)" value={daily} testId="cap-daily" onChange={(v) => editCap(setDaily, v)} onBlur={() => void saveNum("dailyDollarCapUsd", daily)} />
+        <CapField label="Max concurrent" value={max} testId="cap-concurrent" onChange={(v) => editCap(setMax, v)} onBlur={() => void saveNum("maxConcurrentAgents", max)} />
       </Stack>
       <Box sx={{ maxWidth: 280 }}>
         <FormField label="Appearance">
@@ -166,10 +177,32 @@ function CapsForm(props: { settings: Settings; onSaved: (p: Partial<Settings>) =
   );
 }
 
+function CapField(props: {
+  label: string;
+  value: string;
+  testId: string;
+  onChange: (v: string) => void;
+  onBlur: () => void;
+}) {
+  return (
+    <Box sx={{ width: { sm: 180 } }}>
+      <FormField label={props.label}>
+        <TextField
+          type="number"
+          value={props.value}
+          onChange={(e) => props.onChange(e.target.value)}
+          onBlur={props.onBlur}
+          inputProps={{ "data-testid": props.testId }}
+        />
+      </FormField>
+    </Box>
+  );
+}
+
 function JiraForm(props: {
   settings: Settings;
   hasToken: boolean;
-  onDone: (msg: string, settings: Settings) => Promise<void>;
+  onDone: (settings: Settings) => Promise<void>;
   onFail: () => Promise<void>;
 }) {
   const [siteUrl, setSiteUrl] = useState(props.settings.jiraSiteUrl);
@@ -185,7 +218,7 @@ function JiraForm(props: {
     try {
       const res = await api.connectJira({ siteUrl, email, token, projectKey });
       setOk(res.detail);
-      await props.onDone(res.detail, res.settings);
+      await props.onDone(res.settings);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Jira connect failed");
       await props.onFail();
@@ -209,7 +242,11 @@ function JiraForm(props: {
           {err}
         </Alert>
       ) : null}
-      {ok ? <Alert severity="success" sx={{ mb: 2 }}>{ok}</Alert> : null}
+      {ok ? (
+        <Alert severity="success" sx={{ mb: 2 }} data-testid="jira-form-success">
+          {ok}
+        </Alert>
+      ) : null}
       <Box sx={{ maxWidth: 480 }}>
         <FormField label="Site URL">
           <TextField value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} inputProps={{ "data-testid": "jira-url" }} />

@@ -91,6 +91,29 @@ test("Settings shows Claude, GitHub, Jira, repos and caps", async ({ page }) => 
   await expect(page.getByText("Caps saved")).toBeVisible();
 });
 
+test("Jira connect success is not an error banner", async ({ page }) => {
+  await seedHome(page);
+  await page.goto("/settings");
+  await page.getByTestId("jira-token").fill("ok");
+  await page.getByTestId("jira-connect").click();
+  await expect(page.getByTestId("jira-form-success")).toContainText("Connected as dan@example.com (demo)");
+  await expect(page.getByTestId("page-error")).toHaveCount(0);
+  await expect(page.locator('[role="alert"].MuiAlert-colorError, [role="alert"].MuiAlert-standardError')).toHaveCount(0);
+  await expect(page.getByTestId("jira-status")).toContainText("Connected");
+});
+
+test("invalid cap error clears once corrected", async ({ page }) => {
+  await seedHome(page);
+  await page.goto("/settings");
+  await page.getByTestId("cap-run").fill("0");
+  await page.getByTestId("cap-run").blur();
+  await expect(page.getByTestId("cap-error")).toContainText("greater than 0");
+  await page.getByTestId("cap-run").fill("12");
+  await expect(page.getByTestId("cap-error")).toHaveCount(0);
+  await page.getByTestId("cap-run").blur();
+  await expect(page.getByTestId("cap-saved")).toContainText("Caps saved");
+});
+
 test("Jira connect error is visible", async ({ page }) => {
   await seedHome(page);
   await page.goto("/settings");
