@@ -1,0 +1,27 @@
+{
+  "name": "flightdeck",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=12.18.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @flightdeck/server --filter @flightdeck/web --parallel dev",
+    "build": "pnpm -r --if-present build",
+    "check": "node scripts/check.mjs",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm exec eslint . --max-warnings 0",
+    "test": "pnpm -r --if-present test",
+    "postinstall": "pnpm --filter @flightdeck/e2e exec playwright install chromium"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "eslint": "^9.20.0",
+    "eslint-plugin-flightdeck": "workspace:*",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.0"
+  }
+}
