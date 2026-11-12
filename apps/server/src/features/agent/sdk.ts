@@ -21,12 +21,7 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
           settingSources: ["user", "project"],
           allowedTools: [...SHAPE_TOOLS],
           env: opts.env,
-          canUseTool: async (name: string) => {
-            if (!(SHAPE_TOOLS as readonly string[]).includes(name)) {
-              return { behavior: "deny", message: "Shaping is read-only" };
-            }
-            return { behavior: "allow", updatedInput: {} };
-          },
+          canUseTool: canUseShapeTool,
         },
       });
       for await (const msg of handle) {
@@ -38,6 +33,20 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
       }
     },
   };
+}
+
+/** PermissionResult.allow requires updatedInput; pass the original tool input through. */
+export async function canUseShapeTool(
+  name: string,
+  input: Record<string, unknown>,
+): Promise<
+  | { behavior: "allow"; updatedInput: Record<string, unknown> }
+  | { behavior: "deny"; message: string }
+> {
+  if (!(SHAPE_TOOLS as readonly string[]).includes(name)) {
+    return { behavior: "deny", message: "Shaping is read-only" };
+  }
+  return { behavior: "allow", updatedInput: input };
 }
 
 async function loadQuery(): Promise<SdkQuery> {
