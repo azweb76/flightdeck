@@ -61,8 +61,24 @@ Throughout, the agent is hands-off but can pause and ask Dan a question when stu
 - Dan approves or edits each comment, then posts them together as one review with a verdict he picks.
 - Dan can chat with Claude about the PR.
 
-## Still to decide
-1. Tech stack (v1 used TypeScript Node + React + Claude Agent SDK).
-2. Whether to keep per-run and daily dollar caps alongside the concurrency limit.
-3. Screens: home screen and layout of runs, issues and reviews.
-4. Build order.
+## Stack
+- Local web app opened in the browser (Node server bound to 127.0.0.1).
+- TypeScript Node backend with the Claude Agent SDK; React frontend with MUI.
+- Claude auth: use `apiKeyHelper` and the API base URL (ANTHROPIC_BASE_URL) from the user's Claude settings (`~/.claude/settings.json`); fall back to the Claude OAuth login when no `apiKeyHelper` is set.
+- GitHub via the `gh` CLI login; Jira Cloud via email + API token.
+- Per-run and daily dollar caps, plus a max-concurrent-agents setting.
+
+## Screens
+- Home: My issues, ready to shape or start.
+- Nav pages: Issues, Runs, My PRs, Reviews, Settings.
+- Change detail page: stage timeline (plan, implement, review rounds, PR, CI), live transcript, reply box.
+- Goal shaping: full-page chat with the issue draft updating live beside it.
+- Roomier layout with generous whitespace; follows macOS light/dark. Form inputs use a small static label above the field (GitHub style), never MUI floating/notched labels.
+
+## Phases
+Each phase is tested by Dan on his Mac before the next starts.
+1. Goal shaping: app skeleton, Settings (Claude auth status, GitHub, Jira, repos), clone/fetch a chosen repo into the app's folder for read-only context, full-page chat where Claude reads the repo and asks questions, live issue draft with the six sections, save as a new Jira or GitHub issue (choose each time) or update an existing one, Issues home listing my issues.
+2. Run a change: Start, worktree, plan, implement with tests/lint/typecheck/build gates, fresh-context reviewer, loop up to 3 rounds then ask, draft PR, PR link on issue; change detail page.
+3. Many at once: concurrency limit, per-run and daily caps, Runs page, Archive button.
+4. CI and My PRs: watch CI and auto-fix up to 3 attempts then ask; My PRs page.
+5. Reviews: select PRs to review, Review button, worktree at the PR commit, repo review skill or built-in default, summary plus drafted comments, approve/edit and post as one review with a verdict, chat about the PR.
