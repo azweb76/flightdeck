@@ -43,6 +43,8 @@ export function AppShell({ repos }: { repos: CatalogRepo[] }) {
         !type ||
         type === "issues.updated" ||
         type === "runs.updated" ||
+        type === "run.event" ||
+        type === "settings.updated" ||
         type === "reviews.updated" ||
         type === "questions.updated" ||
         type === "notifications.updated"

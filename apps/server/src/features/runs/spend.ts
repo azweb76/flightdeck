@@ -1,6 +1,7 @@
+import { roundUsd, type Run } from "@flightdeck/shared";
 import { getSettings, patchSettings } from "../settings/index.ts";
-import { getDb } from "../db/index.ts";
 import { publish } from "../events/index.ts";
+import { listRuns } from "./store.ts";
 
 export type SpendStatus = {
   todayUsd: number;
@@ -9,27 +10,24 @@ export type SpendStatus = {
   reason?: string;
 };
 
-export function utcDay(now = new Date()): string {
-  return now.toISOString().slice(0, 10);
+const LIVE = new Set<Run["status"]>(["queued", "running", "paused", "asking"]);
+
+export function localDay(now = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-export function addDailySpend(usd: number, now = new Date()): number {
-  if (usd <= 0) return todaySpend(now);
-  const day = utcDay(now);
-  getDb()
-    .prepare(
-      `INSERT INTO daily_spend (day, usd) VALUES (?, ?)
-       ON CONFLICT(day) DO UPDATE SET usd = usd + excluded.usd`,
-    )
-    .run(day, usd);
-  return todaySpend(now);
-}
-
+/** Sum of run.costUsd for live runs plus finished/failed/interrupted runs that spent on this local day. */
 export function todaySpend(now = new Date()): number {
-  const row = getDb().prepare("SELECT usd FROM daily_spend WHERE day = ?").get(utcDay(now)) as
-    | { usd: number }
-    | undefined;
-  return Number(row?.usd ?? 0);
+  const day = localDay(now);
+  let sum = 0;
+  for (const run of listRuns()) {
+    if (!countsTowardDay(run, day)) continue;
+    sum += run.costUsd;
+  }
+  return roundUsd(sum);
 }
 
 export function spendStatus(now = new Date()): SpendStatus {
@@ -58,8 +56,14 @@ export function raiseDailyCap(capUsd: number): SpendStatus {
 }
 
 export function resumeSpendTomorrow(now = new Date()): SpendStatus {
-  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   patchSettings({ spendResumeAt: next.toISOString() });
   publish("settings.updated");
   return spendStatus(now);
+}
+
+function countsTowardDay(run: Run, day: string): boolean {
+  if (LIVE.has(run.status)) return true;
+  const stamp = run.finishedAt ?? run.updatedAt ?? run.startedAt ?? run.createdAt;
+  return localDay(new Date(stamp)) === day;
 }
