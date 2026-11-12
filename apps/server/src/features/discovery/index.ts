@@ -34,7 +34,7 @@ export function lastProjectRepo(projectKey: string): VisibleRepo | undefined {
   return getDb()
     .prepare(
       `SELECT owner, name FROM issue_repo_picks
-       WHERE issue_id LIKE ? ORDER BY updated_at DESC LIMIT 1`,
+       WHERE issue_id LIKE ? ORDER BY updated_at DESC, rowid DESC LIMIT 1`,
     )
     .get(`jira:${projectKey}-%`) as VisibleRepo | undefined;
 }
