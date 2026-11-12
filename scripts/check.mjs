@@ -25,7 +25,12 @@ function run(label, command, cwd) {
 }
 
 const rootLint = run("lint (repo)", ["pnpm", "exec", "eslint", ".", "--max-warnings", "0"], process.cwd());
-let ok = rootLint;
+const browsers = run(
+  "playwright chromium",
+  ["pnpm", "exec", "playwright", "install", "chromium"],
+  resolve("apps/e2e"),
+);
+let ok = rootLint && browsers;
 for (const p of workspacePkgs) {
   if (!existsSync(resolve(p.dir, "package.json"))) continue;
   const scripts = JSON.parse(readFileSync(resolve(p.dir, "package.json"), "utf8")).scripts ?? {};

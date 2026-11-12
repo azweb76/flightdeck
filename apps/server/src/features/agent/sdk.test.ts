@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapSdkMessage } from "./sdk.ts";
+import { mapSdkMessage, SHAPE_TOOLS } from "./sdk.ts";
 
 describe("mapSdkMessage", () => {
   it("maps assistant text and AskUserQuestion", () => {
@@ -20,5 +20,10 @@ describe("mapSdkMessage", () => {
     ];
     expect(events.map((e) => e.kind)).toEqual(["text", "ask"]);
     expect(events[1]?.ask?.options[0]?.label).toBe("API");
+  });
+
+  it("allows AskUserQuestion alongside read-only tools", () => {
+    expect(SHAPE_TOOLS).toContain("AskUserQuestion");
+    expect(SHAPE_TOOLS).toContain("Read");
   });
 });

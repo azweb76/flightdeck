@@ -1,4 +1,4 @@
-import { AppBar, Box, Container, Stack, Tab, Tabs, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Container, Tab, Tabs, Toolbar, Typography } from "@mui/material";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
 const NAV = [
@@ -11,34 +11,52 @@ const NAV = [
 
 export function AppShell() {
   const loc = useLocation();
-  const current = NAV.find((n) => n.match.includes(loc.pathname) || loc.pathname.startsWith("/shape")) ?? NAV[0];
-  const value = current?.to === "/" && loc.pathname.startsWith("/shape") ? "/" : current?.to;
+  const shaping = loc.pathname.startsWith("/shape");
+  const current = NAV.find((n) => n.match.includes(loc.pathname) || shaping) ?? NAV[0];
+  const value = shaping ? "/" : current?.to;
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        height: shaping ? { lg: "100vh" } : "auto",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.default",
+      }}
+    >
       <AppBar
         position="static"
         elevation={0}
         color="inherit"
-        sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper" }}
+        sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.paper", flexShrink: 0 }}
       >
-        <Toolbar sx={{ gap: { xs: 2, md: 5 }, minHeight: 72, px: { xs: 3, md: 5 } }}>
-          <Stack>
-            <Typography variant="h6">Flightdeck</Typography>
-            <Typography variant="caption" color="text.secondary">
-              Shape a goal, then wait to start
-            </Typography>
-          </Stack>
-          <Tabs value={value} sx={{ minHeight: 64 }}>
+        <Toolbar sx={{ gap: 2, minHeight: 64, px: { xs: 2, md: 4 } }}>
+          <Typography variant="h6" sx={{ flexShrink: 0 }}>
+            Flightdeck
+          </Typography>
+          <Tabs
+            value={value}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{ minHeight: 64, flex: 1 }}
+          >
             {NAV.map((n) => (
-              <Tab key={n.to} value={n.to} label={n.label} component={Link} to={n.to} sx={{ minHeight: 64, px: 2.5 }} />
+              <Tab key={n.to} value={n.to} label={n.label} component={Link} to={n.to} sx={{ minHeight: 64, px: 2 }} />
             ))}
           </Tabs>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="lg" sx={{ py: 6, px: { xs: 3, md: 4 } }}>
-        <Outlet />
-      </Container>
+      {shaping ? (
+        <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <Outlet />
+        </Box>
+      ) : (
+        <Container maxWidth="lg" sx={{ py: 5, px: { xs: 3, md: 4 } }}>
+          <Outlet />
+        </Container>
+      )}
     </Box>
   );
 }

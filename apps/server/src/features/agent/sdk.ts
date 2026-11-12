@@ -5,7 +5,9 @@ type SdkQuery = (args: {
   options?: Record<string, unknown>;
 }) => AsyncIterable<Record<string, unknown>>;
 
-/** Real Agent SDK driver. Shaping is read-only: Read, Glob, Grep. */
+export const SHAPE_TOOLS = ["Read", "Glob", "Grep", "AskUserQuestion", "AskUser"] as const;
+
+/** Real Agent SDK driver. Shaping is read-only plus AskUserQuestion. */
 export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
   return {
     async *run(opts: AgentRunOpts): AsyncIterable<AgentEvent> {
@@ -17,10 +19,10 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
           model: opts.model,
           permissionMode: "dontAsk",
           settingSources: ["user", "project"],
-          allowedTools: ["Read", "Glob", "Grep"],
+          allowedTools: [...SHAPE_TOOLS],
           env: opts.env,
           canUseTool: async (name: string) => {
-            if (!["Read", "Glob", "Grep"].includes(name)) {
+            if (!(SHAPE_TOOLS as readonly string[]).includes(name)) {
               return { behavior: "deny", message: "Shaping is read-only" };
             }
             return { behavior: "allow", updatedInput: {} };

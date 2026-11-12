@@ -1,5 +1,9 @@
 import { createTheme } from "@mui/material/styles";
 
+const focus = {
+  "&.Mui-focusVisible": { outline: "3px solid #2997ff", outlineOffset: 2 },
+};
+
 export const theme = createTheme({
   cssVariables: { colorSchemeSelector: "class" },
   colorSchemes: {
@@ -31,40 +35,24 @@ export const theme = createTheme({
   shape: { borderRadius: 14 },
   spacing: 8,
   components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        body: { minHeight: "100vh" },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: { root: { backgroundImage: "none" } },
-    },
+    MuiCssBaseline: { styleOverrides: { body: { minHeight: "100vh" } } },
+    MuiPaper: { styleOverrides: { root: { backgroundImage: "none" } } },
     MuiDialog: {
       defaultProps: { transitionDuration: 0 },
       styleOverrides: {
-        paper: {
-          backgroundImage: "none",
-          backgroundColor: "#ffffff",
-          color: "#1d1d1f",
-          padding: 8,
-          minWidth: 380,
-          boxShadow: "0 24px 64px rgba(0,0,0,0.28)",
-          ".dark &, [data-mui-color-scheme='dark'] &": {
-            backgroundColor: "#1d1d1f",
-            color: "#f5f5f7",
-          },
-        },
+        paper: { backgroundImage: "none", padding: 8, minWidth: 380 },
       },
     },
-    MuiAppBar: {
-      defaultProps: { position: "static" },
-    },
+    MuiDialogTitle: { styleOverrides: { root: { paddingBottom: 12 } } },
+    MuiDialogContent: { styleOverrides: { root: { paddingTop: "16px !important" } } },
+    MuiAppBar: { defaultProps: { position: "static" } },
     MuiButton: {
       defaultProps: { disableElevation: true },
-      styleOverrides: { root: { borderRadius: 10, paddingInline: 16, paddingBlock: 8 } },
+      styleOverrides: { root: { borderRadius: 10, paddingInline: 16, paddingBlock: 8, ...focus } },
     },
-    MuiTextField: {
-      defaultProps: { variant: "outlined", fullWidth: true, hiddenLabel: true },
-    },
+    MuiTab: { styleOverrides: { root: { ...focus } } },
+    MuiChip: { styleOverrides: { root: { ...focus } } },
+    MuiLink: { styleOverrides: { root: { ...focus } } },
+    MuiTextField: { defaultProps: { variant: "outlined", fullWidth: true, hiddenLabel: true } },
   },
 });

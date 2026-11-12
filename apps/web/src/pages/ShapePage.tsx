@@ -1,8 +1,11 @@
-import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from "@mui/material";
-import { DRAFT_SECTION_LABELS, DRAFT_SECTIONS, type ChatMessage, type ShapeSession } from "@flightdeck/shared";
-import { useEffect, useState } from "react";
+import { Alert, Box, Button, Stack, Tooltip, Typography } from "@mui/material";
+import type { AppEvent, ShapeSession } from "@flightdeck/shared";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api.ts";
+import { sessionFromEvent, useAppEvents } from "../useAppEvents.ts";
+import { ChatPane } from "./ChatPane.tsx";
+import { DraftPane } from "./DraftPane.tsx";
 import { SaveIssueDialog } from "./SaveIssueDialog.tsx";
 
 export function ShapePage() {
@@ -10,17 +13,28 @@ export function ShapePage() {
   const [session, setSession] = useState<ShapeSession>();
   const [error, setError] = useState("");
   const [reply, setReply] = useState("");
-  const [savedKey, setSavedKey] = useState("");
   const [saveOpen, setSaveOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const sending = useRef(false);
 
   useEffect(() => {
     if (!id) return;
     api.getShape(id).then(setSession).catch((e: Error) => setError(e.message));
   }, [id]);
 
+  const onEvent = useCallback(
+    (ev: AppEvent) => {
+      if (!id) return;
+      const next = sessionFromEvent(ev, id);
+      if (next) setSession(next);
+    },
+    [id],
+  );
+  useAppEvents(onEvent);
+
   async function send(text: string) {
-    if (!id || !text.trim()) return;
+    if (!id || !text.trim() || sending.current) return;
+    sending.current = true;
     setBusy(true);
     setError("");
     try {
@@ -29,6 +43,7 @@ export function ShapePage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Reply failed");
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
@@ -37,147 +52,61 @@ export function ShapePage() {
     return error ? <Alert severity="error">{error}</Alert> : <Typography color="text.secondary">Loading…</Typography>;
   }
 
+  const saved = Boolean(session.savedKey);
+
   return (
-    <Stack spacing={3}>
-      <Header session={session} savedKey={savedKey} onSave={() => setSaveOpen(true)} />
+    <Stack spacing={2} sx={{ flex: 1, minHeight: 0, p: { xs: 2, md: 3 } }}>
+      <Header session={session} saved={saved} onSave={() => { setError(""); setSaveOpen(true); }} />
       {error ? <Alert severity="error">{error}</Alert> : null}
-      {savedKey ? (
+      {saved ? (
         <Alert severity="success" data-testid="saved-banner">
-          Saved as {savedKey}. Waiting until you click Start.
+          Saved as {session.savedKey}. Waiting until you click Start.
         </Alert>
       ) : null}
-      <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems="stretch">
-        <ChatPane session={session} reply={reply} busy={busy} saved={Boolean(savedKey)} onReply={setReply} onSend={send} />
+      <Stack
+        direction={{ xs: "column", lg: "row" }}
+        spacing={2}
+        alignItems="stretch"
+        sx={{ flex: { lg: 1 }, minHeight: { lg: 0 }, overflow: { lg: "hidden" } }}
+      >
+        <ChatPane session={session} reply={reply} busy={busy} saved={saved} onReply={setReply} onSend={(t) => void send(t)} />
         <DraftPane session={session} />
       </Stack>
       <SaveIssueDialog
         open={saveOpen}
         session={session}
-        onClose={() => setSaveOpen(false)}
-        onError={setError}
+        onClose={() => { setSaveOpen(false); setError(""); }}
         onSaved={(issue) => {
-          setSavedKey(issue.key);
+          setSession({ ...session, savedKey: issue.key, issueId: issue.id });
           setSaveOpen(false);
+          setError("");
         }}
       />
     </Stack>
   );
 }
 
-function Header(props: { session: ShapeSession; savedKey: string; onSave: () => void }) {
+function Header(props: { session: ShapeSession; saved: boolean; onSave: () => void }) {
   return (
-    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
+    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2} sx={{ flexShrink: 0 }}>
       <Box>
         <Typography variant="h4">Shape the goal</Typography>
-        <Typography color="text.secondary" sx={{ mt: 1 }}>
-          Chat on the left. The live issue draft is on the right. Repo {props.session.repoSlug}.
+        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+          Chat and draft stay in view. Repo {props.session.repoSlug}.
         </Typography>
       </Box>
       <Stack direction="row" gap={1}>
-        <Button variant="outlined" onClick={props.onSave} data-testid="save-issue">
+        <Button variant="outlined" disabled={props.saved} onClick={props.onSave} data-testid="save-issue">
           Save issue
         </Button>
-        <Button variant="contained" disabled data-testid="start-run">
-          Start
-        </Button>
+        <Tooltip title="Coming in Phase 2">
+          <span>
+            <Button variant="text" disabled data-testid="start-run">
+              Start
+            </Button>
+          </span>
+        </Tooltip>
       </Stack>
     </Stack>
-  );
-}
-
-function ChatPane(props: {
-  session: ShapeSession;
-  reply: string;
-  busy: boolean;
-  saved: boolean;
-  onReply: (v: string) => void;
-  onSend: (text: string) => void;
-}) {
-  return (
-    <Paper sx={{ p: 3, flex: 1, minWidth: 0, border: 1, borderColor: "divider" }} data-testid="chat-pane">
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Chat
-      </Typography>
-      <Stack spacing={2} sx={{ mb: 3, minHeight: 280 }}>
-        {props.session.messages.map((m) => (
-          <MessageBubble key={m.id} msg={m} disabled={props.busy || props.saved} onPick={(id) => props.onSend(id)} />
-        ))}
-      </Stack>
-      <Stack direction="row" gap={1}>
-        <TextField
-          value={props.reply}
-          onChange={(e) => props.onReply(e.target.value)}
-          placeholder="Reply"
-          disabled={props.busy || props.saved}
-          inputProps={{ "data-testid": "chat-input" }}
-        />
-        <Button variant="contained" disabled={props.busy || props.saved} onClick={() => props.onSend(props.reply)}>
-          Send
-        </Button>
-      </Stack>
-    </Paper>
-  );
-}
-
-function MessageBubble(props: { msg: ChatMessage; disabled: boolean; onPick: (label: string) => void }) {
-  const mine = props.msg.role === "user";
-  return (
-    <Box
-      sx={{
-        p: 1.75,
-        borderRadius: 2,
-        bgcolor: mine ? "action.hover" : "action.selected",
-        border: 1,
-        borderColor: "divider",
-      }}
-    >
-      <Typography variant="caption" color="text.secondary">
-        {mine ? "You" : "Claude"}
-      </Typography>
-      <Typography sx={{ whiteSpace: "pre-wrap" }}>{visibleText(props.msg.text)}</Typography>
-      {props.msg.options?.length ? (
-        <Stack direction="row" gap={1} sx={{ mt: 1 }} flexWrap="wrap">
-          {props.msg.options.map((o) => (
-            <Chip
-              key={o.id}
-              label={o.label}
-              clickable={!props.disabled}
-              onClick={() => props.onPick(o.label)}
-              data-testid={`option-${o.id}`}
-            />
-          ))}
-        </Stack>
-      ) : null}
-    </Box>
-  );
-}
-
-function visibleText(text: string): string {
-  const cleaned = text.replace(/```json[\s\S]*?```/g, "").trim();
-  return cleaned || "Updated the draft.";
-}
-
-function DraftPane(props: { session: ShapeSession }) {
-  const draft = props.session.draft;
-  return (
-    <Paper sx={{ p: 3, flex: 1, minWidth: 0, border: 1, borderColor: "divider" }} data-testid="draft-pane">
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Issue draft
-      </Typography>
-      <Typography variant="subtitle2" color="text.secondary">
-        {DRAFT_SECTION_LABELS.title}
-      </Typography>
-      <Typography variant="h5" sx={{ mb: 3 }} data-testid="draft-title">
-        {draft.title || "Untitled"}
-      </Typography>
-      {DRAFT_SECTIONS.map((key) => (
-        <Box key={key} sx={{ mb: 2.5 }} data-testid={`draft-${key}`}>
-          <Typography variant="subtitle2" color="text.secondary">
-            {DRAFT_SECTION_LABELS[key]}
-          </Typography>
-          <Typography sx={{ whiteSpace: "pre-wrap" }}>{draft[key] || "—"}</Typography>
-        </Box>
-      ))}
-    </Paper>
   );
 }

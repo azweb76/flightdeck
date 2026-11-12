@@ -11,7 +11,7 @@ test("nav pages include Issues, Runs, My PRs, Reviews, Settings", async ({ page 
   await seedHome(page);
   await page.getByRole("tab", { name: "Runs" }).click();
   await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
-  await expect(page.getByText(/Phase 3/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Coming in Phase 3" })).toBeVisible();
   await page.getByRole("tab", { name: "My PRs" }).click();
   await expect(page.getByRole("heading", { name: "My PRs" })).toBeVisible();
   await page.getByRole("tab", { name: "Reviews" }).click();
@@ -23,7 +23,7 @@ test("nav pages include Issues, Runs, My PRs, Reviews, Settings", async ({ page 
 test("start from a new idea, chat, and live draft", async ({ page }) => {
   await seedHome(page);
   await startNewIdea(page);
-  await expect(page.getByText("Is this mostly a backend API change or a UI change?")).toBeVisible();
+  await expect(page.getByText(/backend API change or a UI change/i)).toBeVisible();
   await answerFirstQuestion(page);
   await expect(page.getByTestId("draft-goal")).toContainText("Finance");
   await expect(page.getByTestId("draft-acceptance")).toContainText("CSV");
@@ -36,6 +36,10 @@ test("start from a new idea, chat, and live draft", async ({ page }) => {
 test("start from an existing issue", async ({ page }) => {
   await seedHome(page);
   await page.getByTestId("shape-PROJ-150").click();
+  await expect(page.getByRole("dialog")).toContainText("Pick a repo");
+  await page.getByTestId("repo-select").click();
+  await page.getByRole("option", { name: "acme/web" }).click();
+  await page.getByTestId("confirm-repo").click();
   await expect(page.getByTestId("chat-pane")).toBeVisible();
   await expect(page.getByTestId("draft-title")).toContainText("Invoice CSV");
 });
@@ -81,8 +85,10 @@ test("Settings shows Claude, GitHub, Jira, repos and caps", async ({ page }) => 
   await expect(page.getByTestId("cap-run")).toHaveValue("10");
   await expect(page.getByTestId("cap-daily")).toHaveValue("50");
   await expect(page.getByTestId("cap-concurrent")).toHaveValue("3");
+  await expect(page.getByTestId("github-status")).not.toContainText("gh auth login");
   await page.getByTestId("cap-run").fill("12");
-  await expect(page.getByText("Settings saved")).toBeVisible();
+  await page.getByTestId("cap-run").blur();
+  await expect(page.getByText("Caps saved")).toBeVisible();
 });
 
 test("Jira connect error is visible", async ({ page }) => {
@@ -91,5 +97,19 @@ test("Jira connect error is visible", async ({ page }) => {
   await page.getByTestId("jira-url").fill("https://invalid.example");
   await page.getByTestId("jira-token").fill("fail");
   await page.getByTestId("jira-connect").click();
-  await expect(page.getByRole("alert")).toContainText(/Jira login failed/);
+  await expect(page.getByTestId("jira-form-error")).toContainText(/Jira login failed/);
+  await expect(page.getByTestId("jira-status")).toContainText("Not connected");
+});
+
+test("demo draft follows the idea text", async ({ page }) => {
+  await seedHome(page);
+  await startNewIdea(page, "Add dark mode to settings");
+  await page.getByTestId("option-ui").click();
+  await expect(page.getByTestId("draft-title")).toContainText(/dark mode/i);
+});
+
+test("Refresh is on Issues home", async ({ page }) => {
+  await seedHome(page);
+  await page.getByTestId("refresh-issues").click();
+  await expect(page.getByTestId("issue-row").first()).toBeVisible();
 });

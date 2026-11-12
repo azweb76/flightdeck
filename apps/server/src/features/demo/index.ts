@@ -3,6 +3,7 @@ import { getDb } from "../db/index.ts";
 import { rememberRepo } from "../clone/index.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { patchSettings } from "../settings/index.ts";
+import { setJiraLastError } from "../status/index.ts";
 
 const NOW = "2026-11-12T12:00:00.000Z";
 
@@ -26,6 +27,7 @@ export function seedDemo(): void {
 }
 
 export function resetDemo(opts: { seed: boolean }): void {
+  setJiraLastError(undefined);
   getDb().exec("DELETE FROM issues; DELETE FROM repos; DELETE FROM shape_sessions; DELETE FROM settings;");
   if (opts.seed) {
     process.env.FLIGHTDECK_SEED = "1";
@@ -55,7 +57,6 @@ function seedIssues(): Issue[] {
       title: "Invoice CSV on the web app",
       body: "Need an export for finance.",
       url: "https://example.atlassian.net/browse/PROJ-150",
-      repoSlug: "acme/web",
       updatedAt: NOW,
       saved: true,
     },

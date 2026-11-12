@@ -23,7 +23,6 @@ async function scheme(page: Page, mode: "light" | "dark"): Promise<void> {
 }
 
 test("phase 1 screenshots", async ({ page }) => {
-  test.skip(process.env.PHASE1_SHOTS !== "1", "set PHASE1_SHOTS=1");
   await seedHome(page);
   await scheme(page, "light");
   await shot(page, "issues-light");
@@ -43,10 +42,14 @@ test("phase 1 screenshots", async ({ page }) => {
 
   await scheme(page, "light");
   await seedHome(page);
+  await page.getByTestId("shape-PROJ-150").click();
+  await expect(page.getByRole("dialog")).toContainText("Pick a repo");
+  await shot(page, "pick-repo-light");
+  await page.getByRole("button", { name: "Cancel" }).click();
   await page.getByTestId("new-idea").click();
   await expect(page.getByRole("dialog")).toContainText("Start from a new idea");
   await page.getByTestId("repo-select").click();
-  await page.getByRole("option", { name: "acme/web" }).click();
+  await page.getByRole("option", { name: "acme/web", exact: true }).click();
   await expect(page.getByRole("listbox")).toHaveCount(0);
   await page.getByTestId("idea-input").fill("Export invoices as CSV");
   await shot(page, "new-idea-dialog-light");
@@ -92,7 +95,7 @@ test("phase 1 screenshots", async ({ page }) => {
   await page.getByTestId("jira-token").fill("fail");
   await page.getByTestId("jira-url").fill("https://invalid.example");
   await page.getByTestId("jira-connect").click();
-  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByTestId("jira-form-error")).toBeVisible();
   await shot(page, "settings-jira-error-dark");
 
   await scheme(page, "light");

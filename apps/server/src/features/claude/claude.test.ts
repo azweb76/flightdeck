@@ -25,11 +25,20 @@ describe("detectClaudeConfig", () => {
     expect(claudeSdkEnv(status).ANTHROPIC_BASE_URL).toBe("https://api.example");
   });
 
-  it("falls back to OAuth when no helper is set", async () => {
+  it("treats missing helper as not logged in, with terminal login instructions", async () => {
     const home = mkdtempSync(join(tmpdir(), "claude-"));
     const status = await detectClaudeConfig({ home, env: {}, exec: async () => ({ code: 1, stdout: "", stderr: "" }) });
     expect(status.found).toBe(false);
     expect(status.apiKeyHelper).toBe(false);
-    expect(status.detail).toMatch(/OAuth/);
+    expect(status.loginHint).toMatch(/\/login/);
+  });
+
+  it("detects an existing Claude OAuth credentials file", async () => {
+    const home = mkdtempSync(join(tmpdir(), "claude-"));
+    mkdirSync(join(home, ".claude"));
+    writeFileSync(join(home, ".claude", ".credentials.json"), "{}");
+    const status = await detectClaudeConfig({ home, env: {}, exec: async () => ({ code: 1, stdout: "", stderr: "" }) });
+    expect(status.found).toBe(true);
+    expect(status.oauth).toBe(true);
   });
 });

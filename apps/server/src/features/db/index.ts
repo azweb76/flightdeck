@@ -33,7 +33,8 @@ const SQL = `
     status TEXT NOT NULL,
     draft_json TEXT NOT NULL,
     messages_json TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    saved_key TEXT
   );
 `;
 
@@ -42,7 +43,13 @@ export function openDb(path = dbPath()): Db {
   const db = new DatabaseSync(path);
   db.exec("PRAGMA journal_mode = WAL;");
   db.exec(SQL);
+  migrate(db);
   return db;
+}
+
+function migrate(db: Db): void {
+  const cols = db.prepare("PRAGMA table_info(shape_sessions)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "saved_key")) db.exec("ALTER TABLE shape_sessions ADD COLUMN saved_key TEXT");
 }
 
 export function getDb(): Db {

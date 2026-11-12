@@ -10,17 +10,14 @@ import {
   TextField,
 } from "@mui/material";
 import type { Issue, ShapeSession } from "@flightdeck/shared";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api.ts";
 import { FormField } from "../ui/FormField.tsx";
-
-const PAPER = { elevation: 24, sx: { p: 1, bgcolor: "#ffffff", backgroundImage: "none", color: "#1d1d1f" } };
 
 export function SaveIssueDialog(props: {
   open: boolean;
   session: ShapeSession;
   onClose: () => void;
-  onError: (msg: string) => void;
   onSaved: (issue: Issue) => void;
 }) {
   const [tracker, setTracker] = useState<"jira" | "github" | "">("");
@@ -29,33 +26,34 @@ export function SaveIssueDialog(props: {
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState("");
 
+  useEffect(() => {
+    if (props.open) {
+      setLocalError("");
+      setTracker("");
+    }
+  }, [props.open]);
+
   async function save() {
     if (tracker !== "jira" && tracker !== "github") {
       setLocalError("Choose Jira or GitHub");
-      props.onError("Choose Jira or GitHub");
       return;
     }
     setBusy(true);
     try {
       const issue = await api.saveShape(props.session.id, { tracker, projectKey, repoSlug });
+      setLocalError("");
       props.onSaved(issue);
     } catch (e) {
-      props.onError(e instanceof Error ? e.message : "Save failed");
+      setLocalError(e instanceof Error ? e.message : "Save failed");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Dialog
-      open={props.open}
-      onClose={props.onClose}
-      fullWidth
-      maxWidth="sm"
-      slotProps={{ paper: PAPER }}
-    >
+    <Dialog open={props.open} onClose={props.onClose} fullWidth maxWidth="sm">
       <DialogTitle>Save issue</DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
+      <DialogContent>
         {localError ? (
           <Alert severity="error" sx={{ mb: 2 }} data-testid="save-error">
             {localError}

@@ -8,6 +8,8 @@ type ClaudeSettings = { apiKeyHelper?: string; env?: Record<string, string>; ANT
 
 export type ClaudeDeps = { exec?: ExecFn; home?: string; env?: NodeJS.ProcessEnv };
 
+export const CLAUDE_LOGIN_HINT = "In a terminal run: claude\nThen type /login and finish in the browser.";
+
 export async function detectClaudeConfig(deps: ClaudeDeps = {}): Promise<ClaudeStatus> {
   const home = deps.home ?? homedir();
   const env = deps.env ?? process.env;
@@ -22,29 +24,44 @@ export async function detectClaudeConfig(deps: ClaudeDeps = {}): Promise<ClaudeS
   if (merged.env?.ANTHROPIC_BASE_URL || merged.ANTHROPIC_BASE_URL) sources.push("settings:ANTHROPIC_BASE_URL");
   const hasKeyEnv = Boolean(env.ANTHROPIC_API_KEY || env.CLAUDE_API_KEY);
   if (hasKeyEnv) sources.push("env:ANTHROPIC_API_KEY");
+  const oauth = oauthPresent(home, sources);
   let apiKeyHelperOk: boolean | undefined;
   if (helper) apiKeyHelperOk = await probeHelper(exec, helper, env);
-  const found = Boolean(helper || hasKeyEnv);
+  const found = Boolean(helper || hasKeyEnv || oauth);
   return {
     found,
     apiKeyHelper: Boolean(helper),
     apiKeyHelperOk,
+    oauth,
+    loginHint: CLAUDE_LOGIN_HINT,
     baseUrl,
     sources: [...new Set(sources)],
-    detail: summarize({ found, helper: Boolean(helper), apiKeyHelperOk, baseUrl, hasKeyEnv }),
+    detail: summarize({ found, helper: Boolean(helper), apiKeyHelperOk, baseUrl, hasKeyEnv, oauth }),
   };
 }
 
-export async function startClaudeLogin(exec: ExecFn = defaultExec): Promise<{ ok: boolean; detail: string }> {
-  const r = await exec("claude", ["auth", "login"], { timeoutMs: 5_000 });
-  if (r.code === 0) return { ok: true, detail: r.stdout.trim() || "Claude login started" };
-  return { ok: false, detail: r.stderr.trim() || "Run `claude auth login` in a terminal" };
+export function claudeLoginInstructions(): { ok: true; detail: string } {
+  return { ok: true, detail: CLAUDE_LOGIN_HINT };
 }
 
 export function claudeSdkEnv(status: ClaudeStatus, env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const next = { ...env };
   if (status.baseUrl) next.ANTHROPIC_BASE_URL = status.baseUrl;
   return next;
+}
+
+function oauthPresent(home: string, sources: string[]): boolean {
+  const files = [
+    join(home, ".claude", ".credentials.json"),
+    join(home, ".claude", "credentials.json"),
+    join(home, ".config", "claude", ".credentials.json"),
+    join(home, ".claude.json"),
+  ];
+  return files.some((file) => {
+    if (!existsSync(file)) return false;
+    sources.push(file);
+    return true;
+  });
 }
 
 function settingsFiles(home: string): string[] {
@@ -87,11 +104,13 @@ function summarize(s: {
   apiKeyHelperOk?: boolean;
   baseUrl?: string;
   hasKeyEnv: boolean;
+  oauth: boolean;
 }): string {
-  if (!s.found) return "No apiKeyHelper. Fall back to Claude OAuth login.";
+  if (!s.found) return `No apiKeyHelper or Claude login. ${CLAUDE_LOGIN_HINT}`;
   const parts = [];
   if (s.helper) parts.push(s.apiKeyHelperOk === false ? "apiKeyHelper failed" : "apiKeyHelper found");
   if (s.hasKeyEnv) parts.push("ANTHROPIC_API_KEY is set");
+  if (s.oauth) parts.push("Claude OAuth login found");
   parts.push(s.baseUrl ? `ANTHROPIC_BASE_URL=${s.baseUrl}` : "ANTHROPIC_BASE_URL not set");
   return parts.join("; ");
 }

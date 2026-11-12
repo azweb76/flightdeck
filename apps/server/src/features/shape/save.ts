@@ -24,8 +24,10 @@ export async function saveShapedIssue(
         : await saveGithub(session, body, opts.repoSlug ?? session.repoSlug);
   upsertIssue(issue);
   session.issueId = issue.id;
+  session.savedKey = issue.key;
   saveSession(session);
   publish("issues.updated");
+  publish("shape.updated", { id: session.id, session });
   return issue;
 }
 

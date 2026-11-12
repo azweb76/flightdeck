@@ -28,6 +28,14 @@ export function loadIssues(): Issue[] {
   return rows.map(fromRow);
 }
 
+export function setIssueRepo(id: string, repoSlug: string): Issue {
+  const issue = loadIssue(id);
+  if (!issue) throw new Error("Issue not found");
+  issue.repoSlug = repoSlug;
+  upsertIssue(issue);
+  return issue;
+}
+
 export function loadIssue(id: string): Issue | undefined {
   const row = getDb().prepare("SELECT * FROM issues WHERE id = ?").get(id) as Row | undefined;
   return row ? fromRow(row) : undefined;

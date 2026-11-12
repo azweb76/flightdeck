@@ -1,13 +1,4 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  MenuItem,
-  Select,
-  TextField,
-} from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Select, TextField } from "@mui/material";
 import type { CatalogRepo } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
@@ -20,23 +11,25 @@ export function StartIdeaDialog(props: {
   onStarted: (id: string) => void;
 }) {
   const [repos, setRepos] = useState<CatalogRepo[]>([]);
-  const [repo, setRepo] = useState("acme/web");
+  const [repo, setRepo] = useState("");
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!props.open) return;
-    api.repos().then((r) => {
-      setRepos(r.repos);
-      const first = r.repos[0];
-      if (first) setRepo(`${first.owner}/${first.name}`);
-    });
+    setIdea("");
+    setRepo("");
+    api.repos().then((r) => setRepos(r.repos));
   }, [props.open]);
 
   async function start() {
+    if (!idea.trim()) {
+      props.onError("Write an idea first");
+      return;
+    }
     setBusy(true);
     try {
-      const session = await api.startShape({ repoSlug: repo, idea: idea.trim() || "New idea" });
+      const session = await api.startShape({ repoSlug: repo, idea: idea.trim() });
       props.onStarted(session.id);
       props.onClose();
     } catch (e) {
@@ -47,22 +40,14 @@ export function StartIdeaDialog(props: {
   }
 
   return (
-    <Dialog
-      open={props.open}
-      onClose={props.onClose}
-      fullWidth
-      maxWidth="sm"
-      slotProps={{
-        paper: {
-          elevation: 24,
-          sx: { p: 1, bgcolor: "#ffffff", backgroundImage: "none", color: "#1d1d1f" },
-        },
-      }}
-    >
+    <Dialog open={props.open} onClose={props.onClose} fullWidth maxWidth="sm">
       <DialogTitle>Start from a new idea</DialogTitle>
-      <DialogContent sx={{ pt: 2 }}>
+      <DialogContent>
         <FormField label="Repository" hint="The agent reads this repo. Nothing is pushed.">
-          <Select value={repo} onChange={(e) => setRepo(e.target.value)} data-testid="repo-select">
+          <Select displayEmpty value={repo} onChange={(e) => setRepo(e.target.value)} data-testid="repo-select">
+            <MenuItem value="">
+              <em>Choose a repo</em>
+            </MenuItem>
             {repos.map((r) => {
               const slug = `${r.owner}/${r.name}`;
               return (
@@ -86,7 +71,7 @@ export function StartIdeaDialog(props: {
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
         <Button onClick={props.onClose}>Cancel</Button>
-        <Button variant="contained" disabled={busy || !repo} onClick={start} data-testid="start-idea">
+        <Button variant="contained" disabled={busy || !repo || !idea.trim()} onClick={start} data-testid="start-idea">
           Shape
         </Button>
       </DialogActions>

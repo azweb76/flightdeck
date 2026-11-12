@@ -27,6 +27,17 @@ describe("shaping", () => {
     expect(next.draft.title).toMatch(/CSV/i);
     expect(next.draft.goal.length).toBeGreaterThan(0);
     expect(next.draft.acceptance.length).toBeGreaterThan(0);
+    const again = await replyShape(session.id, "Backend API");
+    expect(again.messages.filter((m) => m.role === "user" && m.text === "Backend API")).toHaveLength(1);
+  });
+
+  it("rejects an empty idea and locks replies after save", async () => {
+    await expect(startShape({ repoSlug: "acme/web", idea: "   " })).rejects.toThrow(/idea/i);
+    const session = await startShape({ repoSlug: "acme/web", idea: "CSV export" });
+    await replyShape(session.id, "Backend API");
+    const saved = await saveShapedIssue(session.id, "github", { repoSlug: "acme/web" });
+    expect(saved.key).toMatch(/acme\/web#/);
+    await expect(replyShape(session.id, "more")).rejects.toThrow(/already saved/i);
   });
 
   it("starts from an existing issue and saves to GitHub or Jira only on Save", async () => {

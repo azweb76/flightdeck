@@ -6,7 +6,7 @@ import { getSettings } from "../settings/index.ts";
 import { loadIssues, upsertIssue } from "./store.ts";
 import { publish } from "../events/index.ts";
 
-export { loadIssue, loadIssues, upsertIssue } from "./store.ts";
+export { loadIssue, loadIssues, setIssueRepo, upsertIssue } from "./store.ts";
 
 export async function syncIssues(): Promise<Issue[]> {
   if (process.env.FLIGHTDECK_DEMO === "1") return loadIssues();

@@ -6,10 +6,15 @@ See [docs/DESIGN.md](docs/DESIGN.md). v1 lives on the `v1-archive` branch.
 
 ## Run on a Mac
 
-Need Node 22.13+ and [pnpm](https://pnpm.io/) 12.18+. GitHub uses `gh auth login`. Claude uses `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, or `claude auth login` when no helper is set. Jira is email + API token in Settings.
+Need Node 22.13+ and [pnpm](https://pnpm.io/) 12.18+. GitHub uses `gh auth login`. Claude uses `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, or open a terminal, run `claude`, then type `/login`. Jira is email + API token in Settings.
 
 ```bash
 pnpm install
+```
+
+`pnpm install` also installs Playwright Chromium (needed for `pnpm check`). If browsers are missing later: `pnpm --filter @flightdeck/e2e exec playwright install chromium`.
+
+```bash
 pnpm dev
 ```
 

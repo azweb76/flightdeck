@@ -6,6 +6,7 @@ export function mountShape(app: Hono): void {
   app.post("/api/shape", async (c) => {
     const body = await c.req.json<{ repoSlug?: string; issueId?: string; idea?: string }>();
     if (!body.repoSlug) fail("Pick a repo");
+    if (!body.issueId && !body.idea?.trim()) fail("Write an idea first");
     return c.json(await startShape({ repoSlug: body.repoSlug, issueId: body.issueId, idea: body.idea }));
   });
   app.get("/api/shape/:id", (c) => {

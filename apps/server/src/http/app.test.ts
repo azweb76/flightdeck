@@ -27,8 +27,9 @@ describe("http", () => {
     expect(health.status).toBe(200);
     expect(await health.json()).toMatchObject({ ok: true, host: "127.0.0.1", demo: true });
     const issues = await app.request("http://127.0.0.1/api/issues");
-    const body = (await issues.json()) as { issues: { key: string }[] };
+    const body = (await issues.json()) as { issues: { key: string; repoSlug?: string }[] };
     expect(body.issues.map((i) => i.key)).toContain("PROJ-150");
+    expect(body.issues.find((i) => i.key === "PROJ-150")?.repoSlug).toBeUndefined();
   });
 
   it("shapes, updates the draft, and saves only on Save", async () => {

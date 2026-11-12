@@ -13,7 +13,8 @@
     "check": "node scripts/check.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm exec eslint . --max-warnings 0",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "postinstall": "pnpm --filter @flightdeck/e2e exec playwright install chromium"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",

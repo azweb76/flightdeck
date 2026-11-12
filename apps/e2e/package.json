@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "shots": "PHASE1_SHOTS=1 playwright test screenshots.spec.ts"
+    "shots": "PHASE1_SHOTS=1 playwright test",
+    "postinstall": "playwright install chromium"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.0"

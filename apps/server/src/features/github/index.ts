@@ -85,21 +85,24 @@ async function cloneRepo(exec: ExecFn, owner: string, name: string, dest: string
   return { ok: true, detail: dest };
 }
 
+export const GH_ISSUE_CREATE_ARGS = (owner: string, name: string, title: string, body: string) =>
+  ["issue", "create", "--repo", `${owner}/${name}`, "--title", title, "--body", body];
+
 async function createIssue(exec: ExecFn, owner: string, name: string, title: string, body: string) {
-  const r = await exec("gh", [
-    "issue",
-    "create",
-    "--repo",
-    `${owner}/${name}`,
-    "--title",
-    title,
-    "--body",
-    body,
-    "--json",
-    "number,url",
-  ]);
+  const args = GH_ISSUE_CREATE_ARGS(owner, name, title, body);
+  const r = await exec("gh", args);
   if (r.code !== 0) throw new Error(r.stderr || "gh issue create failed");
-  return JSON.parse(r.stdout) as { number: number; url: string };
+  return parseCreatedIssue(r.stdout);
+}
+
+export function parseCreatedIssue(stdout: string): { number: number; url: string } {
+  const url = stdout
+    .split(/\s+/)
+    .map((s) => s.trim())
+    .find((s) => /github\.com\/.+\/issues\/\d+/.test(s));
+  const number = Number(url?.match(/\/issues\/(\d+)/)?.[1]);
+  if (!url || !number) throw new Error("Could not parse GitHub issue URL from gh output");
+  return { number, url };
 }
 
 async function updateIssue(exec: ExecFn, owner: string, name: string, number: number, title: string, body: string) {
