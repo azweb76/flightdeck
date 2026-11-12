@@ -4,6 +4,10 @@ const focus = {
   "&.Mui-focusVisible": { outline: "3px solid #2997ff", outlineOffset: 2 },
 };
 
+const inputFocus = {
+  "&:has(.MuiInputBase-input:focus-visible)": { outline: "3px solid #2997ff", outlineOffset: 2 },
+};
+
 export const theme = createTheme({
   cssVariables: { colorSchemeSelector: "class" },
   colorSchemes: {
@@ -54,5 +58,7 @@ export const theme = createTheme({
     MuiChip: { styleOverrides: { root: { ...focus } } },
     MuiLink: { styleOverrides: { root: { ...focus } } },
     MuiTextField: { defaultProps: { variant: "outlined", fullWidth: true, hiddenLabel: true } },
+    MuiOutlinedInput: { styleOverrides: { root: inputFocus } },
+    MuiSelect: { defaultProps: { fullWidth: true } },
   },
 });
