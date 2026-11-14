@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../features/db/index.ts";
 import { seedDemo } from "../features/demo/index.ts";
+import { resetDemoPreflightFixture } from "../features/preflight/index.ts";
 import { subscribe } from "../features/events/index.ts";
 import { upsertIssue } from "../features/issues/store.ts";
 import { createApp } from "./app.ts";
@@ -15,10 +16,12 @@ describe("http", () => {
     process.env.FLIGHTDECK_DEMO = "1";
     delete process.env.FLIGHTDECK_SEED;
     resetDbForTests(join(dir, "app.sqlite"));
+    resetDemoPreflightFixture();
     seedDemo();
   });
   afterEach(() => {
     closeDb();
+    resetDemoPreflightFixture();
     delete process.env.FLIGHTDECK_DATA_DIR;
     delete process.env.FLIGHTDECK_DEMO;
   });
@@ -43,6 +46,15 @@ describe("http", () => {
     const body = (await res.json()) as { ok: boolean; checks: { id: string; status: string }[] };
     expect(body.ok).toBe(false);
     expect(body.checks.find((c) => c.id === "gh")?.status).toBe("fail");
+    const status = (await (await app.request("http://127.0.0.1/api/status")).json()) as {
+      claude: { found: boolean };
+      github: { loggedIn: boolean };
+      jira: { configured: boolean; detail: string };
+    };
+    expect(status.claude.found).toBe(false);
+    expect(status.github.loggedIn).toBe(false);
+    expect(status.jira.configured).toBe(false);
+    expect(status.jira.detail).toMatch(/token is missing/i);
   });
 
   it("binds health on the API and lists seeded issues", async () => {

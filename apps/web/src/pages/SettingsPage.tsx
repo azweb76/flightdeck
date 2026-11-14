@@ -3,7 +3,7 @@ import { JIRA_API_TOKEN_URL, type CatalogRepo, type Settings } from "@flightdeck
 import { useColorScheme } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
 import { api, type AppStatus } from "../api.ts";
-import { PreflightSection } from "../preflight/PreflightSection.tsx";
+import { overlayStatus, PreflightSection, usePreflight } from "../preflight/index.ts";
 import { FormField } from "../ui/FormField.tsx";
 
 export function SettingsPage() {
@@ -12,6 +12,8 @@ export function SettingsPage() {
   const [repos, setRepos] = useState<CatalogRepo[]>([]);
   const [error, setError] = useState("");
   const { setMode } = useColorScheme();
+  const { report } = usePreflight();
+  const shown = status ? overlayStatus(status, report) : undefined;
 
   const reload = useCallback(async () => {
     const [s, st, r] = await Promise.all([api.settings(), api.status(), api.repos()]);
@@ -25,7 +27,7 @@ export function SettingsPage() {
     reload().catch((e: Error) => setError(e.message));
   }, [reload]);
 
-  if (!settings || !status) {
+  if (!settings || !status || !shown) {
     return error ? (
       <Alert severity="error" data-testid="page-error">
         {error}
@@ -45,10 +47,9 @@ export function SettingsPage() {
       ) : null}
       <PreflightSection />
       <StatusCards
-        status={status}
+        status={shown}
         repos={repos}
         onClaudeHint={() => void api.claudeLogin().then((r) => setError(r.detail))}
-        onClaudeRecheck={() => void api.recheckClaude().then(() => reload()).catch((e: Error) => setError(e.message))}
       />
       <CapsForm
         settings={settings}
@@ -60,7 +61,7 @@ export function SettingsPage() {
       />
       <JiraForm
         settings={settings}
-        hasToken={status.jira.hasToken}
+        hasToken={shown.jira.hasToken}
         onDone={async (next) => {
           setSettings(next);
           setError("");
@@ -76,7 +77,6 @@ function StatusCards(props: {
   status: AppStatus;
   repos: CatalogRepo[];
   onClaudeHint: () => void;
-  onClaudeRecheck: () => void;
 }) {
   const { claude, github, jira } = props.status;
   return (
@@ -89,16 +89,11 @@ function StatusCards(props: {
         <Typography color="text.secondary" sx={{ mt: 1, whiteSpace: "pre-wrap" }}>
           {claude.detail}
         </Typography>
-        <Stack direction="row" gap={1} sx={{ mt: 2 }}>
-          <Button variant="outlined" onClick={props.onClaudeRecheck} data-testid="claude-recheck">
-            Re-check
+        {!claude.found ? (
+          <Button variant="outlined" sx={{ mt: 2 }} onClick={props.onClaudeHint} data-testid="claude-login">
+            How to log in
           </Button>
-          {!claude.found ? (
-            <Button variant="outlined" onClick={props.onClaudeHint} data-testid="claude-login">
-              How to log in
-            </Button>
-          ) : null}
-        </Stack>
+        ) : null}
       </Paper>
       <Paper sx={{ p: 3, border: 1, borderColor: "divider" }} data-testid="github-status">
         <Typography variant="overline" color="text.secondary">
@@ -106,7 +101,7 @@ function StatusCards(props: {
         </Typography>
         <Typography variant="h6">{github.loggedIn ? github.user ?? "Logged in" : "Not logged in"}</Typography>
         <Typography color="text.secondary" sx={{ mt: 1 }}>
-          {github.loggedIn ? github.detail : `${github.detail} In a terminal run: gh auth login`}
+          {github.loggedIn ? github.detail : `${github.detail}. In a terminal run: gh auth login`}
         </Typography>
       </Paper>
       <Paper sx={{ p: 3, border: 1, borderColor: "divider" }} data-testid="jira-status">
