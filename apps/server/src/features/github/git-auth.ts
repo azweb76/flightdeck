@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 import { dataDir } from "../../paths.ts";
+import { resolveGithubToken } from "./token.ts";
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "askpass.mjs");
 
@@ -16,11 +17,13 @@ export function askpassPath(): string {
   return dest;
 }
 
-export function gitAuthEnv(): NodeJS.ProcessEnv {
+export async function gitAuthEnv(): Promise<NodeJS.ProcessEnv> {
+  const resolved = await resolveGithubToken();
   return {
     GIT_ASKPASS: askpassPath(),
     GIT_TERMINAL_PROMPT: "0",
     GCM_INTERACTIVE: "never",
+    ...(resolved ? { GITHUB_TOKEN: resolved.token } : {}),
   };
 }
 
@@ -32,13 +35,13 @@ export async function gitClone(
 ): Promise<{ ok: boolean; detail: string }> {
   const r = await exec("git", ["clone", `https://github.com/${owner}/${name}.git`, dest], {
     timeoutMs: 120_000,
-    env: gitAuthEnv(),
+    env: await gitAuthEnv(),
   });
   if (r.code !== 0) return { ok: false, detail: r.stderr || "clone failed" };
   return { ok: true, detail: dest };
 }
 
 export async function gitFetch(exec: ExecFn, dest: string): Promise<void> {
-  const r = await exec("git", ["fetch", "origin"], { cwd: dest, timeoutMs: 60_000, env: gitAuthEnv() });
+  const r = await exec("git", ["fetch", "origin"], { cwd: dest, timeoutMs: 60_000, env: await gitAuthEnv() });
   if (r.code !== 0) throw new Error(r.stderr || "git fetch failed");
 }

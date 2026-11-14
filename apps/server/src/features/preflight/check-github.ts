@@ -6,7 +6,7 @@ const GATES = ["shape", "start", "saveGithub"] as const;
 
 export async function checkGithub(): Promise<PreflightCheck> {
   const status = await createGithubClient().status();
-  if (!status.hasToken) return fail("No GitHub token stored");
+  if (!status.hasToken) return fail("No GitHub token. Set GITHUB_TOKEN or paste a PAT in Settings");
   if (!status.loggedIn) return fail(status.detail);
   return {
     id: "github",

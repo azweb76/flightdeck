@@ -6,7 +6,7 @@ See [docs/DESIGN.md](docs/DESIGN.md). v1 lives on the `v1-archive` branch.
 
 ## Run on a Mac
 
-Need Node 22.13+ and [pnpm](https://pnpm.io/) 12.18+. GitHub uses a personal access token in Settings (git CLI still handles clone/fetch/worktree). Claude uses `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, or open a terminal, run `claude`, then type `/login`. Jira is email + API token in Settings.
+Need Node 22.13+ and [pnpm](https://pnpm.io/) 12.18+. GitHub uses `GITHUB_TOKEN` (or `GH_TOKEN`) if set, otherwise a personal access token in Settings. The env token is never logged or saved; git clone/push still go through `GIT_ASKPASS` with the resolved token. Claude uses `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, or open a terminal, run `claude`, then type `/login`. Jira is email + API token in Settings.
 
 ```bash
 pnpm install

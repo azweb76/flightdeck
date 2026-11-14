@@ -66,7 +66,7 @@ Throughout, the agent is hands-off but can pause and ask Dan a question when stu
 - TypeScript Node backend with the Claude Agent SDK; React frontend with MUI.
 - SQLite at `~/.flightdeck/app.sqlite`. Schema version is `PRAGMA user_version`. Startup creates missing tables and `ALTER TABLE`s missing columns (checked with `PRAGMA table_info`). An incompatible v1 database is renamed to `app.sqlite.v1-backup-<timestamp>` and replaced with a fresh v2 file — never deleted silently.
 - Claude auth: use `apiKeyHelper` and the API base URL (ANTHROPIC_BASE_URL) from the user's Claude settings (`~/.claude/settings.json`); fall back to the Claude OAuth login when no `apiKeyHelper` is set.
-- GitHub via a personal access token in Settings (Octokit; git CLI still does clone/fetch/worktree/commit/push). Jira Cloud via email + API token.
+- GitHub via `GITHUB_TOKEN` (then `GH_TOKEN`) in the environment, else a personal access token in Settings (Octokit; git CLI still does clone/fetch/worktree/commit/push via `GIT_ASKPASS` with the resolved token). The env token is never logged or written to the keychain. Jira Cloud via email + API token.
 - Per-run and daily dollar caps, plus a max-concurrent-agents setting.
 
 ## Caching
@@ -94,7 +94,7 @@ Startup and `pnpm preflight` run the same checks. Required failures print a one-
 | Node.js | required | `process.versions.node` satisfies `engines.node` | `brew install node@22` |
 | pnpm | required | `pnpm --version` satisfies `engines.pnpm` | `corepack enable` |
 | git | required | `git --version` >= 2.20 (semver compare; Apple Git suffixes ignored). Worktrees shipped in 2.5; `git worktree -h` exit 129 is usage, not missing. | `brew install git` |
-| GitHub token | required | PAT present, `GET /user` succeeds, classic scopes include repo, read:org, workflow (fine-grained noted if no scope header) | Add a GitHub token in Settings |
+| GitHub token | required | `GITHUB_TOKEN` or `GH_TOKEN` or a stored PAT; `GET /user` succeeds; classic scopes include repo, read:org, workflow (fine-grained noted if no scope header). Report names the source. | Set `GITHUB_TOKEN` or add a GitHub token in Settings |
 | Claude auth | required | `apiKeyHelper` (and it runs), API key env, or OAuth credentials | `claude` then `/login` |
 | SQLite schema | required | `PRAGMA user_version` matches and columns exist | Pull latest and restart |
 | Jira | optional | skipped if unset; warn if configured without a working token | Add a Jira API token in Settings |

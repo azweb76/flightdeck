@@ -64,6 +64,7 @@ export const GithubStatusSchema = z.object({
   scopes: z.array(z.string()).optional(),
   hasToken: z.boolean().optional(),
   storage: z.enum(["keychain", "file"]).optional(),
+  tokenSource: z.enum(["GITHUB_TOKEN", "GH_TOKEN", "keychain", "file"]).optional(),
   oauthAvailable: z.boolean().optional(),
   detail: z.string(),
 });
