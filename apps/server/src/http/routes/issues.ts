@@ -1,9 +1,9 @@
 import type { Hono } from "hono";
-import { setIssueRepo, syncIssues } from "../../features/issues/index.ts";
+import { listIssues, setIssueRepo, syncIssues } from "../../features/issues/index.ts";
 import { fail } from "../errors.ts";
 
 export function mountIssues(app: Hono): void {
-  app.get("/api/issues", async (c) => c.json({ issues: await syncIssues() }));
+  app.get("/api/issues", async (c) => c.json({ issues: await listIssues() }));
   app.post("/api/issues/sync", async (c) => c.json({ issues: await syncIssues() }));
   app.patch("/api/issues/:id/repo", async (c) => {
     const body = await c.req.json<{ repoSlug?: string }>();

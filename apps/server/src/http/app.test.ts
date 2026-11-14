@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../features/db/index.ts";
 import { seedDemo } from "../features/demo/index.ts";
+import { subscribe } from "../features/events/index.ts";
 import { upsertIssue } from "../features/issues/store.ts";
 import { createApp } from "./app.ts";
 
@@ -79,6 +80,25 @@ describe("http", () => {
     const issues = await app.request("http://127.0.0.1/api/issues");
     const body = (await issues.json()) as { issues: { id: string; repoSlug?: string }[] };
     expect(body.issues.find((i) => i.id === "jira:PROJ-150")?.repoSlug).toBe("acme/web");
+  });
+
+  it("GET /api/issues in demo does not publish issues.updated", async () => {
+    const types: string[] = [];
+    const unsub = subscribe((ev) => types.push(ev.type));
+    const app = createApp();
+    await app.request("http://127.0.0.1/api/issues");
+    await app.request("http://127.0.0.1/api/issues");
+    const synced = await app.request("http://127.0.0.1/api/issues/sync", { method: "POST" });
+    unsub();
+    expect(synced.status).toBe(200);
+    expect(types.filter((t) => t === "issues.updated")).toEqual([]);
+  });
+
+  it("rechecks Claude in demo without calling a live probe", async () => {
+    const app = createApp();
+    const res = await app.request("http://127.0.0.1/api/claude/recheck", { method: "POST" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ found: true, detail: expect.stringContaining("demo") });
   });
 
   it("rejects a Jira connect with a bad token", async () => {

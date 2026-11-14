@@ -1,7 +1,7 @@
 import { Alert, Box, Button, Chip, Link, Paper, Stack, Tooltip, Typography } from "@mui/material";
 import type { Issue } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { api } from "../api.ts";
 import { useAppEvents } from "../useAppEvents.ts";
 import { RepoPickDialog } from "./RepoPickDialog.tsx";
@@ -15,44 +15,30 @@ export function IssuesPage() {
   const [busy, setBusy] = useState<string>();
   const [pick, setPick] = useState<Issue>();
 
-  const refresh = useCallback(async () => {
+  const pull = useCallback(async (mode: "get" | "sync") => {
     setError("");
     try {
-      setIssues((await api.issues()).issues);
+      const body = mode === "sync" ? await api.syncIssues() : await api.issues();
+      setIssues(body.issues);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load issues");
     }
   }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void pull("get");
+  }, [pull]);
   useAppEvents(
     useCallback(
       (ev) => {
-        if (ev.type === "issues.updated") void refresh();
+        if (ev.type === "issues.updated") void pull("get");
       },
-      [refresh],
+      [pull],
     ),
   );
 
   async function shapeExisting(issue: Issue, repoSlug?: string) {
-    const repo = repoSlug ?? issue.repoSlug;
-    if (!repo) {
-      setPick(issue);
-      return;
-    }
-    setBusy(issue.id);
-    setError("");
-    try {
-      if (!issue.repoSlug) await api.setIssueRepo(issue.id, repo);
-      const session = await api.startShape({ repoSlug: repo, issueId: issue.id });
-      nav(`/shape/${session.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start shaping");
-    } finally {
-      setBusy(undefined);
-    }
+    await startShapeForIssue(issue, repoSlug, { setPick, setBusy, setError, nav });
   }
 
   return (
@@ -65,7 +51,7 @@ export function IssuesPage() {
           </Typography>
         </Box>
         <Stack direction="row" gap={1}>
-          <Button variant="outlined" onClick={() => void refresh()} data-testid="refresh-issues">
+          <Button variant="outlined" onClick={() => void pull("sync")} data-testid="refresh-issues">
             Refresh
           </Button>
           <Button variant="contained" onClick={() => setOpen(true)} data-testid="new-idea">
@@ -88,6 +74,34 @@ export function IssuesPage() {
       />
     </Stack>
   );
+}
+
+async function startShapeForIssue(
+  issue: Issue,
+  repoSlug: string | undefined,
+  ui: {
+    setPick: (issue: Issue | undefined) => void;
+    setBusy: (id: string | undefined) => void;
+    setError: (msg: string) => void;
+    nav: NavigateFunction;
+  },
+): Promise<void> {
+  const repo = repoSlug ?? issue.repoSlug;
+  if (!repo) {
+    ui.setPick(issue);
+    return;
+  }
+  ui.setBusy(issue.id);
+  ui.setError("");
+  try {
+    if (!issue.repoSlug) await api.setIssueRepo(issue.id, repo);
+    const session = await api.startShape({ repoSlug: repo, issueId: issue.id });
+    ui.nav(`/shape/${session.id}`);
+  } catch (e) {
+    ui.setError(e instanceof Error ? e.message : "Could not start shaping");
+  } finally {
+    ui.setBusy(undefined);
+  }
 }
 
 function EmptyIssues() {
