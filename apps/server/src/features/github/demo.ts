@@ -2,7 +2,7 @@ import type { CatalogRepo, GithubStatus } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache } from "../cache/index.ts";
 import type { GhIssue, GithubClient } from "./types.ts";
 
-export type DemoGithubMode = "connected" | "empty" | "error";
+export type DemoGithubMode = "connected" | "empty" | "error" | "scopes";
 
 let mode: DemoGithubMode = "connected";
 
@@ -39,6 +39,17 @@ export function demoGithubStatus(): GithubStatus {
       hasToken: true,
       oauthAvailable: Boolean(process.env.FLIGHTDECK_GITHUB_CLIENT_ID),
       detail: "GitHub token was rejected (401). Create a new PAT and paste it in Settings.",
+    };
+  }
+  if (mode === "scopes") {
+    return {
+      installed: true,
+      loggedIn: false,
+      hasToken: true,
+      user: "dan-demo",
+      scopes: ["repo"],
+      oauthAvailable: Boolean(process.env.FLIGHTDECK_GITHUB_CLIENT_ID),
+      detail: "Connected as dan-demo but missing scopes: read:org, workflow. Need repo, read:org, workflow.",
     };
   }
   return {

@@ -9,6 +9,7 @@ const webPort = process.env.FLIGHTDECK_WEB_PORT ?? "47422";
 const shots = process.env.PHASE1_SHOTS === "1";
 const preflightShots = process.env.PREFLIGHT_SHOTS === "1";
 const octokitShots = process.env.OCTOKIT_SHOTS === "1";
+const octokitFixes = process.env.OCTOKIT_FIXES === "1";
 process.env.FLIGHTDECK_DATA_DIR = dataDir;
 process.env.FLIGHTDECK_DEMO = "1";
 process.env.FLIGHTDECK_PORT = apiPort;
@@ -31,7 +32,9 @@ export default defineConfig({
       ? ["preflight-shots.spec.ts"]
       : octokitShots
         ? ["octokit-shots.spec.ts"]
-        : ["phase1.spec.ts", "preflight.spec.ts"],
+        : octokitFixes
+          ? ["octokit-fixes.spec.ts"]
+          : ["phase1.spec.ts", "preflight.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,

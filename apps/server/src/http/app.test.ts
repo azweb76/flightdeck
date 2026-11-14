@@ -153,6 +153,13 @@ describe("http", () => {
       body: JSON.stringify({ token: "fail" }),
     });
     expect(bad.status).toBe(400);
+    const skinny = await app.request("http://127.0.0.1/api/github/token", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: "scopes" }),
+    });
+    expect(skinny.status).toBe(400);
+    expect(await skinny.json()).toMatchObject({ error: expect.stringMatching(/missing scopes/) });
     await app.request("http://127.0.0.1/api/github/disconnect", { method: "POST" });
     const status = (await (await app.request("http://127.0.0.1/api/status")).json()) as { github: { loggedIn: boolean } };
     expect(status.github.loggedIn).toBe(false);

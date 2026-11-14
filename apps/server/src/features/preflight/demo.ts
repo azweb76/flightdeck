@@ -99,13 +99,19 @@ function pass(id: string, label: string, version: string): PreflightCheck {
 function githubDemoCheck(): PreflightCheck {
   const mode = demoGithubMode();
   if (mode === "connected") return passGithub();
+  const detail =
+    mode === "error"
+      ? "GitHub token was rejected (401). Create a new PAT and paste it in Settings."
+      : mode === "scopes"
+        ? "Connected as dan-demo but missing scopes: read:org, workflow. Need repo, read:org, workflow."
+        : "No GitHub token stored";
   return {
     id: "github",
     label: "GitHub token",
     severity: "required",
     ok: false,
     status: "fail",
-    detail: mode === "error" ? "GitHub token was rejected (401). Create a new PAT and paste it in Settings." : "No GitHub token stored",
+    detail,
     fix: "Add a GitHub token in Settings",
     gates: ["shape", "start", "saveGithub"],
   };

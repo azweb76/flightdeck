@@ -40,14 +40,7 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
       <Typography variant="h6" sx={{ mb: 1 }}>
         GitHub
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Paste a classic{" "}
-        <Link href={GITHUB_PAT_URL} target="_blank" rel="noreferrer" data-testid="github-pat-link">
-          personal access token
-        </Link>{" "}
-        with repo, read:org, and workflow. Fine-grained tokens work if they grant Contents, Issues, Metadata, Pull
-        requests, and Workflows. Stored in the Mac keychain (or ~/.flightdeck/secrets if keychain is unavailable).
-      </Typography>
+      <GithubHelp />
       {err ? (
         <Alert
           severity="error"
@@ -84,5 +77,25 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
         ) : null}
       </Stack>
     </Paper>
+  );
+}
+
+function GithubHelp() {
+  return (
+    <Stack spacing={0.5} sx={{ mb: 2 }} data-testid="github-help">
+      <Typography variant="body2" color="text.secondary">
+        Paste a classic{" "}
+        <Link href={GITHUB_PAT_URL} target="_blank" rel="noreferrer" data-testid="github-pat-link">
+          personal access token
+        </Link>{" "}
+        with repo, read:org, and workflow.
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Fine-grained: Contents, Issues, Metadata, Pull requests, Workflows.
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Stored in the Mac keychain, or ~/.flightdeck/secrets if keychain is unavailable.
+      </Typography>
+    </Stack>
   );
 }

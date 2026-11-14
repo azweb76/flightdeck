@@ -58,6 +58,11 @@ async function demoToken(token: string): Promise<{ ok: boolean; status: ReturnTy
     await recheckPreflight();
     fail("GitHub token was rejected (401). Create a new PAT and paste it in Settings.");
   }
+  if (token === "scopes") {
+    setDemoGithubMode("scopes");
+    await recheckPreflight();
+    fail(demoGithubStatus().detail);
+  }
   setDemoGithubMode("connected");
   await recheckPreflight();
   return { ok: true, status: demoGithubStatus() };

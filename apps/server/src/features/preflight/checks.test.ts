@@ -113,6 +113,10 @@ describe("preflight checks", () => {
     expect(missing).toMatchObject({ id: "github", ok: false, fix: "Add a GitHub token in Settings" });
     setDemoGithubMode("error");
     expect((await checkGithub()).ok).toBe(false);
+    setDemoGithubMode("scopes");
+    const scopes = await checkGithub();
+    expect(scopes.ok).toBe(false);
+    expect(scopes.detail).toMatch(/missing scopes/);
     setDemoGithubMode("connected");
     const ok = await checkGithub();
     expect(ok.ok).toBe(true);
