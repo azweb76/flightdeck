@@ -1,5 +1,7 @@
 import type { CatalogRepo, GithubStatus } from "@flightdeck/shared";
+import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
+import { runGh } from "./run.ts";
 
 export type GhIssue = {
   id: string;
@@ -22,10 +24,11 @@ export type GithubClient = {
 };
 
 export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
+  const cache = getCache();
   return {
-    status: () => githubStatus(exec),
-    listAssignedIssues: () => listAssigned(exec),
-    listRepos: () => listRepos(exec),
+    status: () => cache.get(CACHE_KEYS.githubStatus, () => githubStatus(exec), TTL.githubStatus),
+    listAssignedIssues: () => cache.get(CACHE_KEYS.githubIssues, () => listAssigned(exec), TTL.githubIssues),
+    listRepos: () => cache.get(CACHE_KEYS.githubRepos, () => listRepos(exec), TTL.githubRepos),
     cloneRepo: (owner, name, dest) => cloneRepo(exec, owner, name, dest),
     createIssue: (owner, name, title, body) => createIssue(exec, owner, name, title, body),
     updateIssue: (owner, name, number, title, body) => updateIssue(exec, owner, name, number, title, body),
@@ -34,8 +37,8 @@ export function createGithubClient(exec: ExecFn = defaultExec): GithubClient {
 
 export async function githubStatus(exec: ExecFn): Promise<GithubStatus> {
   const [version, auth] = await Promise.all([
-    exec("gh", ["--version"], { timeoutMs: 5_000 }),
-    exec("gh", ["auth", "status"], { timeoutMs: 8_000 }),
+    runGh(exec, ["--version"], { timeoutMs: 5_000 }),
+    runGh(exec, ["auth", "status"], { timeoutMs: 8_000 }),
   ]);
   if (version.code !== 0) return { installed: false, loggedIn: false, detail: "gh is not installed" };
   const loggedIn = auth.code === 0;
@@ -49,7 +52,7 @@ export async function githubStatus(exec: ExecFn): Promise<GithubStatus> {
 }
 
 async function listAssigned(exec: ExecFn): Promise<GhIssue[]> {
-  const r = await exec("gh", [
+  const r = await runGh(exec, [
     "search",
     "issues",
     "is:issue is:open assignee:@me",
@@ -64,7 +67,7 @@ async function listAssigned(exec: ExecFn): Promise<GhIssue[]> {
 }
 
 async function listRepos(exec: ExecFn): Promise<CatalogRepo[]> {
-  const r = await exec("gh", [
+  const r = await runGh(exec, [
     "api",
     "--paginate",
     "user/repos?affiliation=owner,collaborator,organization_member&per_page=100",
@@ -80,7 +83,7 @@ async function listRepos(exec: ExecFn): Promise<CatalogRepo[]> {
 }
 
 async function cloneRepo(exec: ExecFn, owner: string, name: string, dest: string) {
-  const r = await exec("gh", ["repo", "clone", `${owner}/${name}`, dest], { timeoutMs: 120_000 });
+  const r = await runGh(exec, ["repo", "clone", `${owner}/${name}`, dest], { timeoutMs: 120_000 });
   if (r.code !== 0) return { ok: false, detail: r.stderr || "clone failed" };
   return { ok: true, detail: dest };
 }
@@ -90,8 +93,9 @@ export const GH_ISSUE_CREATE_ARGS = (owner: string, name: string, title: string,
 
 async function createIssue(exec: ExecFn, owner: string, name: string, title: string, body: string) {
   const args = GH_ISSUE_CREATE_ARGS(owner, name, title, body);
-  const r = await exec("gh", args);
+  const r = await runGh(exec, args);
   if (r.code !== 0) throw new Error(r.stderr || "gh issue create failed");
+  getCache().invalidate(CACHE_KEYS.githubIssues);
   return parseCreatedIssue(r.stdout);
 }
 
@@ -106,7 +110,7 @@ export function parseCreatedIssue(stdout: string): { number: number; url: string
 }
 
 async function updateIssue(exec: ExecFn, owner: string, name: string, number: number, title: string, body: string) {
-  const r = await exec("gh", [
+  const r = await runGh(exec, [
     "issue",
     "edit",
     String(number),
@@ -118,6 +122,7 @@ async function updateIssue(exec: ExecFn, owner: string, name: string, number: nu
     body,
   ]);
   if (r.code !== 0) throw new Error(r.stderr || "gh issue edit failed");
+  getCache().invalidate(CACHE_KEYS.githubIssues);
 }
 
 function toIssue(row: Record<string, unknown>): GhIssue {
