@@ -1,18 +1,8 @@
-import {
-  Alert,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  MenuItem,
-  Select,
-  TextField,
-} from "@mui/material";
-import type { Issue, ShapeSession } from "@flightdeck/shared";
+import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from "@mui/material";
+import type { Issue, PreflightCheck, ShapeSession } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
-import { usePreflight } from "../preflight/PreflightContext.tsx";
+import { TrackerChoice, usePreflight } from "../preflight/index.ts";
 import { FormField } from "../ui/FormField.tsx";
 
 export function SaveIssueDialog(props: {
@@ -26,8 +16,9 @@ export function SaveIssueDialog(props: {
   const [repoSlug, setRepoSlug] = useState(props.session.repoSlug);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState("");
-  const ghBlock = usePreflight().block("saveGithub");
-  const jiraBlock = usePreflight().block("saveJira");
+  const preflight = usePreflight();
+  const ghBlock = preflight.block("saveGithub");
+  const jiraBlock = preflight.block("saveJira");
   const blocked = tracker === "github" ? ghBlock : tracker === "jira" ? jiraBlock : undefined;
 
   useEffect(() => {
@@ -40,6 +31,10 @@ export function SaveIssueDialog(props: {
   async function save() {
     if (tracker !== "jira" && tracker !== "github") {
       setLocalError("Choose Jira or GitHub");
+      return;
+    }
+    if (blocked) {
+      setLocalError(`${blocked.detail}${blocked.fix ? ` Fix: ${blocked.fix}` : ""}`);
       return;
     }
     setBusy(true);
@@ -67,20 +62,61 @@ export function SaveIssueDialog(props: {
           tracker={tracker}
           projectKey={projectKey}
           repoSlug={repoSlug}
-          ghBlock={Boolean(ghBlock)}
-          jiraBlock={Boolean(jiraBlock)}
+          ghBlock={ghBlock}
+          jiraBlock={jiraBlock}
           onTracker={setTracker}
           onProjectKey={setProjectKey}
           onRepoSlug={setRepoSlug}
         />
+        <TrackerGateHint blocked={blocked} />
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
         <Button onClick={props.onClose}>Cancel</Button>
-        <Button variant="contained" disabled={busy || Boolean(blocked)} onClick={save} data-testid="confirm-save">
-          Save
-        </Button>
+        <SaveConfirm busy={busy} blocked={Boolean(blocked)} onSave={() => void save()} />
       </DialogActions>
     </Dialog>
+  );
+}
+
+function SaveConfirm(props: { busy: boolean; blocked: boolean; onSave: () => void }) {
+  return (
+    <Button
+      variant={props.blocked ? "outlined" : "contained"}
+      disabled={props.busy || props.blocked}
+      onClick={props.onSave}
+      data-testid="confirm-save"
+      sx={
+        props.blocked
+          ? { "&.Mui-disabled": { bgcolor: "action.hover", color: "text.disabled", borderColor: "divider" } }
+          : undefined
+      }
+    >
+      Save
+    </Button>
+  );
+}
+
+function TrackerGateHint(props: { blocked?: PreflightCheck }) {
+  if (!props.blocked) return null;
+  return (
+    <Alert
+      severity="warning"
+      sx={{
+        mt: 1,
+        bgcolor: "#ffd60a",
+        color: "#1d1d1f",
+        "& .MuiAlert-icon": { color: "#1d1d1f" },
+      }}
+      data-testid="tracker-gate-hint"
+    >
+      {props.blocked.detail}
+      {props.blocked.fix ? (
+        <>
+          <br />
+          Fix: {props.blocked.fix}
+        </>
+      ) : null}
+    </Alert>
   );
 }
 
@@ -88,38 +124,38 @@ function TrackerFields(props: {
   tracker: "jira" | "github" | "";
   projectKey: string;
   repoSlug: string;
-  ghBlock: boolean;
-  jiraBlock: boolean;
-  onTracker: (v: "jira" | "github" | "") => void;
+  ghBlock?: PreflightCheck;
+  jiraBlock?: PreflightCheck;
+  onTracker: (v: "jira" | "github") => void;
   onProjectKey: (v: string) => void;
   onRepoSlug: (v: string) => void;
 }) {
   return (
     <>
       <FormField label="Tracker" hint="Choose each time. Nothing is created until Save.">
-        <Select
-          value={props.tracker}
-          displayEmpty
-          onChange={(e) => props.onTracker(e.target.value as "jira" | "github" | "")}
-          data-testid="tracker-select"
-        >
-          <MenuItem value="">
-            <em>Choose Jira or GitHub</em>
-          </MenuItem>
-          <MenuItem value="github" disabled={props.ghBlock} data-testid="tracker-github">
-            GitHub{props.ghBlock ? " (needs gh)" : ""}
-          </MenuItem>
-          <MenuItem value="jira" disabled={props.jiraBlock} data-testid="tracker-jira">
-            Jira{props.jiraBlock ? " (needs Jira)" : ""}
-          </MenuItem>
-        </Select>
+        <Stack spacing={1.5} data-testid="tracker-select">
+          <TrackerChoice
+            title="GitHub"
+            testId="tracker-github"
+            selected={props.tracker === "github"}
+            block={props.ghBlock}
+            onSelect={() => props.onTracker("github")}
+          />
+          <TrackerChoice
+            title="Jira"
+            testId="tracker-jira"
+            selected={props.tracker === "jira"}
+            block={props.jiraBlock}
+            onSelect={() => props.onTracker("jira")}
+          />
+        </Stack>
       </FormField>
-      {props.tracker === "jira" ? (
+      {props.tracker === "jira" && !props.jiraBlock ? (
         <FormField label="Jira project key">
           <TextField value={props.projectKey} onChange={(e) => props.onProjectKey(e.target.value)} inputProps={{ "data-testid": "jira-project" }} />
         </FormField>
       ) : null}
-      {props.tracker === "github" ? (
+      {props.tracker === "github" && !props.ghBlock ? (
         <FormField label="GitHub repo">
           <TextField value={props.repoSlug} onChange={(e) => props.onRepoSlug(e.target.value)} inputProps={{ "data-testid": "gh-repo" }} />
         </FormField>
