@@ -49,8 +49,7 @@ test("save to GitHub then wait with Start disabled", async ({ page }) => {
   await startNewIdea(page);
   await answerFirstQuestion(page);
   await page.getByTestId("save-issue").click();
-  await page.getByTestId("tracker-select").click();
-  await page.getByRole("option", { name: "GitHub", exact: true }).click();
+  await page.getByTestId("tracker-github").click();
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toContainText(/Saved as acme\/web#/);
   await expect(page.getByTestId("start-run")).toBeDisabled();
@@ -61,8 +60,7 @@ test("save to Jira", async ({ page }) => {
   await startNewIdea(page);
   await answerFirstQuestion(page);
   await page.getByTestId("save-issue").click();
-  await page.getByTestId("tracker-select").click();
-  await page.getByRole("option", { name: "Jira", exact: true }).click();
+  await page.getByTestId("tracker-jira").click();
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toContainText(/PROJ-200/);
 });
@@ -86,7 +84,7 @@ test("Settings shows Claude, GitHub, Jira, repos and caps", async ({ page }) => 
   await expect(page.getByTestId("cap-daily")).toHaveValue("50");
   await expect(page.getByTestId("cap-concurrent")).toHaveValue("3");
   await expect(page.getByTestId("github-status")).not.toContainText("gh auth login");
-  await page.getByTestId("claude-recheck").click();
+  await page.getByTestId("preflight-section").getByTestId("preflight-recheck").click();
   await expect(page.getByTestId("claude-status")).toContainText("apiKeyHelper");
   await page.getByTestId("cap-run").fill("12");
   await page.getByTestId("cap-run").blur();

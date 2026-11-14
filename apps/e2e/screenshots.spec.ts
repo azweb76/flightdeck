@@ -74,9 +74,7 @@ test("phase 1 screenshots", async ({ page }) => {
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("dialog")).toContainText("Choose Jira or GitHub");
   await shot(page, "save-dialog-light");
-  await page.getByTestId("tracker-select").click();
-  await page.getByRole("option", { name: "GitHub", exact: true }).click();
-  await expect(page.getByRole("listbox")).toHaveCount(0);
+  await page.getByTestId("tracker-github").click();
   await shot(page, "save-github-light");
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toBeVisible();
