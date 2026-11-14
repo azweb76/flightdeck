@@ -1,6 +1,6 @@
 import { getCache } from "../cache/index.ts";
 import { resetDemoPreflightFixture } from "../preflight/demo.ts";
-import { resetPreflightStore } from "../preflight/report.ts";
+import { resetPreflightStore, runChecks } from "../preflight/report.ts";
 import { rememberRepo } from "../clone/index.ts";
 import { getDb } from "../db/index.ts";
 import { upsertIssue } from "../issues/store.ts";
@@ -28,7 +28,7 @@ export function seedDemo(): void {
   for (const issue of seedIssues()) upsertIssue(issue);
 }
 
-export function resetDemo(opts: { seed: boolean }): void {
+export async function resetDemo(opts: { seed: boolean }): Promise<void> {
   setJiraLastError(undefined);
   resetDemoGithubMode();
   resetDemoPreflightFixture();
@@ -43,4 +43,5 @@ export function resetDemo(opts: { seed: boolean }): void {
   } else {
     process.env.FLIGHTDECK_SEED = "0";
   }
+  await runChecks();
 }

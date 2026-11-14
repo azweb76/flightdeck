@@ -76,5 +76,6 @@ export async function githubStatus(opts: { token?: string; fetch?: FetchFn } = {
 }
 
 function withSource(status: GithubStatus): GithubStatus {
+  if (!status.loggedIn) return status;
   return { ...status, detail: appendGithubSourceLabel(status.detail, status.tokenSource) };
 }

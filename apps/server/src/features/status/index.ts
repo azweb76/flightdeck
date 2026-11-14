@@ -1,6 +1,7 @@
-import type { ClaudeStatus, GithubStatus } from "@flightdeck/shared";
+import { githubEnvFailDetail, type ClaudeStatus, type GithubStatus } from "@flightdeck/shared";
 import { detectClaudeConfig, CLAUDE_LOGIN_HINT } from "../claude/index.ts";
 import { createGithubClient, demoGithubStatus } from "../github/index.ts";
+import { envGithubToken } from "../github/token.ts";
 import { demoPreflightFixture } from "../preflight/demo.ts";
 import { getSettings } from "../settings/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
@@ -60,11 +61,14 @@ function failDemoClaude(): ClaudeStatus {
 }
 
 function failDemoGithub(): GithubStatus {
+  const tokenSource = envGithubToken()?.source;
   return {
-    installed: false,
+    installed: Boolean(tokenSource),
     loggedIn: false,
-    hasToken: false,
-    detail: "No GitHub token stored",
+    hasToken: Boolean(tokenSource),
+    oauthAvailable: Boolean(process.env.FLIGHTDECK_GITHUB_CLIENT_ID),
+    tokenSource,
+    detail: githubEnvFailDetail(tokenSource),
   };
 }
 

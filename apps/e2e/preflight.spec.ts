@@ -48,7 +48,7 @@ test("failing preflight matches Settings cards", async ({ page }) => {
   await page.goto("/settings");
   await expect(page.getByTestId("preflight-claude")).toContainText("Fail");
   await expect(page.getByTestId("claude-status")).toContainText("Needs login");
-  await expect(page.getByTestId("github-status")).toContainText("Not connected");
+  await expect(page.getByTestId("github-status")).toContainText("GITHUB_TOKEN");
   await expect(page.getByTestId("jira-status")).toContainText("Not connected");
   await expect(page.getByTestId("jira-status")).toContainText("token is missing");
 });

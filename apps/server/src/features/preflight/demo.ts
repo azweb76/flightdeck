@@ -1,4 +1,4 @@
-import { appendGithubSourceLabel, type PreflightCheck, type PreflightReport } from "@flightdeck/shared";
+import { githubEnvFailDetail, type PreflightCheck, type PreflightReport } from "@flightdeck/shared";
 import { demoGithubStatus } from "../github/demo.ts";
 import { envGithubToken } from "../github/token.ts";
 import { githubCheckFromStatus } from "./check-github.ts";
@@ -45,7 +45,7 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
       severity: "required",
       ok: false,
       status: "fail",
-      detail: appendGithubSourceLabel("No GitHub token stored", envGithubToken()?.source),
+      detail: githubEnvFailDetail(envGithubToken()?.source),
       fix: "Add a GitHub token in Settings",
       gates: ["shape", "start", "saveGithub"],
     },

@@ -23,6 +23,13 @@ export function appendGithubSourceLabel(detail: string, source?: GithubTokenSour
   if (!label || detail.includes(label)) return detail;
   return `${detail.replace(/\.$/, "")}. ${label}.`;
 }
+
+/** Fail copy when an env token is present — never “no token stored” plus a source label. */
+export function githubEnvFailDetail(source?: GithubTokenSource): string {
+  if (source === "GITHUB_TOKEN") return "GitHub token from GITHUB_TOKEN was rejected";
+  if (source === "GH_TOKEN") return "GitHub token from GH_TOKEN was rejected";
+  return "No GitHub token stored";
+}
 export const GITHUB_NEEDED_SCOPES = ["repo", "read:org", "workflow"] as const;
 export const GITHUB_PAT_URL =
   "https://github.com/settings/tokens/new?description=Flightdeck&scopes=repo,read:org,workflow";

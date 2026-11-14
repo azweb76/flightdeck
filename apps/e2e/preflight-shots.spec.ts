@@ -83,12 +83,16 @@ test("settings pass and fail", async ({ page }) => {
   await seedHome(page);
   await page.goto("/settings");
   await expect(page.getByTestId("preflight-section")).toBeVisible();
+  await expect(page.getByTestId("github-token-source")).toContainText("Using GITHUB_TOKEN from environment");
+  await page.getByTestId("github-form").scrollIntoViewIfNeeded();
   await scheme(page, "light");
   await pair(page, "settings-pass-light");
   await scheme(page, "dark");
   await pair(page, "settings-pass-dark");
   await setPreflight(page, "fail");
   await expect(page.getByTestId("claude-status")).toContainText("Needs login");
+  await expect(page.getByTestId("github-status")).toContainText("GITHUB_TOKEN");
+  await page.getByTestId("github-form").scrollIntoViewIfNeeded();
   await scheme(page, "light");
   await pair(page, "settings-fail-light");
   await scheme(page, "dark");

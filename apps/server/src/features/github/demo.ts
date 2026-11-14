@@ -1,4 +1,4 @@
-import { appendGithubSourceLabel, type CatalogRepo, type GithubStatus } from "@flightdeck/shared";
+import { appendGithubSourceLabel, githubEnvFailDetail, type CatalogRepo, type GithubStatus } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache } from "../cache/index.ts";
 import { envGithubToken } from "./token.ts";
 import type { GhIssue, GithubClient } from "./types.ts";
@@ -31,7 +31,7 @@ export function demoGithubStatus(): GithubStatus {
       hasToken: false,
       oauthAvailable,
       tokenSource,
-      detail: appendGithubSourceLabel("Set GITHUB_TOKEN or paste a PAT in Settings", tokenSource),
+      detail: githubEnvFailDetail(tokenSource),
     };
   }
   if (mode === "error") {
@@ -41,10 +41,7 @@ export function demoGithubStatus(): GithubStatus {
       hasToken: true,
       oauthAvailable,
       tokenSource,
-      detail: appendGithubSourceLabel(
-        "GitHub token was rejected (401). Create a new PAT and paste it in Settings.",
-        tokenSource,
-      ),
+      detail: "GitHub token was rejected (401). Create a new PAT and paste it in Settings.",
     };
   }
   if (mode === "scopes") {
@@ -56,10 +53,7 @@ export function demoGithubStatus(): GithubStatus {
       scopes: ["repo"],
       oauthAvailable,
       tokenSource,
-      detail: appendGithubSourceLabel(
-        "Connected as dan-demo but missing scopes: read:org, workflow. Need repo, read:org, workflow.",
-        tokenSource,
-      ),
+      detail: "Connected as dan-demo but missing scopes: read:org, workflow. Need repo, read:org, workflow.",
     };
   }
   return {

@@ -111,7 +111,7 @@ describe("preflight checks", () => {
     setDemoGithubMode("empty");
     const missing = await checkGithub();
     expect(missing.ok).toBe(false);
-    expect(missing.detail).toMatch(/GITHUB_TOKEN|Settings/);
+    expect(missing.detail).toMatch(/No GitHub token stored|GITHUB_TOKEN/);
     setDemoGithubMode("error");
     expect((await checkGithub()).ok).toBe(false);
     setDemoGithubMode("scopes");

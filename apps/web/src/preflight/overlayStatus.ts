@@ -30,9 +30,14 @@ function overlayClaude(base: ClaudeStatus, check?: PreflightCheck): ClaudeStatus
 function overlayGithub(base: GithubStatus, check?: PreflightCheck): GithubStatus {
   if (!check || check.ok) return base;
   const scopes = /missing scopes/i.test(check.detail);
+  const noToken = /no github token stored/i.test(check.detail);
+  if (noToken && (base.tokenSource || base.hasToken)) {
+    return { ...base, loggedIn: false };
+  }
   return {
     ...base,
     loggedIn: false,
+    hasToken: noToken ? false : base.hasToken,
     user: scopes ? base.user : undefined,
     detail: check.detail,
   };

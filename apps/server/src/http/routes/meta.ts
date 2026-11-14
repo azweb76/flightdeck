@@ -21,7 +21,7 @@ export function mountMeta(app: Hono): void {
   app.post("/api/demo/reset", async (c) => {
     if (process.env.FLIGHTDECK_DEMO !== "1") fail("Demo reset is only available in demo mode");
     const body = await c.req.json<{ seed?: boolean }>().catch(() => ({ seed: shouldSeed() }));
-    resetDemo({ seed: body.seed !== false });
+    await resetDemo({ seed: body.seed !== false });
     return c.json({ ok: true, seed: process.env.FLIGHTDECK_SEED !== "0" });
   });
 }

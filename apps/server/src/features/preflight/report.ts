@@ -1,4 +1,5 @@
 import type { GithubStatus, PreflightCheck, PreflightReport } from "@flightdeck/shared";
+import { CACHE_KEYS, getCache } from "../cache/index.ts";
 import { databasePreflightCheck, getDb } from "../db/index.ts";
 import { publish } from "../events/index.ts";
 import { checkClaude } from "./check-claude.ts";
@@ -22,14 +23,14 @@ export function preflightBuildCount(): number {
   return builds;
 }
 
-/** Snapshot from startup/recheck. Builds once if empty (tests). GET never rebuilds. */
-export async function getPreflightReport(opts?: { ctx?: PreflightCtx }): Promise<PreflightReport> {
-  if (opts?.ctx) return buildReport(opts.ctx);
-  if (stored) return stored;
-  return runChecks();
+/** In-memory snapshot. GET never builds. */
+export function getPreflightReport(): PreflightReport | undefined {
+  return stored;
 }
 
 export async function runChecks(): Promise<PreflightReport> {
+  getCache().invalidate(CACHE_KEYS.githubStatus);
+  getCache().invalidate(CACHE_KEYS.claudeConfig);
   const report = await buildReport();
   builds += 1;
   stored = report;

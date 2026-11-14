@@ -4,7 +4,11 @@ import { getPreflightReport, recheckPreflight, runChecks, setDemoPreflightFixtur
 import { fail } from "../errors.ts";
 
 export function mountPreflight(app: Hono): void {
-  app.get("/api/preflight", async (c) => c.json(await getPreflightReport()));
+  app.get("/api/preflight", (c) => {
+    const report = getPreflightReport();
+    if (!report) fail("Preflight has not run yet", 503);
+    return c.json(report);
+  });
   app.post("/api/preflight/recheck", async (c) => c.json(await recheckPreflight()));
   app.post("/api/demo/preflight", async (c) => {
     if (process.env.FLIGHTDECK_DEMO !== "1") fail("Demo preflight is only available in demo mode");
