@@ -15,6 +15,8 @@ export const theme = createTheme({
       palette: {
         background: { default: "#f5f5f7", paper: "#ffffff" },
         primary: { main: "#0071e3" },
+        error: { main: "#d70015", light: "#ff3b30" },
+        warning: { main: "#e6a700", light: "#ffd60a" },
         text: { primary: "#1d1d1f", secondary: "#6e6e73" },
         divider: "rgba(0,0,0,0.08)",
       },
@@ -23,6 +25,8 @@ export const theme = createTheme({
       palette: {
         background: { default: "#000000", paper: "#1d1d1f" },
         primary: { main: "#2997ff" },
+        error: { main: "#ff453a", light: "#ff6961" },
+        warning: { main: "#ffd60a", light: "#ff9f0a" },
         text: { primary: "#f5f5f7", secondary: "#a1a1a6" },
         divider: "rgba(255,255,255,0.12)",
       },

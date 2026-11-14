@@ -20,7 +20,17 @@ export function PreflightBanner() {
           Re-check
         </Button>
       </Stack>
-      <Alert severity="error" sx={{ mb: 2 }}>
+      <Alert
+        severity="error"
+        variant="outlined"
+        sx={{
+          mb: 2,
+          bgcolor: "error.main",
+          color: "#fff",
+          borderColor: "error.main",
+          "& .MuiAlert-icon": { color: "#fff" },
+        }}
+      >
         Flightdeck can still run, but Shape and GitHub save stay off until the required tools are ready.
       </Alert>
       {failed.map((check, i) => (

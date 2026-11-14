@@ -1,7 +1,7 @@
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import type { PreflightCheck } from "@flightdeck/shared";
 import { CopyFix } from "./CopyFix.tsx";
-import { statusColor, statusLabel } from "./statusColor.ts";
+import { chipTone, statusLabel } from "./statusColor.ts";
 
 export function CheckRow(props: { check: PreflightCheck }) {
   const { check } = props;
@@ -15,9 +15,13 @@ export function CheckRow(props: { check: PreflightCheck }) {
     >
       <Chip
         size="small"
-        color={statusColor(check.status)}
         label={statusLabel(check.status)}
-        sx={{ minWidth: 64, mt: 0.4 }}
+        sx={{
+          minWidth: 64,
+          mt: 0.4,
+          fontWeight: 700,
+          ...chipTone(check.status),
+        }}
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography variant="subtitle2">{check.label}</Typography>
