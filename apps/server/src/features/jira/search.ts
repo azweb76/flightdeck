@@ -1,5 +1,5 @@
 import { adfToMarkdown } from "@flightdeck/shared";
-import { authHeaders, throwIfJiraFailed } from "./http.ts";
+import { authHeaders, jiraFetch } from "./http.ts";
 import type { JiraIssue } from "./types.ts";
 
 const MAX_PAGES = 10;
@@ -28,8 +28,12 @@ export async function searchJira(
       fields: ["summary", "description", "updated"],
     };
     if (nextPageToken) body.nextPageToken = nextPageToken;
-    const res = await fetchFn(url, { method: "POST", headers, body: JSON.stringify(body) });
-    await throwIfJiraFailed(res, "Jira search failed");
+    const res = await jiraFetch(
+      fetchFn,
+      url,
+      { method: "POST", headers, body: JSON.stringify(body) },
+      "Jira search failed",
+    );
     const data = (await res.json()) as SearchPage;
     out.push(...(data.issues ?? []).map((i) => toIssue(base, i)));
     if (data.isLast || !data.nextPageToken) break;

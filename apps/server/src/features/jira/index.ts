@@ -1,5 +1,6 @@
 import { markdownToAdf } from "@flightdeck/shared";
-import { authHeaders, throwIfJiraFailed } from "./http.ts";
+import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
+import { authHeaders, jiraFetch } from "./http.ts";
 import { searchJira } from "./search.ts";
 import type { JiraIssue } from "./types.ts";
 
@@ -31,9 +32,16 @@ export type JiraClient = {
 type FetchFn = typeof fetch;
 
 export function createJiraClient(fetchFn: FetchFn = fetch): JiraClient {
+  const cache = getCache();
   return {
-    test: (siteUrl, email, token) => testJira(fetchFn, siteUrl, email, token),
-    search: (opts) => searchJira(fetchFn, opts),
+    test: (siteUrl, email, token) =>
+      cache.get(CACHE_KEYS.jiraTest(siteUrl, email), () => testJira(fetchFn, siteUrl, email, token), TTL.jiraConnect),
+    search: (opts) =>
+      cache.get(
+        CACHE_KEYS.jiraSearch(opts.siteUrl, opts.email, opts.jql),
+        () => searchJira(fetchFn, opts),
+        TTL.jiraSearch,
+      ),
     createIssue: (opts) => jiraCreate(fetchFn, opts),
     updateIssue: (opts) => jiraUpdate(fetchFn, opts),
   };
@@ -41,10 +49,12 @@ export function createJiraClient(fetchFn: FetchFn = fetch): JiraClient {
 
 async function testJira(fetchFn: FetchFn, siteUrl: string, email: string, token: string) {
   const base = siteUrl.replace(/\/$/, "");
-  const res = await fetchFn(`${base}/rest/api/3/myself`, { headers: authHeaders(email, token) });
-  if (!res.ok) {
-    await throwIfJiraFailed(res, "Jira login failed");
-  }
+  const res = await jiraFetch(
+    fetchFn,
+    `${base}/rest/api/3/myself`,
+    { headers: authHeaders(email, token) },
+    "Jira login failed",
+  );
   const me = (await res.json()) as { displayName?: string };
   return { ok: true, detail: me.displayName ? `Connected as ${me.displayName}` : "Connected" };
 }
@@ -54,20 +64,25 @@ async function jiraCreate(
   opts: { siteUrl: string; email: string; token: string; projectKey: string; title: string; body: string },
 ) {
   const base = opts.siteUrl.replace(/\/$/, "");
-  const res = await fetchFn(`${base}/rest/api/3/issue`, {
-    method: "POST",
-    headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fields: {
-        project: { key: opts.projectKey },
-        summary: opts.title,
-        issuetype: { name: "Task" },
-        description: { ...markdownToAdf(opts.body), version: 1 },
-      },
-    }),
-  });
-  await throwIfJiraFailed(res, "Jira create failed");
+  const res = await jiraFetch(
+    fetchFn,
+    `${base}/rest/api/3/issue`,
+    {
+      method: "POST",
+      headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fields: {
+          project: { key: opts.projectKey },
+          summary: opts.title,
+          issuetype: { name: "Task" },
+          description: { ...markdownToAdf(opts.body), version: 1 },
+        },
+      }),
+    },
+    "Jira create failed",
+  );
   const data = (await res.json()) as { key: string };
+  getCache().invalidate(CACHE_KEYS.jiraAll);
   return { key: data.key, url: `${base}/browse/${data.key}` };
 }
 
@@ -76,12 +91,17 @@ async function jiraUpdate(
   opts: { siteUrl: string; email: string; token: string; key: string; title: string; body: string },
 ) {
   const base = opts.siteUrl.replace(/\/$/, "");
-  const res = await fetchFn(`${base}/rest/api/3/issue/${opts.key}`, {
-    method: "PUT",
-    headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
-    body: JSON.stringify({
-      fields: { summary: opts.title, description: { ...markdownToAdf(opts.body), version: 1 } },
-    }),
-  });
-  await throwIfJiraFailed(res, "Jira update failed");
+  await jiraFetch(
+    fetchFn,
+    `${base}/rest/api/3/issue/${opts.key}`,
+    {
+      method: "PUT",
+      headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fields: { summary: opts.title, description: { ...markdownToAdf(opts.body), version: 1 } },
+      }),
+    },
+    "Jira update failed",
+  );
+  getCache().invalidate(CACHE_KEYS.jiraAll);
 }

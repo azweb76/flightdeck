@@ -1,6 +1,24 @@
+import { parseRetryAfterMs, RateLimitError, withBackoff } from "../cache/index.ts";
+
 export function authHeaders(email: string, token: string): Record<string, string> {
   const basic = Buffer.from(`${email}:${token}`).toString("base64");
   return { Authorization: `Basic ${basic}`, Accept: "application/json" };
+}
+
+export async function jiraFetch(
+  fetchFn: typeof fetch,
+  url: string,
+  init: RequestInit | undefined,
+  prefix: string,
+): Promise<Response> {
+  return withBackoff(async () => {
+    const res = await fetchFn(url, init);
+    if (res.status === 429) {
+      throw new RateLimitError("Jira", parseRetryAfterMs(res.headers.get("retry-after")));
+    }
+    await throwIfJiraFailed(res, prefix);
+    return res;
+  }, "Jira");
 }
 
 export async function throwIfJiraFailed(res: Response, prefix: string): Promise<void> {
