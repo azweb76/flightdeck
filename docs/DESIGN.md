@@ -68,6 +68,22 @@ Throughout, the agent is hands-off but can pause and ask Dan a question when stu
 - GitHub via the `gh` CLI login; Jira Cloud via email + API token.
 - Per-run and daily dollar caps, plus a max-concurrent-agents setting.
 
+## Caching
+Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`features/cache`). Failed loads are not cached. Demo mode never calls the live trackers.
+
+| Call | TTL | Invalidation |
+|---|---|---|
+| Issues tracker sync (`GET /api/issues`) | 60s | `POST /api/issues/sync` (Refresh) forces a sync |
+| `gh auth status` / `gh --version` | 2 min | Settings save |
+| `gh search` assigned issues | 60s | Refresh; after GitHub issue create/update |
+| `gh api user/repos` | 5 min | — |
+| Jira JQL search | 60s | Jira settings save/connect; after Jira create/update; Refresh |
+| Jira connect `myself` | 2 min | Jira settings save/connect; after Jira create/update |
+| `detectClaudeConfig` (including apiKeyHelper) | 2 min | Settings save; Settings Re-check |
+| `git fetch origin` | 60s | TTL only |
+
+`issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or gh "API rate limit exceeded" / secondary rate limit, Flightdeck backs off (capped) and returns `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s and gh stderr.
+
 ## Screens
 - Home: My issues, ready to shape or start.
 - Nav pages: Issues, Runs, My PRs, Reviews, Settings.
