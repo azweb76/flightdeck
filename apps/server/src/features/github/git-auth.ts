@@ -1,9 +1,19 @@
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
+import { dataDir } from "../../paths.ts";
+
+const SRC = join(dirname(fileURLToPath(import.meta.url)), "askpass.mjs");
 
 export function askpassPath(): string {
-  return join(dirname(fileURLToPath(import.meta.url)), "askpass.mjs");
+  const dir = dataDir();
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const dest = join(dir, "askpass.mjs");
+  const body = readFileSync(SRC, "utf8");
+  writeFileSync(dest, body, { encoding: "utf8", mode: 0o700 });
+  chmodSync(dest, 0o700);
+  return dest;
 }
 
 export function gitAuthEnv(): NodeJS.ProcessEnv {

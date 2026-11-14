@@ -48,7 +48,12 @@ async function detectStorage(account: string): Promise<SecretStorage | undefined
   return undefined;
 }
 
+function keychainOff(): boolean {
+  return process.env.FLIGHTDECK_NO_KEYCHAIN === "1";
+}
+
 async function keychainGet(account: string): Promise<string | undefined> {
+  if (keychainOff()) return undefined;
   try {
     const { Entry } = await import("@napi-rs/keyring");
     const v = new Entry(KEYCHAIN_SERVICE, account).getPassword();
@@ -59,6 +64,7 @@ async function keychainGet(account: string): Promise<string | undefined> {
 }
 
 async function keychainSet(account: string, value: string): Promise<boolean> {
+  if (keychainOff()) return false;
   try {
     const { Entry } = await import("@napi-rs/keyring");
     new Entry(KEYCHAIN_SERVICE, account).setPassword(value);
@@ -69,6 +75,7 @@ async function keychainSet(account: string, value: string): Promise<boolean> {
 }
 
 async function keychainDelete(account: string): Promise<void> {
+  if (keychainOff()) return;
   try {
     const { Entry } = await import("@napi-rs/keyring");
     new Entry(KEYCHAIN_SERVICE, account).deletePassword();

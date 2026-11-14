@@ -53,8 +53,11 @@ export function claudeLoginInstructions(): { ok: true; detail: string } {
   return { ok: true, detail: CLAUDE_LOGIN_HINT };
 }
 
+const STRIP_FROM_SDK = ["GITHUB_TOKEN", "GH_TOKEN", "GH_ENTERPRISE_TOKEN"] as const;
+
 export function claudeSdkEnv(status: ClaudeStatus, env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const next = { ...env };
+  for (const key of STRIP_FROM_SDK) delete next[key];
   if (status.baseUrl) next.ANTHROPIC_BASE_URL = status.baseUrl;
   return next;
 }

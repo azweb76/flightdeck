@@ -25,6 +25,17 @@ describe("detectClaudeConfig", () => {
     expect(claudeSdkEnv(status).ANTHROPIC_BASE_URL).toBe("https://api.example");
   });
 
+  it("strips GitHub tokens from the Agent SDK env", () => {
+    const env = claudeSdkEnv(
+      { found: false, apiKeyHelper: false, oauth: false, loginHint: "", sources: [], detail: "" },
+      { GITHUB_TOKEN: "ghs_x", GH_TOKEN: "gho_x", GH_ENTERPRISE_TOKEN: "ghe_x", PATH: "/bin" },
+    );
+    expect(env.GITHUB_TOKEN).toBeUndefined();
+    expect(env.GH_TOKEN).toBeUndefined();
+    expect(env.GH_ENTERPRISE_TOKEN).toBeUndefined();
+    expect(env.PATH).toBe("/bin");
+  });
+
   it("treats missing helper as not logged in, with terminal login instructions", async () => {
     const home = mkdtempSync(join(tmpdir(), "claude-"));
     const status = await detectClaudeConfig({ home, env: {}, exec: async () => ({ code: 1, stdout: "", stderr: "" }) });
