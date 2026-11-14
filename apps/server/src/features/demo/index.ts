@@ -1,6 +1,7 @@
 import type { Issue } from "@flightdeck/shared";
-import { getDb } from "../db/index.ts";
+import { getCache } from "../cache/index.ts";
 import { rememberRepo } from "../clone/index.ts";
+import { getDb } from "../db/index.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { patchSettings } from "../settings/index.ts";
 import { setJiraLastError } from "../status/index.ts";
@@ -28,6 +29,7 @@ export function seedDemo(): void {
 
 export function resetDemo(opts: { seed: boolean }): void {
   setJiraLastError(undefined);
+  getCache().invalidate("*");
   getDb().exec("DELETE FROM issues; DELETE FROM repos; DELETE FROM shape_sessions; DELETE FROM settings;");
   if (opts.seed) {
     process.env.FLIGHTDECK_SEED = "1";
