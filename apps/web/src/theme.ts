@@ -56,7 +56,34 @@ export const theme = createTheme({
     MuiAppBar: { defaultProps: { position: "static" } },
     MuiButton: {
       defaultProps: { disableElevation: true },
-      styleOverrides: { root: { borderRadius: 10, paddingInline: 16, paddingBlock: 8, ...focus } },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: 10,
+          paddingInline: 16,
+          paddingBlock: 8,
+          ...focus,
+          "&.Mui-disabled":
+            theme.palette.mode === "dark"
+              ? { opacity: 1, color: "rgba(245,245,247,0.62)" }
+              : { opacity: 0.55 },
+        }),
+        contained: ({ theme }) => ({
+          "&.Mui-disabled":
+            theme.palette.mode === "dark"
+              ? { backgroundColor: "rgba(41,151,255,0.28)", color: "#d6ebff" }
+              : {},
+        }),
+        outlined: ({ theme }) => ({
+          "&.Mui-disabled":
+            theme.palette.mode === "dark"
+              ? { borderColor: "rgba(245,245,247,0.38)", color: "rgba(245,245,247,0.68)" }
+              : {},
+        }),
+        text: ({ theme }) => ({
+          "&.Mui-disabled":
+            theme.palette.mode === "dark" ? { color: "rgba(245,245,247,0.62)" } : {},
+        }),
+      },
     },
     MuiTab: { styleOverrides: { root: { ...focus } } },
     MuiChip: { styleOverrides: { root: { ...focus } } },

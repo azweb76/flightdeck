@@ -1,5 +1,6 @@
-import { Alert, Button, Divider, Paper, Stack, Typography } from "@mui/material";
+import { Button, Divider, Paper, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
+import { ContrastAlert } from "../ui/ContrastAlert.tsx";
 import { CheckRow } from "./CheckRow.tsx";
 import { usePreflight } from "./PreflightContext.tsx";
 
@@ -20,19 +21,9 @@ export function PreflightBanner() {
           Re-check
         </Button>
       </Stack>
-      <Alert
-        severity="error"
-        variant="outlined"
-        sx={{
-          mb: 2,
-          bgcolor: "error.main",
-          color: "#fff",
-          borderColor: "error.main",
-          "& .MuiAlert-icon": { color: "#fff" },
-        }}
-      >
+      <ContrastAlert sx={{ mb: 2 }}>
         Flightdeck can still run, but Shape and GitHub save stay off until the required tools are ready.
-      </Alert>
+      </ContrastAlert>
       {failed.map((check, i) => (
         <BoxBlock key={check.id} divider={i > 0}>
           <CheckRow check={check} />

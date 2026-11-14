@@ -29,7 +29,13 @@ function overlayClaude(base: ClaudeStatus, check?: PreflightCheck): ClaudeStatus
 
 function overlayGithub(base: GithubStatus, check?: PreflightCheck): GithubStatus {
   if (!check || check.ok) return base;
-  return { ...base, loggedIn: false, user: undefined, detail: check.detail };
+  const scopes = /missing scopes/i.test(check.detail);
+  return {
+    ...base,
+    loggedIn: false,
+    user: scopes ? base.user : undefined,
+    detail: check.detail,
+  };
 }
 
 function overlayJira(
