@@ -93,7 +93,7 @@ Startup and `pnpm preflight` run the same checks. Required failures print a one-
 |---|---|---|---|
 | Node.js | required | `process.versions.node` satisfies `engines.node` | `brew install node@22` |
 | pnpm | required | `pnpm --version` satisfies `engines.pnpm` | `corepack enable` |
-| git | required | `git --version` >= 2.20 and `git worktree -h` works | `brew install git` |
+| git | required | `git --version` >= 2.20 (semver compare; Apple Git suffixes ignored). Worktrees shipped in 2.5; `git worktree -h` exit 129 is usage, not missing. | `brew install git` |
 | GitHub CLI | required | `gh` installed and `gh auth status` succeeds | `brew install gh` / `gh auth login` |
 | Claude auth | required | `apiKeyHelper` (and it runs), API key env, or OAuth credentials | `claude` then `/login` |
 | SQLite schema | required | `PRAGMA user_version` matches and columns exist | Pull latest and restart |

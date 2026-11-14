@@ -2,7 +2,7 @@ import type { PreflightCheck } from "@flightdeck/shared";
 import type { ExecFn } from "../exec/index.ts";
 import { MIN_GIT } from "./engines.ts";
 import type { PreflightCtx } from "./types.ts";
-import { meetsMin, parseTriple } from "./version.ts";
+import { meetsMin, parseGitVersion } from "./version.ts";
 
 export async function checkPnpm(ctx: PreflightCtx): Promise<PreflightCheck> {
   const version = await toolVersion(ctx.exec, "pnpm", ["--version"]);
@@ -34,7 +34,7 @@ export async function checkPnpm(ctx: PreflightCtx): Promise<PreflightCheck> {
 
 export async function checkGit(ctx: PreflightCtx): Promise<PreflightCheck> {
   const raw = await toolOutput(ctx.exec, "git", ["--version"]);
-  const version = raw ? parseTriple(raw)?.join(".") : undefined;
+  const version = raw ? parseGitVersion(raw)?.join(".") : undefined;
   if (!version) {
     return {
       id: "git",
@@ -47,9 +47,10 @@ export async function checkGit(ctx: PreflightCtx): Promise<PreflightCheck> {
       gates: ["shape", "start"],
     };
   }
-  const worktree = await ctx.exec("git", ["worktree", "-h"], { timeoutMs: 5_000 });
+  const help = await ctx.exec("git", ["worktree", "-h"], { timeoutMs: 5_000 });
   const recent = meetsMin(version, `>=${MIN_GIT}`);
-  const ok = recent && worktree.code === 0;
+  const worktree = recent || worktreeHelpOk(help);
+  const ok = recent;
   return {
     id: "git",
     label: "git",
@@ -57,7 +58,7 @@ export async function checkGit(ctx: PreflightCtx): Promise<PreflightCheck> {
     ok,
     status: ok ? "pass" : "fail",
     version,
-    detail: gitDetail(version, recent, worktree.code === 0),
+    detail: gitDetail(version, recent, worktree),
     fix: ok ? undefined : "brew install git",
     gates: ["shape", "start"],
   };
@@ -72,6 +73,12 @@ async function toolOutput(exec: ExecFn, file: string, args: string[]): Promise<s
   const r = await exec(file, args, { timeoutMs: 5_000 });
   if (r.code !== 0) return undefined;
   return `${r.stdout}\n${r.stderr}`.trim();
+}
+
+export function worktreeHelpOk(r: { code: number; stdout: string; stderr: string }): boolean {
+  const text = `${r.stdout}\n${r.stderr}`;
+  if (r.code === 0) return true;
+  return r.code === 129 && /worktree|usage/i.test(text);
 }
 
 function gitDetail(version: string, recent: boolean, worktree: boolean): string {

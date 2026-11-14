@@ -8,7 +8,7 @@ import { checkClaude } from "./check-claude.ts";
 import { checkGh } from "./check-gh.ts";
 import { checkJira } from "./check-jira.ts";
 import { checkNode, nodeTooOld } from "./check-node.ts";
-import { checkGit, checkPnpm } from "./check-tools.ts";
+import { checkGit, checkPnpm, worktreeHelpOk } from "./check-tools.ts";
 import type { PreflightCtx } from "./types.ts";
 
 const engines = { node: ">=22.13.0", pnpm: ">=12.18.0" };
@@ -52,37 +52,57 @@ describe("preflight checks", () => {
     expect(ok).toMatchObject({ ok: true, version: "12.18.0" });
   });
 
-  it("fails when git is missing, old, or lacks worktrees", async () => {
+  it("fails when git is missing or older than 2.20", async () => {
     const missing = await checkGit(ctx(execFor({ git: { code: 1 } })));
     expect(missing).toMatchObject({ ok: false, fix: "brew install git" });
     const old = await checkGit(
       ctx(
         execFor({
-          "git --version": { code: 0, stdout: "git version 2.14.0" },
-          "git worktree -h": { code: 0, stdout: "usage" },
+          "git --version": { code: 0, stdout: "git version 2.9.0" },
+          "git worktree -h": { code: 0, stdout: "usage: git worktree" },
         }),
       ),
     );
     expect(old.detail).toMatch(/too old/);
     expect(old.ok).toBe(false);
-    const noWt = await checkGit(
+  });
+
+  it("accepts Apple Git 2.50 and worktree -h exit 129", async () => {
+    expect(
+      worktreeHelpOk({
+        code: 129,
+        stdout: "",
+        stderr: "usage: git worktree [-h]\n    add\n    list\n    remove\n",
+      }),
+    ).toBe(true);
+    const apple = await checkGit(
       ctx(
         execFor({
-          "git --version": { code: 0, stdout: "git version 2.47.0" },
-          "git worktree -h": { code: 1, stderr: "unknown" },
+          "git --version": { code: 0, stdout: "git version 2.50.1 (Apple Git-155)" },
+          "git worktree -h": { code: 129, stderr: "usage: git worktree add|list|remove" },
         }),
       ),
     );
-    expect(noWt.ok).toBe(false);
-    const ok = await checkGit(
+    expect(apple).toMatchObject({ ok: true, version: "2.50.1" });
+    expect(apple.detail).not.toMatch(/does not support worktrees/);
+    const plain = await checkGit(
       ctx(
         execFor({
-          "git --version": { code: 0, stdout: "git version 2.47.0" },
-          "git worktree -h": { code: 0, stdout: "usage: git worktree" },
+          "git --version": { code: 0, stdout: "2.50.0" },
+          "git worktree -h": { code: 129, stdout: "usage: git worktree" },
         }),
       ),
     );
-    expect(ok).toMatchObject({ ok: true, version: "2.47.0" });
+    expect(plain).toMatchObject({ ok: true, version: "2.50.0" });
+    const olderApple = await checkGit(
+      ctx(
+        execFor({
+          "git --version": { code: 0, stdout: "2.39.5 (Apple Git-154)" },
+          "git worktree -h": { code: 129, stderr: "usage: git worktree" },
+        }),
+      ),
+    );
+    expect(olderApple).toMatchObject({ ok: true, version: "2.39.5" });
   });
 
   it("fails when gh is missing or unauthenticated", async () => {
