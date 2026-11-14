@@ -15,7 +15,7 @@ export function canReply(status: ChangeStatus): boolean {
 }
 
 export function canArchive(status: ChangeStatus): boolean {
-  return status !== "planning" && status !== "implementing" && status !== "reviewing" && status !== "opening_pr";
+  return status !== "planning" && status !== "implementing" && status !== "reviewing" && status !== "opening_pr" && status !== "archived";
 }
 
 export function activeStatuses(): ChangeStatus[] {

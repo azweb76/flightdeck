@@ -24,9 +24,11 @@ export async function runLive(change: Change, answer?: string): Promise<void> {
 
   if (!answer && change.status === "asking") return;
 
+  let guidance = answer;
   while (change.reviewRound < MAX_REVIEW_ROUNDS) {
     setStage(change, "implementing", "implement", "Implement");
-    await collect(change, "implement", implementPrompt(change, answer), cwd, settings.model, env);
+    await collect(change, "implement", implementPrompt(change, guidance), cwd, settings.model, env);
+    guidance = undefined;
     if (stopped(change)) return;
     const gates = await runGates(cwd);
     log(change, { kind: "system", title: "gates", detail: gates.detail });
@@ -51,6 +53,7 @@ export async function runLive(change: Change, answer?: string): Promise<void> {
       change.prNumber = pr.number;
       await commentPrLink(change, pr.url);
       log(change, { kind: "system", title: "draft pr", detail: `Opened draft PR ${pr.url}` });
+      log(change, { kind: "system", title: "issue comment", detail: `Commented ${pr.url} on ${change.issueKey}.` });
       change.status = "done";
       change.stage = "ci";
       log(change, { kind: "system", title: "ci", detail: "CI watch is a Phase 4 placeholder." });

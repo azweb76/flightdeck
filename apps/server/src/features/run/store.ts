@@ -10,6 +10,7 @@ type ChangeRow = {
   issue_url: string;
   repo_slug: string;
   title: string;
+  issue_body: string;
   status: ChangeStatus;
   stage: Change["stage"];
   review_round: number;
@@ -46,6 +47,7 @@ export function insertChange(issue: Issue, scenario: string, worktreePath: strin
     issueUrl: issue.url,
     repoSlug: issue.repoSlug ?? "",
     title: issue.title,
+    issueBody: issue.body,
     status: "planning",
     stage: "plan",
     reviewRound: 0,
@@ -60,9 +62,9 @@ export function insertChange(issue: Issue, scenario: string, worktreePath: strin
   };
   getDb()
     .prepare(
-      `INSERT INTO changes (id, issue_id, issue_key, issue_source, issue_url, repo_slug, title, status, stage,
+      `INSERT INTO changes (id, issue_id, issue_key, issue_source, issue_url, repo_slug, title, issue_body, status, stage,
         review_round, worktree_path, branch, plan_text, cost_usd, pr_url, pr_number, scenario, ask_json, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       change.id,
@@ -72,6 +74,7 @@ export function insertChange(issue: Issue, scenario: string, worktreePath: strin
       change.issueUrl,
       change.repoSlug,
       change.title,
+      change.issueBody,
       change.status,
       change.stage,
       change.reviewRound,
@@ -114,7 +117,7 @@ export function saveChange(change: Change): void {
   getDb()
     .prepare(
       `UPDATE changes SET status=?, stage=?, review_round=?, worktree_path=?, branch=?, plan_text=?, cost_usd=?,
-        pr_url=?, pr_number=?, scenario=?, ask_json=?, updated_at=? WHERE id=?`,
+        pr_url=?, pr_number=?, scenario=?, ask_json=?, issue_body=?, updated_at=? WHERE id=?`,
     )
     .run(
       change.status,
@@ -128,6 +131,7 @@ export function saveChange(change: Change): void {
       change.prNumber ?? null,
       change.scenario ?? null,
       change.ask ? JSON.stringify(change.ask) : null,
+      change.issueBody,
       change.updatedAt,
       change.id,
     );
@@ -146,7 +150,7 @@ export function addEvent(change: Change, ev: Omit<ChangeEvent, "id" | "at">): Ch
 
 export function dailySpendUsd(day = new Date().toISOString().slice(0, 10)): number {
   const row = getDb()
-    .prepare(`SELECT COALESCE(SUM(cost_usd), 0) AS n FROM changes WHERE substr(updated_at, 1, 10) = ? AND status != 'archived'`)
+    .prepare(`SELECT COALESCE(SUM(cost_usd), 0) AS n FROM change_events WHERE substr(at, 1, 10) = ?`)
     .get(day) as { n: number };
   return row.n;
 }
@@ -182,6 +186,7 @@ function fromRow(row: ChangeRow, events: ChangeEvent[]): Change {
     issueUrl: row.issue_url,
     repoSlug: row.repo_slug,
     title: row.title,
+    issueBody: row.issue_body ?? "",
     status: row.status,
     stage: row.stage,
     reviewRound: row.review_round,

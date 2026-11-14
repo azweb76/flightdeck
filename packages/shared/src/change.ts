@@ -45,6 +45,7 @@ export const ChangeSchema = z.object({
   issueUrl: z.string().default(""),
   repoSlug: z.string(),
   title: z.string(),
+  issueBody: z.string().default(""),
   status: ChangeStatusSchema,
   stage: ChangeStageSchema,
   reviewRound: z.number().int().min(0),
