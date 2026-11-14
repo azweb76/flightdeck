@@ -1,5 +1,13 @@
 import { expect, type Page } from "@playwright/test";
 
+export async function setPreflight(page: Page, fixture: "pass" | "fail"): Promise<void> {
+  const apiPort = process.env.FLIGHTDECK_PORT ?? "47421";
+  const res = await page.request.post(`http://127.0.0.1:${apiPort}/api/demo/preflight`, {
+    data: { fixture },
+  });
+  expect(res.ok()).toBeTruthy();
+}
+
 export async function resetDemo(page: Page, seed: boolean): Promise<void> {
   const apiPort = process.env.FLIGHTDECK_PORT ?? "47421";
   const res = await page.request.post(`http://127.0.0.1:${apiPort}/api/demo/reset`, {

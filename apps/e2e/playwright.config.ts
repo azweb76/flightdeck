@@ -7,6 +7,7 @@ const dataDir = process.env.FLIGHTDECK_DATA_DIR ?? mkdtempSync(join(tmpdir(), "f
 const apiPort = process.env.FLIGHTDECK_PORT ?? "47421";
 const webPort = process.env.FLIGHTDECK_WEB_PORT ?? "47422";
 const shots = process.env.PHASE1_SHOTS === "1";
+const preflightShots = process.env.PREFLIGHT_SHOTS === "1";
 process.env.FLIGHTDECK_DATA_DIR = dataDir;
 process.env.FLIGHTDECK_DEMO = "1";
 process.env.FLIGHTDECK_PORT = apiPort;
@@ -23,7 +24,11 @@ const env = {
 
 export default defineConfig({
   testDir: ".",
-  testMatch: shots ? ["screenshots.spec.ts"] : ["phase1.spec.ts"],
+  testMatch: shots
+    ? ["screenshots.spec.ts"]
+    : preflightShots
+      ? ["preflight-shots.spec.ts"]
+      : ["phase1.spec.ts", "preflight.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,

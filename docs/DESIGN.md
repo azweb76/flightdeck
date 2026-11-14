@@ -81,9 +81,25 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 | Jira JQL search | 60s | Jira settings save/connect; after Jira create/update; Refresh |
 | Jira connect `myself` | 2 min | Jira settings save/connect; after Jira create/update |
 | `detectClaudeConfig` (including apiKeyHelper) | 2 min | Settings save; Settings Re-check |
+| Preflight report (`GET /api/preflight`) | 30s | `?refresh=1`, `POST /api/preflight/recheck`, Settings save |
 | `git fetch origin` | 60s | TTL only |
 
 `issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or gh "API rate limit exceeded" / secondary rate limit, Flightdeck backs off (capped) and returns `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s and gh stderr.
+
+## Preflight
+Startup and `pnpm preflight` run the same checks. Required failures print a one-line fix and do not crash the server (the UI can show them), except Node itself being below `package.json` `engines`. `GET /api/preflight` returns the report; cache keys and logs never include secrets.
+
+| Check | Required? | Pass when | Fix if not |
+|---|---|---|---|
+| Node.js | required | `process.versions.node` satisfies `engines.node` | `brew install node@22` |
+| pnpm | required | `pnpm --version` satisfies `engines.pnpm` | `corepack enable` |
+| git | required | `git --version` >= 2.20 and `git worktree -h` works | `brew install git` |
+| GitHub CLI | required | `gh` installed and `gh auth status` succeeds | `brew install gh` / `gh auth login` |
+| Claude auth | required | `apiKeyHelper` (and it runs), API key env, or OAuth credentials | `claude` then `/login` |
+| SQLite schema | required | `PRAGMA user_version` matches and columns exist | Pull latest and restart |
+| Jira | optional | skipped if unset; warn if configured without a working token | Add a Jira API token in Settings |
+
+Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report for screenshots and e2e. The Issues banner lists required failures; Settings → Dependencies lists all checks. Shape / Start / Save to GitHub disable only when that dependency failed.
 
 ## Screens
 - Home: My issues, ready to shape or start.

@@ -6,6 +6,7 @@
   "scripts": {
     "test": "playwright test",
     "shots": "PHASE1_SHOTS=1 playwright test",
+    "preflight-shots": "PREFLIGHT_SHOTS=1 playwright test",
     "postinstall": "playwright install chromium"
   },
   "devDependencies": {
