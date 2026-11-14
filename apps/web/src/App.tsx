@@ -4,9 +4,11 @@ import { IssuesPage } from "./pages/IssuesPage.tsx";
 import { PlaceholderPage } from "./pages/PlaceholderPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { ShapePage } from "./pages/ShapePage.tsx";
+import { PreflightProvider } from "./preflight/PreflightContext.tsx";
 
 export function App() {
   return (
+    <PreflightProvider>
     <Routes>
       <Route element={<AppShell />}>
         <Route path="/" element={<IssuesPage />} />
@@ -45,5 +47,6 @@ export function App() {
         <Route path="/shape/:id" element={<ShapePage />} />
       </Route>
     </Routes>
+    </PreflightProvider>
   );
 }

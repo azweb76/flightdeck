@@ -3,6 +3,7 @@ import { JIRA_API_TOKEN_URL, type CatalogRepo, type Settings } from "@flightdeck
 import { useColorScheme } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
 import { api, type AppStatus } from "../api.ts";
+import { PreflightSection } from "../preflight/PreflightSection.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
 export function SettingsPage() {
@@ -42,6 +43,7 @@ export function SettingsPage() {
           {error}
         </Alert>
       ) : null}
+      <PreflightSection />
       <StatusCards
         status={status}
         repos={repos}

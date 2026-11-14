@@ -1,8 +1,10 @@
-import { Alert, Box, Button, Chip, Link, Paper, Stack, Tooltip, Typography } from "@mui/material";
+import { Alert, Box, Button, Chip, Link, Paper, Stack, Typography } from "@mui/material";
 import type { Issue } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { api } from "../api.ts";
+import { GatedButton } from "../preflight/GatedButton.tsx";
+import { PreflightBanner } from "../preflight/PreflightBanner.tsx";
 import { useAppEvents } from "../useAppEvents.ts";
 import { RepoPickDialog } from "./RepoPickDialog.tsx";
 import { StartIdeaDialog } from "./StartIdeaDialog.tsx";
@@ -43,6 +45,7 @@ export function IssuesPage() {
 
   return (
     <Stack spacing={4}>
+      <PreflightBanner />
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
         <Box>
           <Typography variant="h4">My issues</Typography>
@@ -54,9 +57,14 @@ export function IssuesPage() {
           <Button variant="outlined" onClick={() => void pull("sync")} data-testid="refresh-issues">
             Refresh
           </Button>
-          <Button variant="contained" onClick={() => setOpen(true)} data-testid="new-idea">
+          <GatedButton
+            gate="shape"
+            variant="contained"
+            onClick={() => setOpen(true)}
+            testId="new-idea"
+          >
             New idea
-          </Button>
+          </GatedButton>
         </Stack>
       </Stack>
       {error ? <Alert severity="error">{error}</Alert> : null}
@@ -143,16 +151,18 @@ function IssueList(props: { issues: Issue[]; busy?: string; onShape: (issue: Iss
               ) : null}
             </Box>
             <Stack direction="row" gap={1}>
-              <Button variant="outlined" disabled={props.busy === issue.id} onClick={() => props.onShape(issue)} data-testid={`shape-${issue.key}`}>
+              <GatedButton
+                gate="shape"
+                variant="outlined"
+                disabled={props.busy === issue.id}
+                onClick={() => props.onShape(issue)}
+                testId={`shape-${issue.key}`}
+              >
                 Shape
-              </Button>
-              <Tooltip title="Coming in Phase 2">
-                <span>
-                  <Button variant="text" disabled data-testid={`start-${issue.key}`}>
-                    Start
-                  </Button>
-                </span>
-              </Tooltip>
+              </GatedButton>
+              <GatedButton gate="start" variant="text" disabled fallbackTitle="Coming in Phase 2" testId={`start-${issue.key}`}>
+                Start
+              </GatedButton>
             </Stack>
           </Stack>
         </Paper>

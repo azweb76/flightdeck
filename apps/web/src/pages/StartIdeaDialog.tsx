@@ -2,6 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Se
 import type { CatalogRepo } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
+import { GatedButton } from "../preflight/GatedButton.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
 export function StartIdeaDialog(props: {
@@ -71,9 +72,15 @@ export function StartIdeaDialog(props: {
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
         <Button onClick={props.onClose}>Cancel</Button>
-        <Button variant="contained" disabled={busy || !repo || !idea.trim()} onClick={start} data-testid="start-idea">
+        <GatedButton
+          gate="shape"
+          variant="contained"
+          disabled={busy || !repo || !idea.trim()}
+          onClick={start}
+          testId="start-idea"
+        >
           Shape
-        </Button>
+        </GatedButton>
       </DialogActions>
     </Dialog>
   );

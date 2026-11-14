@@ -1,8 +1,9 @@
-import { Alert, Box, Button, Stack, Tooltip, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import type { AppEvent, ShapeSession } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api.ts";
+import { GatedButton } from "../preflight/GatedButton.tsx";
 import { sessionFromEvent, useAppEvents } from "../useAppEvents.ts";
 import { ChatPane } from "./ChatPane.tsx";
 import { DraftPane } from "./DraftPane.tsx";
@@ -99,13 +100,9 @@ function Header(props: { session: ShapeSession; saved: boolean; onSave: () => vo
         <Button variant="outlined" disabled={props.saved} onClick={props.onSave} data-testid="save-issue">
           Save issue
         </Button>
-        <Tooltip title="Coming in Phase 2">
-          <span>
-            <Button variant="text" disabled data-testid="start-run">
-              Start
-            </Button>
-          </span>
-        </Tooltip>
+        <GatedButton gate="start" variant="text" disabled fallbackTitle="Coming in Phase 2" testId="start-run">
+          Start
+        </GatedButton>
       </Stack>
     </Stack>
   );

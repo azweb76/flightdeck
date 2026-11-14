@@ -6,6 +6,7 @@ import type {
   ShapeSession,
   ClaudeStatus,
   GithubStatus,
+  PreflightReport,
 } from "@flightdeck/shared";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -53,6 +54,10 @@ export const api = {
     }),
   claudeLogin: () => req<{ ok: boolean; detail: string }>("/api/claude/login", { method: "POST" }),
   recheckClaude: () => req<ClaudeStatus>("/api/claude/recheck", { method: "POST" }),
+  preflight: (refresh = false) => req<PreflightReport>(`/api/preflight${refresh ? "?refresh=1" : ""}`),
+  recheckPreflight: () => req<PreflightReport>("/api/preflight/recheck", { method: "POST" }),
+  setDemoPreflight: (fixture: "pass" | "fail") =>
+    req<PreflightReport>("/api/demo/preflight", { method: "POST", body: JSON.stringify({ fixture }) }),
   resetDemo: (seed: boolean) =>
     req<{ ok: boolean }>("/api/demo/reset", { method: "POST", body: JSON.stringify({ seed }) }),
 };
