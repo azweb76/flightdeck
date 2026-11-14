@@ -7,13 +7,13 @@ const report = (ok: boolean): PreflightReport => ({
   demo: true,
   checks: [
     {
-      id: "gh",
-      label: "GitHub CLI",
+      id: "github",
+      label: "GitHub token",
       severity: "required",
       ok,
       status: ok ? "pass" : "fail",
-      detail: "gh is installed but not logged in",
-      fix: "gh auth login",
+      detail: "No GitHub token stored",
+      fix: "Add a GitHub token in Settings",
       gates: ["shape", "start", "saveGithub"],
     },
     {
@@ -31,8 +31,8 @@ const report = (ok: boolean): PreflightReport => ({
 describe("blockedBy", () => {
   it("gates only required failures for the matching action", () => {
     const fail = report(false);
-    expect(blockedBy(fail, "saveGithub")?.id).toBe("gh");
-    expect(blockedBy(fail, "shape")?.id).toBe("gh");
+    expect(blockedBy(fail, "saveGithub")?.id).toBe("github");
+    expect(blockedBy(fail, "shape")?.id).toBe("github");
     expect(blockedBy(fail, "saveJira")?.id).toBe("jira");
     expect(blockedBy(report(true), "shape")).toBeUndefined();
     expect(blockedBy(report(true), "saveJira")?.id).toBe("jira");

@@ -61,6 +61,10 @@ export const GithubStatusSchema = z.object({
   installed: z.boolean(),
   loggedIn: z.boolean(),
   user: z.string().optional(),
+  scopes: z.array(z.string()).optional(),
+  hasToken: z.boolean().optional(),
+  storage: z.enum(["keychain", "file"]).optional(),
+  oauthAvailable: z.boolean().optional(),
   detail: z.string(),
 });
 export type GithubStatus = z.infer<typeof GithubStatusSchema>;

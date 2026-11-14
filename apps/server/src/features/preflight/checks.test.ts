@@ -5,7 +5,8 @@ import { SettingsSchema } from "@flightdeck/shared";
 import { describe, expect, it } from "vitest";
 import type { ExecFn } from "../exec/index.ts";
 import { checkClaude } from "./check-claude.ts";
-import { checkGh } from "./check-gh.ts";
+import { setDemoGithubMode } from "../github/index.ts";
+import { checkGithub } from "./check-github.ts";
 import { checkJira } from "./check-jira.ts";
 import { checkNode, nodeTooOld } from "./check-node.ts";
 import { checkGit, checkPnpm, worktreeHelpOk } from "./check-tools.ts";
@@ -105,28 +106,22 @@ describe("preflight checks", () => {
     expect(olderApple).toMatchObject({ ok: true, version: "2.39.5" });
   });
 
-  it("fails when gh is missing or unauthenticated", async () => {
-    const missing = await checkGh(ctx(execFor({ gh: { code: 1 } })));
-    expect(missing).toMatchObject({ ok: false, fix: "brew install gh" });
-    const loggedOut = await checkGh(
-      ctx(
-        execFor({
-          "gh --version": { code: 0, stdout: "gh 2.67.0" },
-          "gh auth status": { code: 1, stderr: "not logged in" },
-        }),
-      ),
-    );
-    expect(loggedOut).toMatchObject({ ok: false, fix: "gh auth login" });
-    const ok = await checkGh(
-      ctx(
-        execFor({
-          "gh --version": { code: 0, stdout: "gh 2.67.0" },
-          "gh auth status": { code: 0, stderr: "Logged in to github.com account dan" },
-        }),
-      ),
-    );
+  it("requires a GitHub token in Settings", async () => {
+    process.env.FLIGHTDECK_DEMO = "1";
+    setDemoGithubMode("empty");
+    const missing = await checkGithub();
+    expect(missing).toMatchObject({ id: "github", ok: false, fix: "Add a GitHub token in Settings" });
+    setDemoGithubMode("error");
+    expect((await checkGithub()).ok).toBe(false);
+    setDemoGithubMode("scopes");
+    const scopes = await checkGithub();
+    expect(scopes.ok).toBe(false);
+    expect(scopes.detail).toMatch(/missing scopes/);
+    setDemoGithubMode("connected");
+    const ok = await checkGithub();
     expect(ok.ok).toBe(true);
-    expect(ok.detail).toContain("dan");
+    expect(ok.detail).toContain("dan-demo");
+    delete process.env.FLIGHTDECK_DEMO;
   });
 
   it("reuses Claude detect for missing, failed helper, and OAuth", async () => {

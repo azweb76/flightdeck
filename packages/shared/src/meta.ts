@@ -6,6 +6,10 @@ export const DEFAULT_PORT = 47321;
 export const DEFAULT_HOST = "127.0.0.1";
 export const DEFAULT_THEME = "system" as const;
 export const JIRA_TOKEN_ACCOUNT = "jira-api-token";
+export const GITHUB_TOKEN_ACCOUNT = "github-token";
+export const GITHUB_NEEDED_SCOPES = ["repo", "read:org", "workflow"] as const;
+export const GITHUB_PAT_URL =
+  "https://github.com/settings/tokens/new?description=Flightdeck&scopes=repo,read:org,workflow";
 export const DEFAULT_JIRA_JQL =
   "assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC";
 export const DEFAULT_DOLLAR_CAP_USD = 10;

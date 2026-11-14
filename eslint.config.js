@@ -9,7 +9,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/build/**", "coverage/**"],
+    ignores: ["**/dist/**", "**/node_modules/**", "**/build/**", "coverage/**", "**/askpass.mjs"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

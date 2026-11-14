@@ -6,14 +6,14 @@ See [docs/DESIGN.md](docs/DESIGN.md). v1 lives on the `v1-archive` branch.
 
 ## Run on a Mac
 
-Need Node 22.13+ and [pnpm](https://pnpm.io/) 12.18+. GitHub uses `gh auth login`. Claude uses `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, or open a terminal, run `claude`, then type `/login`. Jira is email + API token in Settings.
+Need Node 22.13+ and [pnpm](https://pnpm.io/) 12.18+. GitHub uses a personal access token in Settings (git CLI still handles clone/fetch/worktree). Claude uses `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, or open a terminal, run `claude`, then type `/login`. Jira is email + API token in Settings.
 
 ```bash
 pnpm install
 pnpm preflight
 ```
 
-`pnpm preflight` checks Node, pnpm, git (worktrees), `gh auth status`, Claude auth, SQLite schema, and Jira (optional). Required failures exit non-zero with a one-line fix. The same checks run when the server starts; missing tools are shown in the UI instead of crashing, unless Node is too old.
+`pnpm preflight` checks Node, pnpm, git (worktrees), GitHub token, Claude auth, SQLite schema, and Jira (optional). Required failures exit non-zero with a one-line fix. The same checks run when the server starts; missing tools are shown in the UI instead of crashing, unless Node is too old.
 
 `pnpm install` also installs Playwright Chromium (needed for `pnpm check`). If browsers are missing later: `pnpm --filter @flightdeck/e2e exec playwright install chromium`.
 

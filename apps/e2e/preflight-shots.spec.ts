@@ -100,7 +100,7 @@ test("save tracker cards gated", async ({ page }) => {
   await startNewIdea(page);
   await setPreflight(page, "fail");
   await page.getByTestId("save-issue").click({ force: true });
-  await expect(page.getByTestId("tracker-github")).toContainText("gh auth login");
+  await expect(page.getByTestId("tracker-github")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("tracker-jira")).toContainText("Add a Jira API token");
   await page.getByTestId("tracker-github").click();
   await expect(page.getByTestId("tracker-gate-hint")).toBeVisible();

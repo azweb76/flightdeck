@@ -4,7 +4,7 @@ export { formatPreflight, printPreflight } from "./print.ts";
 export { demoPreflightFixture, setDemoPreflightFixture, resetDemoPreflightFixture } from "./demo.ts";
 export { checkNode, nodeTooOld } from "./check-node.ts";
 export { checkPnpm, checkGit, worktreeHelpOk } from "./check-tools.ts";
-export { checkGh } from "./check-gh.ts";
+export { checkGithub } from "./check-github.ts";
 export { checkClaude } from "./check-claude.ts";
 export { checkJira } from "./check-jira.ts";
 export { liveContext } from "./context.ts";

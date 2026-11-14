@@ -5,6 +5,7 @@ import { rememberRepo } from "../clone/index.ts";
 import { getDb } from "../db/index.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { patchSettings } from "../settings/index.ts";
+import { resetDemoGithubMode } from "../github/index.ts";
 import { setJiraLastError } from "../status/index.ts";
 
 const NOW = "2026-11-12T12:00:00.000Z";
@@ -30,6 +31,7 @@ export function seedDemo(): void {
 
 export function resetDemo(opts: { seed: boolean }): void {
   setJiraLastError(undefined);
+  resetDemoGithubMode();
   resetDemoPreflightFixture();
   getCache().invalidate("*");
   getDb().exec("DELETE FROM issues; DELETE FROM repos; DELETE FROM shape_sessions; DELETE FROM settings;");

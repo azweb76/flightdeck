@@ -69,5 +69,5 @@ export function TrackerChoice(props: {
 }
 
 function needsLabel(title: string): string {
-  return title === "GitHub" ? "gh" : title;
+  return title === "GitHub" ? "a token" : title;
 }

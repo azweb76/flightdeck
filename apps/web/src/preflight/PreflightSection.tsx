@@ -10,7 +10,7 @@ export function PreflightSection() {
         <div>
           <Typography variant="h6">Dependencies</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Preflight checks for Node, pnpm, git, GitHub CLI, Claude, Jira, and the local database.
+            Preflight checks for Node, pnpm, git, GitHub token, Claude, Jira, and the local database.
           </Typography>
         </div>
         <Button variant="outlined" onClick={() => void recheck()} data-testid="preflight-recheck">

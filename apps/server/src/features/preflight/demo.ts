@@ -1,5 +1,6 @@
 import type { PreflightCheck, PreflightReport } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache } from "../cache/index.ts";
+import { demoGithubMode } from "../github/demo.ts";
 import type { DemoPreflightFixture } from "./types.ts";
 
 let fixture: DemoPreflightFixture | undefined;
@@ -21,7 +22,7 @@ export function resetDemoPreflightFixture(): void {
 }
 
 export function passingChecks(database: PreflightCheck): PreflightCheck[] {
-  return [pass("node", "Node.js", process.versions.node), pass("pnpm", "pnpm", "12.18.0"), pass("git", "git", "2.47.0"), passGh(), passClaude(), passJira(), database];
+  return [pass("node", "Node.js", process.versions.node), pass("pnpm", "pnpm", "12.18.0"), pass("git", "git", "2.47.0"), githubDemoCheck(), passClaude(), passJira(), database];
 }
 
 export function failingChecks(database: PreflightCheck): PreflightCheck[] {
@@ -40,13 +41,13 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
       gates: ["shape", "start"],
     },
     {
-      id: "gh",
-      label: "GitHub CLI",
+      id: "github",
+      label: "GitHub token",
       severity: "required",
       ok: false,
       status: "fail",
-      detail: "gh is installed but not logged in",
-      fix: "gh auth login",
+      detail: "No GitHub token stored",
+      fix: "Add a GitHub token in Settings",
       gates: ["shape", "start", "saveGithub"],
     },
     {
@@ -95,14 +96,35 @@ function pass(id: string, label: string, version: string): PreflightCheck {
   };
 }
 
-function passGh(): PreflightCheck {
+function githubDemoCheck(): PreflightCheck {
+  const mode = demoGithubMode();
+  if (mode === "connected") return passGithub();
+  const detail =
+    mode === "error"
+      ? "GitHub token was rejected (401). Create a new PAT and paste it in Settings."
+      : mode === "scopes"
+        ? "Connected as dan-demo but missing scopes: read:org, workflow. Need repo, read:org, workflow."
+        : "No GitHub token stored";
   return {
-    id: "gh",
-    label: "GitHub CLI",
+    id: "github",
+    label: "GitHub token",
+    severity: "required",
+    ok: false,
+    status: "fail",
+    detail,
+    fix: "Add a GitHub token in Settings",
+    gates: ["shape", "start", "saveGithub"],
+  };
+}
+
+function passGithub(): PreflightCheck {
+  return {
+    id: "github",
+    label: "GitHub token",
     severity: "required",
     ok: true,
     status: "pass",
-    detail: "gh logged in as dan-demo (demo)",
+    detail: "Connected as dan-demo (demo); scopes repo, read:org, workflow",
     gates: ["shape", "start", "saveGithub"],
   };
 }
