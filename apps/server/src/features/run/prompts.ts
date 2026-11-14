@@ -27,5 +27,5 @@ export function reviewPrompt(change: Change): string {
   return `You are a fresh reviewer. You did not write this code. Check the diff against every acceptance criterion.
 ${issueContext(change)}
 End with APPROVE if every criterion is met, or CHANGES_NEEDED with a bullet list if not.
-This is review round ${change.reviewRound} of 3.`;
+This is review round ${change.reviewRound}${change.reviewRound > 3 ? " (follow-up after Dan answered)" : " of 3"}.`;
 }

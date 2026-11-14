@@ -56,4 +56,10 @@ describe("run prompts", () => {
     expect(implementPrompt(change)).not.toContain("Dan answered");
     expect(reviewPrompt(change)).not.toContain("Paid only");
   });
+
+  it("does not claim round 4 of 3 after Dan answers", () => {
+    expect(reviewPrompt(stub({ reviewRound: 4 }))).toContain("review round 4 (follow-up after Dan answered)");
+    expect(reviewPrompt(stub({ reviewRound: 4 }))).not.toContain("of 3");
+    expect(reviewPrompt(stub({ reviewRound: 3 }))).toContain("review round 3 of 3");
+  });
 });
