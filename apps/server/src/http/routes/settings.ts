@@ -1,10 +1,11 @@
 import type { Hono } from "hono";
 import { SettingsPatchSchema } from "@flightdeck/shared";
-import { getSettings, patchSettings } from "../../features/settings/index.ts";
-import { createSecretStore } from "../../features/secrets/index.ts";
-import { createJiraClient } from "../../features/jira/index.ts";
+import { CACHE_KEYS, getCache } from "../../features/cache/index.ts";
 import { claudeLoginInstructions } from "../../features/claude/index.ts";
-import { setJiraLastError } from "../../features/status/index.ts";
+import { createJiraClient } from "../../features/jira/index.ts";
+import { createSecretStore } from "../../features/secrets/index.ts";
+import { getSettings, patchSettings } from "../../features/settings/index.ts";
+import { appStatus, setJiraLastError } from "../../features/status/index.ts";
 import { fail } from "../errors.ts";
 
 export function mountSettings(app: Hono): void {
@@ -14,6 +15,10 @@ export function mountSettings(app: Hono): void {
     return c.json(patchSettings(patch));
   });
   app.post("/api/claude/login", (c) => c.json(claudeLoginInstructions()));
+  app.post("/api/claude/recheck", async (c) => {
+    getCache().invalidate(CACHE_KEYS.claudeConfig);
+    return c.json((await appStatus()).claude);
+  });
   app.post("/api/jira/connect", async (c) => {
     const body = await c.req.json<{ siteUrl?: string; email?: string; token?: string; projectKey?: string }>();
     if (!body.siteUrl || !body.email) fail("Site URL and email are required");
@@ -21,6 +26,7 @@ export function mountSettings(app: Hono): void {
     const token = body.token?.trim() || (await createSecretStore().get());
     if (!token) fail("Paste a Jira API token, or connect once so we can reuse the stored token");
     try {
+      getCache().invalidate(CACHE_KEYS.jiraAll);
       const test = await createJiraClient().test(body.siteUrl, body.email, token);
       if (body.token?.trim()) await createSecretStore().set(body.token.trim());
       setJiraLastError(undefined);

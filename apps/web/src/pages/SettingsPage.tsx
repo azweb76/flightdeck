@@ -42,7 +42,12 @@ export function SettingsPage() {
           {error}
         </Alert>
       ) : null}
-      <StatusCards status={status} repos={repos} onClaudeHint={() => void api.claudeLogin().then((r) => setError(r.detail))} />
+      <StatusCards
+        status={status}
+        repos={repos}
+        onClaudeHint={() => void api.claudeLogin().then((r) => setError(r.detail))}
+        onClaudeRecheck={() => void api.recheckClaude().then(() => reload()).catch((e: Error) => setError(e.message))}
+      />
       <CapsForm
         settings={settings}
         onSaved={async (patch) => {
@@ -65,7 +70,12 @@ export function SettingsPage() {
   );
 }
 
-function StatusCards(props: { status: AppStatus; repos: CatalogRepo[]; onClaudeHint: () => void }) {
+function StatusCards(props: {
+  status: AppStatus;
+  repos: CatalogRepo[];
+  onClaudeHint: () => void;
+  onClaudeRecheck: () => void;
+}) {
   const { claude, github, jira } = props.status;
   return (
     <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" } }}>
@@ -77,11 +87,16 @@ function StatusCards(props: { status: AppStatus; repos: CatalogRepo[]; onClaudeH
         <Typography color="text.secondary" sx={{ mt: 1, whiteSpace: "pre-wrap" }}>
           {claude.detail}
         </Typography>
-        {!claude.found ? (
-          <Button sx={{ mt: 2 }} variant="outlined" onClick={props.onClaudeHint} data-testid="claude-login">
-            How to log in
+        <Stack direction="row" gap={1} sx={{ mt: 2 }}>
+          <Button variant="outlined" onClick={props.onClaudeRecheck} data-testid="claude-recheck">
+            Re-check
           </Button>
-        ) : null}
+          {!claude.found ? (
+            <Button variant="outlined" onClick={props.onClaudeHint} data-testid="claude-login">
+              How to log in
+            </Button>
+          ) : null}
+        </Stack>
       </Paper>
       <Paper sx={{ p: 3, border: 1, borderColor: "divider" }} data-testid="github-status">
         <Typography variant="overline" color="text.secondary">

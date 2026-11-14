@@ -86,6 +86,8 @@ test("Settings shows Claude, GitHub, Jira, repos and caps", async ({ page }) => 
   await expect(page.getByTestId("cap-daily")).toHaveValue("50");
   await expect(page.getByTestId("cap-concurrent")).toHaveValue("3");
   await expect(page.getByTestId("github-status")).not.toContainText("gh auth login");
+  await page.getByTestId("claude-recheck").click();
+  await expect(page.getByTestId("claude-status")).toContainText("apiKeyHelper");
   await page.getByTestId("cap-run").fill("12");
   await page.getByTestId("cap-run").blur();
   await expect(page.getByText("Caps saved")).toBeVisible();

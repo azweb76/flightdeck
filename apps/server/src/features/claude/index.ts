@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ClaudeStatus } from "@flightdeck/shared";
+import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 
 type ClaudeSettings = { apiKeyHelper?: string; env?: Record<string, string>; ANTHROPIC_BASE_URL?: string };
@@ -11,6 +12,14 @@ export type ClaudeDeps = { exec?: ExecFn; home?: string; env?: NodeJS.ProcessEnv
 export const CLAUDE_LOGIN_HINT = "In a terminal run: claude\nThen type /login and finish in the browser.";
 
 export async function detectClaudeConfig(deps: ClaudeDeps = {}): Promise<ClaudeStatus> {
+  const custom = Boolean(deps.home || deps.env || deps.exec);
+  if (!custom) {
+    return getCache().get(CACHE_KEYS.claudeConfig, () => readClaudeConfig(deps), TTL.claudeConfig);
+  }
+  return readClaudeConfig(deps);
+}
+
+async function readClaudeConfig(deps: ClaudeDeps): Promise<ClaudeStatus> {
   const home = deps.home ?? homedir();
   const env = deps.env ?? process.env;
   const exec = deps.exec ?? defaultExec;

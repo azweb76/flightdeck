@@ -52,6 +52,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
   claudeLogin: () => req<{ ok: boolean; detail: string }>("/api/claude/login", { method: "POST" }),
+  recheckClaude: () => req<ClaudeStatus>("/api/claude/recheck", { method: "POST" }),
   resetDemo: (seed: boolean) =>
     req<{ ok: boolean }>("/api/demo/reset", { method: "POST", body: JSON.stringify({ seed }) }),
 };
