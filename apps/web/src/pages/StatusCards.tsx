@@ -29,7 +29,7 @@ export function StatusCards(props: {
           GitHub
         </Typography>
         <Typography variant="h6">{githubCardTitle(github)}</Typography>
-        <Typography color="text.secondary" sx={{ mt: 1 }}>
+        <Typography color="text.secondary" sx={{ mt: 1 }} data-testid="github-status-detail">
           {github.detail}
         </Typography>
       </Paper>

@@ -1,5 +1,5 @@
 import { Alert, Box, Button, Link, Paper, Stack, TextField, Typography } from "@mui/material";
-import { GITHUB_PAT_URL, type GithubStatus } from "@flightdeck/shared";
+import { GITHUB_PAT_URL, githubTokenSourceLabel, type GithubStatus } from "@flightdeck/shared";
 import { useState } from "react";
 import { api } from "../api.ts";
 import { ContrastAlert } from "../ui/ContrastAlert.tsx";
@@ -11,6 +11,8 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
   const connected = props.status.loggedIn;
+  const sourceLabel = githubTokenSourceLabel(props.status.tokenSource);
+  const envWins = props.status.tokenSource === "GITHUB_TOKEN" || props.status.tokenSource === "GH_TOKEN";
 
   async function save() {
     setErr("");
@@ -41,7 +43,7 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
       <Typography variant="h6" sx={{ mb: 1 }}>
         GitHub
       </Typography>
-      <GithubHelp />
+      <GithubHelp envWins={envWins} sourceLabel={sourceLabel} />
       {err ? (
         <ContrastAlert sx={{ mb: 2 }} data-testid="github-form-error">
           {err}
@@ -53,7 +55,7 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
         </Alert>
       ) : null}
       <Box sx={{ maxWidth: 480 }}>
-        <FormField label="Personal access token" hint={connected ? "Leave blank unless you are replacing the stored token." : "Never stored in the database."}>
+        <FormField label="Personal access token" hint={tokenHint(envWins, sourceLabel, connected)}>
           <TextField
             type="password"
             value={token}
@@ -77,9 +79,22 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
   );
 }
 
-function GithubHelp() {
+function tokenHint(envWins: boolean, sourceLabel: string, connected: boolean): string {
+  if (envWins) {
+    return `${sourceLabel}. A pasted token is stored for later; the environment variable wins until you unset it.`;
+  }
+  if (connected) return "Leave blank unless you are replacing the stored token.";
+  return "Never stored in the database. GITHUB_TOKEN or GH_TOKEN in the environment overrides this.";
+}
+
+function GithubHelp(props: { envWins: boolean; sourceLabel: string }) {
   return (
     <Stack spacing={0.5} sx={{ mb: 2 }} data-testid="github-help">
+      {props.sourceLabel ? (
+        <Typography variant="body2" data-testid="github-token-source">
+          {props.sourceLabel}.
+        </Typography>
+      ) : null}
       <Typography variant="body2" color="text.secondary">
         Paste a classic{" "}
         <Link href={GITHUB_PAT_URL} target="_blank" rel="noreferrer" data-testid="github-pat-link">
@@ -91,7 +106,9 @@ function GithubHelp() {
         Fine-grained: Contents, Issues, Metadata, Pull requests, Workflows.
       </Typography>
       <Typography variant="body2" color="text.secondary">
-        Stored in the Mac keychain, or ~/.flightdeck/secrets if keychain is unavailable.
+        {props.envWins
+          ? "GITHUB_TOKEN / GH_TOKEN override the keychain and ~/.flightdeck/secrets until you unset them."
+          : "Stored in the Mac keychain, or ~/.flightdeck/secrets if keychain is unavailable. GITHUB_TOKEN or GH_TOKEN in the environment overrides a stored token."}
       </Typography>
     </Stack>
   );

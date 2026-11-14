@@ -36,7 +36,7 @@ export function createGithubClient(deps: GithubDeps = {}): GithubClient {
 
 async function requireToken(load: () => Promise<string | undefined>): Promise<string> {
   const token = await load();
-  if (!token) throw new Error("Add a GitHub token in Settings");
+  if (!token) throw new Error("Set GITHUB_TOKEN or paste a PAT in Settings");
   return token;
 }
 

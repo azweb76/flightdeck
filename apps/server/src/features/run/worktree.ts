@@ -46,7 +46,7 @@ export async function pushBranch(dest: string, branch: string, exec: ExecFn = de
   const r = await exec("git", ["push", "-u", "origin", branch], {
     cwd: dest,
     timeoutMs: 120_000,
-    env: gitAuthEnv(),
+    env: await gitAuthEnv(),
   });
   if (r.code !== 0) throw new Error(r.stderr || "git push failed");
 }

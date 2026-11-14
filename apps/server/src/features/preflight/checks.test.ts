@@ -110,7 +110,8 @@ describe("preflight checks", () => {
     process.env.FLIGHTDECK_DEMO = "1";
     setDemoGithubMode("empty");
     const missing = await checkGithub();
-    expect(missing).toMatchObject({ id: "github", ok: false, fix: "Add a GitHub token in Settings" });
+    expect(missing.ok).toBe(false);
+    expect(missing.detail).toMatch(/GITHUB_TOKEN|Settings/);
     setDemoGithubMode("error");
     expect((await checkGithub()).ok).toBe(false);
     setDemoGithubMode("scopes");

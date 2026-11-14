@@ -63,4 +63,8 @@ test("phase 2 screenshots", async ({ page }) => {
   await page.getByTestId("archive-acme/web#12").click();
   await expect(page.getByTestId("run-status-acme/web#12")).toContainText("Archived");
   await pair(page, "archive");
+
+  await page.getByRole("tab", { name: "Settings" }).click();
+  await expect(page.getByTestId("github-token-source")).toContainText("Using GITHUB_TOKEN from environment");
+  await pair(page, "settings-github");
 });
