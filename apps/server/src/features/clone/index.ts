@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { getDb } from "../db/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 import { createGithubClient } from "../github/index.ts";
@@ -48,7 +49,7 @@ export async function ensureClone(
   const dest = repoPath(owner, name);
   mkdirSync(join(dest, ".."), { recursive: true });
   if (existsSync(join(dest, ".git"))) {
-    await exec("git", ["fetch", "origin"], { cwd: dest, timeoutMs: 60_000 });
+    await fetchOriginIfStale(owner, name, dest, exec);
     rememberRepo(owner, name, dest);
     return { localPath: dest };
   }
@@ -56,4 +57,20 @@ export async function ensureClone(
   if (!cloned.ok) throw new Error(cloned.detail);
   rememberRepo(owner, name, dest);
   return { localPath: dest };
+}
+
+async function fetchOriginIfStale(owner: string, name: string, dest: string, exec: ExecFn): Promise<void> {
+  try {
+    await getCache().get(
+      CACHE_KEYS.cloneFetch(owner, name),
+      async () => {
+        const r = await exec("git", ["fetch", "origin"], { cwd: dest, timeoutMs: 60_000 });
+        if (r.code !== 0) throw new Error(r.stderr || "git fetch failed");
+        return true;
+      },
+      TTL.cloneFetch,
+    );
+  } catch {
+    /* keep the existing clone; a failed fetch is not cached */
+  }
 }
