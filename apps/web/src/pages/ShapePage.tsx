@@ -3,7 +3,7 @@ import type { AppEvent, ShapeSession } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api.ts";
-import { GatedButton } from "../preflight/GatedButton.tsx";
+import { GatedButton } from "../preflight/index.ts";
 import { sessionFromEvent, useAppEvents } from "../useAppEvents.ts";
 import { ChatPane } from "./ChatPane.tsx";
 import { DraftPane } from "./DraftPane.tsx";
@@ -100,7 +100,14 @@ function Header(props: { session: ShapeSession; saved: boolean; onSave: () => vo
         <Button variant="outlined" disabled={props.saved} onClick={props.onSave} data-testid="save-issue">
           Save issue
         </Button>
-        <GatedButton gate="start" variant="text" disabled fallbackTitle="Coming in Phase 2" testId="start-run">
+        <GatedButton
+          gate="start"
+          variant="text"
+          placement="bottom"
+          disabled
+          fallbackTitle="Coming in Phase 2"
+          testId="start-run"
+        >
           Start
         </GatedButton>
       </Stack>

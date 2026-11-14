@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Se
 import type { CatalogRepo } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
-import { GatedButton } from "../preflight/GatedButton.tsx";
+import { GatedButton } from "../preflight/index.ts";
 import { FormField } from "../ui/FormField.tsx";
 
 export function StartIdeaDialog(props: {

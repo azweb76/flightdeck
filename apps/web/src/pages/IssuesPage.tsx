@@ -3,8 +3,7 @@ import type { Issue } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { api } from "../api.ts";
-import { GatedButton } from "../preflight/GatedButton.tsx";
-import { PreflightBanner } from "../preflight/PreflightBanner.tsx";
+import { GatedButton, PreflightBanner } from "../preflight/index.ts";
 import { useAppEvents } from "../useAppEvents.ts";
 import { RepoPickDialog } from "./RepoPickDialog.tsx";
 import { StartIdeaDialog } from "./StartIdeaDialog.tsx";
@@ -60,6 +59,7 @@ export function IssuesPage() {
           <GatedButton
             gate="shape"
             variant="contained"
+            placement="bottom"
             onClick={() => setOpen(true)}
             testId="new-idea"
           >
@@ -154,13 +154,21 @@ function IssueList(props: { issues: Issue[]; busy?: string; onShape: (issue: Iss
               <GatedButton
                 gate="shape"
                 variant="outlined"
+                placement="top"
                 disabled={props.busy === issue.id}
                 onClick={() => props.onShape(issue)}
                 testId={`shape-${issue.key}`}
               >
                 Shape
               </GatedButton>
-              <GatedButton gate="start" variant="text" disabled fallbackTitle="Coming in Phase 2" testId={`start-${issue.key}`}>
+              <GatedButton
+                gate="start"
+                variant="text"
+                placement="top"
+                disabled
+                fallbackTitle="Coming in Phase 2"
+                testId={`start-${issue.key}`}
+              >
                 Start
               </GatedButton>
             </Stack>
