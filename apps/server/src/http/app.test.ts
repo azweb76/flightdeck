@@ -23,6 +23,16 @@ describe("http", () => {
     delete process.env.FLIGHTDECK_DEMO;
   });
 
+  it("reports SQLite schema health on GET /api/preflight", async () => {
+    const app = createApp();
+    const res = await app.request("http://127.0.0.1/api/preflight");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      ok: true,
+      checks: [expect.objectContaining({ id: "database", ok: true, status: "pass" })],
+    });
+  });
+
   it("binds health on the API and lists seeded issues", async () => {
     const app = createApp();
     const health = await app.request("http://127.0.0.1/api/health");

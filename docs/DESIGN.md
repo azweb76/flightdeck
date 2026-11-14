@@ -64,6 +64,7 @@ Throughout, the agent is hands-off but can pause and ask Dan a question when stu
 ## Stack
 - Local web app opened in the browser (Node server bound to 127.0.0.1).
 - TypeScript Node backend with the Claude Agent SDK; React frontend with MUI.
+- SQLite at `~/.flightdeck/app.sqlite`. Schema version is `PRAGMA user_version`. Startup creates missing tables and `ALTER TABLE`s missing columns (checked with `PRAGMA table_info`). An incompatible v1 database is renamed to `app.sqlite.v1-backup-<timestamp>` and replaced with a fresh v2 file — never deleted silently.
 - Claude auth: use `apiKeyHelper` and the API base URL (ANTHROPIC_BASE_URL) from the user's Claude settings (`~/.claude/settings.json`); fall back to the Claude OAuth login when no `apiKeyHelper` is set.
 - GitHub via the `gh` CLI login; Jira Cloud via email + API token.
 - Per-run and daily dollar caps, plus a max-concurrent-agents setting.
