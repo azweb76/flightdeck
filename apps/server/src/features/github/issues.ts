@@ -1,16 +1,22 @@
 import { CACHE_KEYS, getCache } from "../cache/index.ts";
 import { createOctokit, githubCall, type FetchFn } from "./octokit.ts";
+import { headerOf } from "./scopes.ts";
 import type { GhIssue } from "./types.ts";
+
+const SEARCH = "is:issue is:open assignee:@me";
 
 export async function listAssigned(token: string, fetchFn: FetchFn): Promise<GhIssue[]> {
   const octokit = createOctokit(token, fetchFn);
-  const res = await githubCall(() =>
-    octokit.rest.search.issuesAndPullRequests({
-      q: "is:issue is:open assignee:@me",
-      per_page: 50,
-    }),
-  );
-  return res.data.items.map(toIssue);
+  const items = await githubCall(async () => {
+    const rows: SearchHit[] = [];
+    for (let page = 1; page <= 10; page++) {
+      const res = await octokit.rest.search.issuesAndPullRequests({ q: SEARCH, per_page: 100, page });
+      rows.push(...res.data.items);
+      if (!/rel="next"/.test(headerOf(res.headers, "link") ?? "")) break;
+    }
+    return rows;
+  });
+  return items.map(toIssue);
 }
 
 export async function createIssue(
@@ -41,7 +47,16 @@ export async function updateIssue(
   getCache().invalidate(CACHE_KEYS.githubIssues);
 }
 
-function toIssue(row: { number: number; title: string; body?: string | null; html_url: string; updated_at: string; repository_url: string }): GhIssue {
+type SearchHit = {
+  number: number;
+  title: string;
+  body?: string | null;
+  html_url: string;
+  updated_at: string;
+  repository_url: string;
+};
+
+function toIssue(row: SearchHit): GhIssue {
   const slug = row.repository_url.replace("https://api.github.com/repos/", "");
   const [owner, name] = slug.split("/");
   return {

@@ -41,6 +41,20 @@ describe("github octokit adapter", () => {
     await gh.listRepos();
   });
 
+  it("paginates assigned issues", async () => {
+    const pages: string[] = [];
+    const gh = createGithubClient({
+      token: "t",
+      fetch: mockFetch({
+        paginateSearch: true,
+        onRequest: (_method, url) => pages.push(url.searchParams.get("page") ?? "1"),
+      }),
+    });
+    const issues = await gh.listAssignedIssues();
+    expect(issues.map((i) => i.number)).toEqual([12, 13]);
+    expect(pages.filter((p) => p === "2").length).toBeGreaterThan(0);
+  });
+
   it("backs off on 403 primary and 429 secondary rate limits", async () => {
     const sleeps: number[] = [];
     setSleepForTests(async (ms) => {
@@ -119,6 +133,7 @@ function mockFetch(opts?: {
   onRequest?: (method: string, url: URL) => void;
   user?: () => Response;
   search?: () => Response;
+  paginateSearch?: boolean;
 }): typeof fetch {
   return (async (input, init) => {
     const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
@@ -128,7 +143,14 @@ function mockFetch(opts?: {
       return (opts?.user ?? (() => json({ login: "dan" }, 200, { "x-oauth-scopes": "repo,read:org,workflow" })))();
     }
     if (url.pathname === "/search/issues") {
-      return (opts?.search ?? (() => json({ items: [searchItem()] })))();
+      if (opts?.search) return opts.search();
+      if (opts?.paginateSearch) {
+        const page = url.searchParams.get("page") ?? "1";
+        if (page === "2") return json({ items: [searchItem(13)], total_count: 2 });
+        const next = `https://api.github.com/search/issues?q=${encodeURIComponent(url.searchParams.get("q") ?? "")}&per_page=100&page=2`;
+        return json({ items: [searchItem(12)], total_count: 2 }, 200, { link: `<${next}>; rel="next"` });
+      }
+      return json({ items: [searchItem()] });
     }
     if (url.pathname === "/user/repos") {
       if (url.searchParams.get("page") === "2") return json([{ full_name: "acme/api" }]);
@@ -146,9 +168,9 @@ function mockFetch(opts?: {
   }) as typeof fetch;
 }
 
-function searchItem() {
+function searchItem(number = 12) {
   return {
-    number: 12,
+    number,
     title: "Mine",
     body: "b",
     html_url: "https://github.com/acme/web/issues/12",

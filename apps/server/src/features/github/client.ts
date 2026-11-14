@@ -21,9 +21,7 @@ export function createGithubClient(deps: GithubDeps = {}): GithubClient {
     listRepos: () => cache.get(CACHE_KEYS.githubRepos, async () => listRepos(await requireToken(tokenOf), fetchFn), TTL.githubRepos),
     cloneRepo: (owner, name, dest) => gitClone(exec, owner, name, dest),
     createIssue: async (owner, name, title, body) => {
-      const created = await createIssue(await requireToken(tokenOf), fetchFn, owner, name, title, body);
-      cache.invalidate(CACHE_KEYS.githubStatus);
-      return created;
+      return createIssue(await requireToken(tokenOf), fetchFn, owner, name, title, body);
     },
     updateIssue: async (owner, name, number, title, body) => {
       await updateIssue(await requireToken(tokenOf), fetchFn, owner, name, number, title, body);

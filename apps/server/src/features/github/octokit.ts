@@ -7,16 +7,37 @@ const Api = Octokit.plugin(retry, throttling);
 
 export type FetchFn = typeof fetch;
 
+const immediateGroup = {
+  key: () => ({
+    schedule: (_job: unknown, fn?: unknown, ...args: unknown[]) =>
+      typeof fn === "function" ? (fn as (...a: unknown[]) => unknown)(...args) : undefined,
+  }),
+};
+
+const immediateLimiter = {
+  on() {
+    /* ignore Bottleneck retry hooks so 403/429 throw into withBackoff */
+  },
+  schedule<T>(fn: (...a: never[]) => T, ...args: never[]) {
+    return fn(...args);
+  },
+};
+
 export function createOctokit(token: string, fetchFn: FetchFn = fetch): Octokit {
-  const test = Boolean(process.env.VITEST);
   return new Api({
     auth: token,
-    request: { fetch: fetchFn, retries: test ? 0 : 1 },
+    request: { fetch: fetchFn, retries: 0 },
     throttle: {
-      enabled: !test,
-      onRateLimit: (_wait, _opts, _octokit, retryCount) => !test && retryCount < 2,
-      onSecondaryRateLimit: (_wait, _opts, _octokit, retryCount) => !test && retryCount < 2,
-    },
+      enabled: true,
+      onRateLimit: () => false,
+      onSecondaryRateLimit: () => false,
+      global: immediateGroup,
+      auth: immediateGroup,
+      search: immediateGroup,
+      write: immediateGroup,
+      notifications: immediateGroup,
+      retryLimiter: immediateLimiter,
+    } as never,
   });
 }
 

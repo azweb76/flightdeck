@@ -76,7 +76,7 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 |---|---|---|
 | Issues tracker sync (`GET /api/issues`) | 60s | `POST /api/issues/sync` (Refresh) forces a sync |
 | GitHub `GET /user` (token status) | 2 min | Settings token save/disconnect |
-| GitHub assigned issues search | 60s | Refresh; after GitHub issue create/update |
+| GitHub assigned issues search (paginated, 100 per page) | 60s | Refresh; after GitHub issue create/update |
 | GitHub `GET /user/repos` | 5 min | — |
 | Jira JQL search | 60s | Jira settings save/connect; after Jira create/update; Refresh |
 | Jira connect `myself` | 2 min | Jira settings save/connect; after Jira create/update |
@@ -84,7 +84,7 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 | Preflight report (`GET /api/preflight`) | 30s | `?refresh=1`, `POST /api/preflight/recheck`, Settings save |
 | `git fetch origin` | 60s | TTL only |
 
-`issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or GitHub 403/429 (`Retry-After`, `x-ratelimit-reset`, secondary rate limit), Flightdeck backs off (capped) and returns `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s.
+`issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or GitHub 403/429 (`Retry-After`, `x-ratelimit-reset`, secondary rate limit), Octokit throttle plugins do not wait: they throw immediately so `withBackoff` owns every retry, capped at 30s, and the UI gets `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s.
 
 ## Preflight
 Startup and `pnpm preflight` run the same checks. Required failures print a one-line fix and do not crash the server (the UI can show them), except Node itself being below `package.json` `engines`. `GET /api/preflight` returns the report; cache keys and logs never include secrets.
