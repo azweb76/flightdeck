@@ -33,6 +33,8 @@ test("failed review rounds ask Dan", async ({ page }) => {
   await page.getByTestId("run-reply").fill("Ship retries without the extra 5xx fixture.");
   await page.getByTestId("run-send").click();
   await expect(page.getByTestId("pr-link")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("stage-review")).toContainText("Follow-up after Dan answered");
+  await expect(page.getByTestId("stage-timeline")).not.toContainText("of 3");
 });
 
 test("dollar cap stops the run", async ({ page }) => {

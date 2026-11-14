@@ -1,5 +1,5 @@
 import { Box, Paper, Stack, Typography } from "@mui/material";
-import type { Change, ChangeStage } from "@flightdeck/shared";
+import { reviewRoundCaption, type Change, type ChangeStage } from "@flightdeck/shared";
 
 const STAGES: { id: ChangeStage; label: string }[] = [
   { id: "plan", label: "Plan" },
@@ -57,7 +57,7 @@ function dotColor(change: Change, stage: ChangeStage): string {
 }
 
 function caption(change: Change, stage: ChangeStage): string {
-  if (stage === "review") return change.reviewRound ? `Round ${change.reviewRound} of 3` : "Waiting";
+  if (stage === "review") return reviewRoundCaption(change.reviewRound);
   if (stage === "pr") return change.prUrl ? "Draft PR opened" : "Opens after review";
   if (stage === "ci") return "Phase 4 placeholder";
   if (stage === "plan") {

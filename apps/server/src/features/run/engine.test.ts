@@ -69,6 +69,9 @@ describe("run engine (demo)", () => {
     expect(resumed.events.some((e) => e.title === "resume")).toBe(true);
     expect(resumed.events.filter((e) => e.kind === "user" && e.detail?.includes("5xx")).length).toBe(1);
     expect(resumed.events.filter((e) => e.title === "implement" && /Using your answer/.test(e.detail ?? "")).length).toBe(1);
+    expect(resumed.reviewRound).toBe(4);
+    expect(resumed.events.some((e) => e.kind === "stage" && e.detail === "Follow-up after Dan answered")).toBe(true);
+    expect(resumed.events.filter((e) => e.kind === "stage").every((e) => !/\bof 3\b/.test(e.detail ?? ""))).toBe(true);
   });
 
   it("stops when the per-run dollar cap is hit", async () => {

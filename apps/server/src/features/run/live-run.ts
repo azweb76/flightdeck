@@ -1,4 +1,4 @@
-import type { Change } from "@flightdeck/shared";
+import { extraRoundLabel, type Change } from "@flightdeck/shared";
 import { getAgentDriver, type AgentEvent } from "../agent/index.ts";
 import { detectClaudeConfig, claudeSdkEnv } from "../claude/index.ts";
 import { getSettings } from "../settings/index.ts";
@@ -43,7 +43,7 @@ export async function runLive(change: Change, answer?: string): Promise<void> {
     await commitAll(cwd, `flightdeck: ${change.issueKey} round ${change.reviewRound + 1}`);
 
     change.reviewRound += 1;
-    setStage(change, "reviewing", "review", "Review", `Round ${change.reviewRound}`);
+    setStage(change, "reviewing", "review", "Review", extraRoundLabel(change.reviewRound));
     const reviewText = await collect(change, "review", reviewPrompt(change), cwd, settings.model, env);
     if (stopped(change)) return;
     const next = nextAfterReview(change.reviewRound, parseReviewVerdict(reviewText));

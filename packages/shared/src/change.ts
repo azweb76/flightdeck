@@ -3,6 +3,16 @@ import { IssueSourceSchema } from "./schemas.ts";
 
 export const MAX_REVIEW_ROUNDS = 3;
 
+export function reviewRoundCaption(round: number): string {
+  if (round <= 0) return "Waiting";
+  if (round > MAX_REVIEW_ROUNDS) return "Follow-up after Dan answered";
+  return `Round ${round} of ${MAX_REVIEW_ROUNDS}`;
+}
+
+export function extraRoundLabel(round: number): string {
+  return round > MAX_REVIEW_ROUNDS ? "Follow-up after Dan answered" : `Round ${round}`;
+}
+
 export const ChangeStatusSchema = z.enum([
   "planning",
   "implementing",

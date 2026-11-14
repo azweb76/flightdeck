@@ -1,4 +1,4 @@
-import type { Change } from "@flightdeck/shared";
+import { extraRoundLabel, type Change } from "@flightdeck/shared";
 import { applyAgentEvent, emitChange, log, setStage } from "./emit.ts";
 import { MAX_REVIEW_ROUNDS, nextAfterReview, reviewLimit } from "./machine.ts";
 import { commentPrLink, openDraftPr } from "./pr.ts";
@@ -53,14 +53,14 @@ async function implementAndReview(change: Change, answer?: string): Promise<void
   const extra = Boolean(answer) && change.reviewRound >= MAX_REVIEW_ROUNDS;
   const limit = reviewLimit(change.reviewRound, extra);
   while (change.reviewRound < limit) {
-    setStage(change, "implementing", "implement", "Implement", `Round ${change.reviewRound + 1}`);
+    setStage(change, "implementing", "implement", "Implement", extraRoundLabel(change.reviewRound + 1));
     const usedGuidance = Boolean(guidance);
     const haltImpl = await play(change, implementEvents(change.reviewRound, guidance, { key: change.issueKey, title: change.title }));
     guidance = undefined;
     if (haltImpl !== "ok") return;
 
     change.reviewRound += 1;
-    setStage(change, "reviewing", "review", "Review", `Round ${change.reviewRound}`);
+    setStage(change, "reviewing", "review", "Review", extraRoundLabel(change.reviewRound));
     const pass = change.scenario !== "fail-review" || usedGuidance;
     const haltRev = await play(change, reviewEvents(change.reviewRound, pass, { key: change.issueKey, title: change.title }));
     if (haltRev !== "ok") return;

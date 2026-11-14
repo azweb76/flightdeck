@@ -40,6 +40,11 @@ export function* implementEvents(round: number, answer?: string, issue?: { key: 
 
 function implementNotes(round: number, extra: string, issue?: { key: string; title: string }): string {
   const webhook = issue && (/#21\b/.test(issue.key) || /webhook/i.test(issue.title));
+  if (round >= 3) {
+    return webhook
+      ? `Follow-up after Dan answered: still tightening retries and the 5xx-then-success test.${extra}`
+      : `Follow-up after Dan answered: addressed the review notes.${extra}`;
+  }
   if (webhook) {
     return round === 0
       ? `Added retry with backoff to the webhook handler.${extra}\nRunning tests, lint, typecheck, and build.`
@@ -80,13 +85,13 @@ export function* reviewEvents(
     yield {
       kind: "text",
       title: "review",
-      detail: `Review round ${round}: checked every acceptance criterion against the diff.\n\nAPPROVE — all acceptance criteria are met.`,
+      detail: `${round > 3 ? "Follow-up after Dan answered" : `Review round ${round}`}: checked every acceptance criterion against the diff.\n\nAPPROVE — all acceptance criteria are met.`,
     };
   } else {
     yield {
       kind: "text",
       title: "review",
-      detail: `Review round ${round}: CHANGES_NEEDED.\n${reviewFailNotes(issue, round)}\nAcceptance criteria are not all met.`,
+      detail: `${round > 3 ? "Follow-up after Dan answered" : `Review round ${round}`}: CHANGES_NEEDED.\n${reviewFailNotes(issue, round)}\nAcceptance criteria are not all met.`,
     };
   }
   yield { kind: "usage", title: "usage", costUsd: 0.18 };
