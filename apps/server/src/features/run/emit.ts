@@ -20,17 +20,7 @@ export function log(change: Change, ev: Omit<ChangeEvent, "id" | "at">): ChangeE
 
 export function applyAgentEvent(change: Change, ev: AgentEvent): "ask" | "cap" | "ok" {
   const add = eventCost(ev);
-  if (add > 0) {
-    const hit = evaluateSpend(change.costUsd, add);
-    if (hit !== "ok") {
-      change.status = "cap_hit";
-      change.ask = undefined;
-      log(change, { kind: "system", title: "cap", detail: capMessage(hit) });
-      return "cap";
-    }
-    change.costUsd += add;
-    log(change, { kind: "usage", title: "usage", detail: `+$${add.toFixed(2)} (run $${change.costUsd.toFixed(2)})`, costUsd: add });
-  }
+  if (add > 0 && applySpend(change, add) === "cap") return "cap";
   if (ev.kind === "ask" && ev.ask) {
     change.status = "asking";
     change.ask = ev.ask;
@@ -45,6 +35,17 @@ export function applyAgentEvent(change: Change, ev: AgentEvent): "ask" | "cap" |
     log(change, { kind: "system", title: "error", detail: ev.detail ?? ev.title });
   }
   return "ok";
+}
+
+function applySpend(change: Change, add: number): "cap" | "ok" {
+  const hit = evaluateSpend(change.costUsd, add);
+  change.costUsd += add;
+  log(change, { kind: "usage", title: "usage", detail: `+$${add.toFixed(2)} (run $${change.costUsd.toFixed(2)})`, costUsd: add });
+  if (hit === "ok") return "ok";
+  change.status = "cap_hit";
+  change.ask = undefined;
+  log(change, { kind: "system", title: "cap", detail: capMessage(hit) });
+  return "cap";
 }
 
 export function setStage(change: Change, status: ChangeStatus, stage: Change["stage"], title: string, detail?: string): void {

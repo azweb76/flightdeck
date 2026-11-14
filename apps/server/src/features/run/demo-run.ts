@@ -49,15 +49,18 @@ export async function runDemo(change: Change, answer?: string): Promise<void> {
 }
 
 async function implementAndReview(change: Change, answer?: string): Promise<void> {
+  let guidance = answer;
   while (change.reviewRound < MAX_REVIEW_ROUNDS) {
     setStage(change, "implementing", "implement", "Implement", `Round ${change.reviewRound + 1}`);
-    const haltImpl = await play(change, implementEvents(change.reviewRound, answer));
+    const usedGuidance = Boolean(guidance);
+    const haltImpl = await play(change, implementEvents(change.reviewRound, guidance, { key: change.issueKey, title: change.title }));
+    guidance = undefined;
     if (haltImpl !== "ok") return;
 
     change.reviewRound += 1;
     setStage(change, "reviewing", "review", "Review", `Round ${change.reviewRound}`);
-    const pass = change.scenario !== "fail-review";
-    const haltRev = await play(change, reviewEvents(change.reviewRound, pass));
+    const pass = change.scenario !== "fail-review" || usedGuidance;
+    const haltRev = await play(change, reviewEvents(change.reviewRound, pass, { key: change.issueKey, title: change.title }));
     if (haltRev !== "ok") return;
 
     const next = nextAfterReview(change.reviewRound, pass);
@@ -85,7 +88,12 @@ async function finishPr(change: Change): Promise<void> {
   change.prUrl = pr.url;
   change.prNumber = pr.number;
   await commentPrLink(change, pr.url);
-  log(change, { kind: "system", title: "draft pr", detail: `Opened draft PR ${pr.url} and commented it on ${change.issueKey}.` });
+  log(change, { kind: "system", title: "draft pr", detail: `Opened draft PR ${pr.url}` });
+  log(change, {
+    kind: "system",
+    title: "issue comment",
+    detail: `Demo: would comment ${pr.url} on ${change.issueKey}.`,
+  });
   change.status = "done";
   change.stage = "ci";
   log(change, { kind: "system", title: "ci", detail: "CI watch is a Phase 4 placeholder." });

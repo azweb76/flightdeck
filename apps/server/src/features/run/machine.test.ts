@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canArchive, canReply, checkCaps, nextAfterReview, parseReviewVerdict } from "./machine.ts";
-import { demoScenarioFor } from "./script.ts";
+import { demoScenarioFor, reviewFailNotes } from "./script.ts";
 
 describe("run state machine", () => {
   it("opens a PR after a passing review and asks Dan after 3 failures", () => {
@@ -16,6 +16,7 @@ describe("run state machine", () => {
     expect(canReply("implementing")).toBe(false);
     expect(canArchive("done")).toBe(true);
     expect(canArchive("cap_hit")).toBe(true);
+    expect(canArchive("archived")).toBe(false);
     expect(canArchive("implementing")).toBe(false);
   });
 
@@ -35,5 +36,11 @@ describe("run state machine", () => {
     expect(demoScenarioFor({ key: "acme/web#15", title: "Clarify CSV refund rows" })).toBe("ask");
     expect(demoScenarioFor({ key: "acme/web#21", title: "Add retry to webhook handler" })).toBe("fail-review");
     expect(demoScenarioFor({ key: "acme/api#8", title: "Spend-cap sensitive refactor" })).toBe("cap");
+  });
+
+  it("uses fail-review notes that match the demo issue", () => {
+    expect(reviewFailNotes({ key: "acme/web#21", title: "Add retry to webhook handler" })).toMatch(/backoff|webhook|5xx/i);
+    expect(reviewFailNotes({ key: "acme/web#12", title: "Export invoices as CSV" })).toMatch(/auth|header/i);
+    expect(reviewFailNotes({ key: "acme/web#15", title: "Clarify CSV refund rows" })).toMatch(/refund/i);
   });
 });

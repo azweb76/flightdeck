@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "../demo/index.ts";
-import { archiveChange, getChange, startChange, waitForChange, replyChange } from "./index.ts";
+import { upsertIssue } from "../issues/store.ts";
+import { archiveChange, dailySpendUsd, getChange, startChange, waitForChange, replyChange } from "./index.ts";
 
 describe("run engine (demo)", () => {
   beforeEach(() => {
@@ -31,7 +32,10 @@ describe("run engine (demo)", () => {
     expect(done.prUrl).toMatch(/\/pull\/42$/);
     expect(done.reviewRound).toBe(1);
     expect(done.events.some((e) => e.title === "draft pr")).toBe(true);
+    expect(done.events.some((e) => e.detail?.startsWith("Demo: would comment"))).toBe(true);
     expect(done.planText.length).toBeGreaterThan(10);
+    expect(done.issueBody).toMatch(/Acceptance criteria/i);
+    expect(done.issueBody).toMatch(/paid invoices|CSV/i);
   });
 
   it("pauses for a question and continues after Dan replies", async () => {
@@ -54,6 +58,15 @@ describe("run engine (demo)", () => {
     expect(stuck.status).toBe("needs_dan");
     expect(stuck.reviewRound).toBe(3);
     expect(stuck.events.filter((e) => e.title === "review").length).toBe(3);
+    expect(stuck.events.filter((e) => e.title === "review").every((e) => /backoff|5xx|webhook/i.test(e.detail ?? ""))).toBe(true);
+    await replyChange(started.id, "Ship retries without the extra 5xx fixture.");
+    await waitForChange(started.id);
+    const resumed = getChange(started.id)!;
+    expect(resumed.status).toBe("done");
+    expect(resumed.prUrl).toMatch(/\/pull\/42$/);
+    expect(resumed.events.some((e) => e.title === "resume")).toBe(true);
+    expect(resumed.events.filter((e) => e.kind === "user" && e.detail?.includes("5xx")).length).toBe(1);
+    expect(resumed.events.filter((e) => e.title === "implement" && /Using your answer/.test(e.detail ?? "")).length).toBe(1);
   });
 
   it("stops when the per-run dollar cap is hit", async () => {
@@ -61,7 +74,24 @@ describe("run engine (demo)", () => {
     await waitForChange(started.id);
     const hit = getChange(started.id)!;
     expect(hit.status).toBe("cap_hit");
+    expect(hit.costUsd).toBeGreaterThan(0);
     expect(hit.events.some((e) => e.title === "cap")).toBe(true);
+    expect(hit.events.some((e) => e.kind === "usage" && (e.costUsd ?? 0) > 0)).toBe(true);
+  });
+
+  it("rejects Start until the issue is saved", async () => {
+    upsertIssue({
+      id: "github:acme/web#99",
+      source: "github",
+      key: "acme/web#99",
+      title: "Unsaved idea",
+      body: "Not saved yet.",
+      url: "",
+      repoSlug: "acme/web",
+      updatedAt: new Date().toISOString(),
+      saved: false,
+    });
+    await expect(startChange("github:acme/web#99")).rejects.toThrow(/Save the issue first/);
   });
 
   it("archive removes the worktree path", async () => {
@@ -71,5 +101,7 @@ describe("run engine (demo)", () => {
     expect(archived.status).toBe("archived");
     expect(archived.worktreePath).toBe("");
     expect(archived.events.at(-1)?.title).toBe("archived");
+    expect(dailySpendUsd()).toBe(archived.costUsd);
+    expect(archived.costUsd).toBeGreaterThan(0);
   });
 });

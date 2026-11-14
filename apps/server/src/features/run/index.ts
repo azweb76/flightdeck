@@ -11,7 +11,7 @@ import { demoScenarioFor } from "./script.ts";
 import { countActive, findActiveForIssue, getChange, insertChange, saveChange } from "./store.ts";
 import { addWorktree, demoWorktree, removeWorktree } from "./worktree.ts";
 
-export { getChange, listChanges } from "./store.ts";
+export { dailySpendUsd, getChange, listChanges } from "./store.ts";
 
 const jobs = new Map<string, Promise<void>>();
 
@@ -24,6 +24,7 @@ export async function startChange(issueId: string): Promise<Change> {
   if (existing) return existing;
   const issue = loadIssue(issueId);
   if (!issue) throw new Error("Issue not found");
+  if (!issue.saved) throw new Error("Save the issue first");
   if (!issue.repoSlug) throw new Error("Pick a repo for this issue first");
   const settings = getSettings();
   if (countActive() >= settings.maxConcurrentAgents) {
@@ -53,16 +54,26 @@ export async function replyChange(id: string, text: string): Promise<Change> {
   if (!canReply(change.status)) throw new Error("This run is not waiting for a reply");
   log(change, { kind: "user", title: "dan", detail: text });
   const asking = change.status === "asking";
+  const fromDan = change.status === "needs_dan";
   change.ask = undefined;
-  if (asking) change.status = "implementing";
+  if (fromDan) {
+    change.reviewRound = 0;
+    log(change, {
+      kind: "system",
+      title: "resume",
+      detail: "Starting a new implement/review loop (3 rounds) with your guidance.",
+    });
+  }
+  if (asking || fromDan) change.status = "implementing";
   saveChange(change);
-  if (asking) kick(id, text);
+  if (asking || fromDan) kick(id, text);
   return getChange(id) ?? change;
 }
 
 export async function archiveChange(id: string): Promise<Change> {
   const change = getChange(id);
   if (!change) throw new Error("Change not found");
+  if (change.status === "archived") return change;
   if (!canArchive(change.status)) throw new Error("Wait until this run pauses or finishes before archiving");
   const [owner, name] = change.repoSlug.split("/");
   if (owner && name) await removeWorktree(repoPath(owner, name), change.worktreePath);

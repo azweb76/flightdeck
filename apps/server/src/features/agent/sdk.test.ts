@@ -47,5 +47,7 @@ describe("canUseShapeTool", () => {
     expect(write).toMatchObject({ behavior: "allow" });
     const reviewWrite = await canUseTool("review", "Write", { path: "a.ts" });
     expect(reviewWrite.behavior).toBe("deny");
+    const reviewBash = await canUseTool("review", "Bash", { command: "git diff" });
+    expect(reviewBash).toEqual({ behavior: "deny", message: "This session is read-only" });
   });
 });
