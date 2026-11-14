@@ -82,21 +82,9 @@ function EventRow(props: { ev: ChangeEvent; waiting: boolean; onPick: (label: st
   }
   if (props.ev.kind === "usage") {
     return (
-      <Box
-        sx={{
-          px: 1.25,
-          py: 0.75,
-          borderRadius: 2,
-          alignSelf: "flex-start",
-          bgcolor: "action.selected",
-          color: "text.secondary",
-        }}
-        data-testid="event-usage"
-      >
-        <Typography variant="caption">
-          {props.ev.detail ?? (props.ev.costUsd != null ? `$${props.ev.costUsd.toFixed(2)}` : "usage")}
-        </Typography>
-      </Box>
+      <Typography variant="caption" color="text.secondary" sx={{ pl: 2, mt: -0.75 }} data-testid="event-usage">
+        {props.ev.detail ?? (props.ev.costUsd != null ? `$${props.ev.costUsd.toFixed(2)}` : "usage")}
+      </Typography>
     );
   }
   const mine = props.ev.kind === "user";
