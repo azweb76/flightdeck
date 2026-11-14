@@ -1,4 +1,5 @@
 import type { ChangeStatus } from "@flightdeck/shared";
+import type { SxProps, Theme } from "@mui/material/styles";
 
 export function chipColor(status: ChangeStatus): "default" | "success" | "warning" | "error" | "info" {
   if (status === "done") return "success";
@@ -7,6 +8,13 @@ export function chipColor(status: ChangeStatus): "default" | "success" | "warnin
   if (status === "archived") return "default";
   return "info";
 }
+
+/** Gold chip that stays readable in light and dark. */
+export const askingChipSx: SxProps<Theme> = {
+  bgcolor: "warning.light",
+  color: "warning.contrastText",
+  fontWeight: 600,
+};
 
 export function archiveDisabled(status: ChangeStatus): boolean {
   return ["planning", "implementing", "reviewing", "opening_pr", "archived"].includes(status);

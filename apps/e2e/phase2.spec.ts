@@ -11,6 +11,7 @@ test("successful run opens a draft PR", async ({ page }) => {
   await expect(page.getByTestId("stage-ci")).toContainText("Phase 4");
   await expect(page.getByTestId("stage-pr")).toContainText("Draft PR opened");
   await expect(page.getByTestId("transcript")).toContainText("Review · Round 1");
+  await expect(page.getByTestId("event-usage").first()).toBeVisible();
 });
 
 test("run can pause for a question and continue after a reply", async ({ page }) => {
@@ -18,6 +19,7 @@ test("run can pause for a question and continue after a reply", async ({ page })
   await page.getByTestId("start-acme/web#15").click();
   await expect(page.getByTestId("run-option-paid")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId("stage-plan")).toContainText("Paused for your answer");
+  await expect(page.getByTestId("change-status")).toContainText("Needs you");
   await page.getByTestId("run-option-paid").click();
   await expect(page.getByTestId("pr-link")).toBeVisible({ timeout: 20_000 });
 });

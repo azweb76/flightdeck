@@ -1,6 +1,6 @@
 import { Box, Button, Chip, Link, Stack, Typography } from "@mui/material";
 import type { Change } from "@flightdeck/shared";
-import { archiveDisabled, chipColor, statusChip } from "./changeStatus.ts";
+import { archiveDisabled, askingChipSx, chipColor, statusChip } from "./changeStatus.ts";
 
 export function ChangeHeader(props: { change: Change; onRuns: () => void; onArchive: () => void }) {
   const { change } = props;
@@ -9,7 +9,13 @@ export function ChangeHeader(props: { change: Change; onRuns: () => void; onArch
       <Box>
         <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
           <Typography variant="h4">{change.title}</Typography>
-          <Chip size="small" color={chipColor(change.status)} label={statusChip(change.status)} data-testid="change-status" />
+          <Chip
+            size="small"
+            color={chipColor(change.status)}
+            label={statusChip(change.status)}
+            data-testid="change-status"
+            sx={change.status === "asking" ? askingChipSx : undefined}
+          />
         </Stack>
         <Typography color="text.secondary" sx={{ mt: 0.5 }} data-testid="change-cost">
           {change.issueKey} · {change.repoSlug} · ${change.costUsd.toFixed(2)} · {change.branch || "no branch yet"}
