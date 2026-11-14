@@ -99,7 +99,7 @@ Startup and `pnpm preflight` run the same checks. Required failures print a one-
 | SQLite schema | required | `PRAGMA user_version` matches and columns exist | Pull latest and restart |
 | Jira | optional | skipped if unset; warn if configured without a working token | Add a Jira API token in Settings |
 
-Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report (and matching Claude/GitHub/Jira Settings cards) for screenshots and e2e. The Issues banner lists required failures with a high-contrast error alert; Settings → Dependencies lists all checks and is the only Re-check control. Shape / Save to GitHub disable only when that dependency failed. Start stays Phase-2 gated and says so in its tooltip (plus the preflight reason when both apply). Save picks GitHub/Jira from readable cards that explain why a tracker is blocked, not ghosted menu items.
+Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report (and matching Claude/GitHub/Jira Settings cards) for screenshots and e2e. The Issues banner lists required failures with a high-contrast error alert and a Re-check button. Settings → Dependencies lists every check and also has Re-check. Shape / Save to GitHub / Start disable only when that dependency failed. Save picks GitHub/Jira from readable cards that explain why a tracker is blocked, not ghosted menu items.
 
 ## Screens
 - Home: My issues, ready to shape or start.
@@ -110,8 +110,8 @@ Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local 
 
 ## Phases
 Each phase is tested by Dan on his Mac before the next starts.
-1. Goal shaping: app skeleton, Settings (Claude auth status, GitHub, Jira, repos), clone/fetch a chosen repo into the app's folder for read-only context, full-page chat where Claude reads the repo and asks questions, live issue draft with the six sections, save as a new Jira or GitHub issue (choose each time) or update an existing one, Issues home listing my issues.
-2. Run a change: Start, worktree, plan, implement with tests/lint/typecheck/build gates, fresh-context reviewer, loop up to 3 rounds then ask, draft PR, PR link on issue; change detail page.
-3. Many at once: concurrency limit, per-run and daily caps, Runs page, Archive button.
+1. Goal shaping (**done**): app skeleton, Settings (Claude auth status, GitHub, Jira, repos), clone/fetch a chosen repo into the app's folder for read-only context, full-page chat where Claude reads the repo and asks questions, live issue draft with the six sections, save as a new Jira or GitHub issue (choose each time) or update an existing one, Issues home listing my issues.
+2. Run a change (**done in demo; live adapters wired, not live-run here**): Start, worktree, plan, implement with tests/lint/typecheck/build gates, fresh-context reviewer, loop up to 3 rounds then ask, draft PR, PR link on issue; change detail page. Caps, Runs page, and Archive are pulled forward from Phase 3 so a single change is operable. CI on the timeline is a Phase 4 placeholder.
+3. Many at once: concurrency limit across several agents (setting exists; simple guard is in), polish for parallel Runs.
 4. CI and My PRs: watch CI and auto-fix up to 3 attempts then ask; My PRs page.
 5. Reviews: select PRs to review, Review button, worktree at the PR commit, repo review skill or built-in default, summary plus drafted comments, approve/edit and post as one review with a verdict, chat about the PR.

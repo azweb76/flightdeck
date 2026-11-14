@@ -10,8 +10,8 @@ test("empty issues home", async ({ page }) => {
 test("nav pages include Issues, Runs, My PRs, Reviews, Settings", async ({ page }) => {
   await seedHome(page);
   await page.getByRole("tab", { name: "Runs" }).click();
-  await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Coming in Phase 3" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Runs", exact: true })).toBeVisible();
+  await expect(page.getByTestId("empty-runs")).toBeVisible();
   await page.getByRole("tab", { name: "My PRs" }).click();
   await expect(page.getByRole("heading", { name: "My PRs" })).toBeVisible();
   await page.getByRole("tab", { name: "Reviews" }).click();
@@ -44,7 +44,7 @@ test("start from an existing issue", async ({ page }) => {
   await expect(page.getByTestId("draft-title")).toContainText("Invoice CSV");
 });
 
-test("save to GitHub then wait with Start disabled", async ({ page }) => {
+test("save to GitHub then Start is enabled", async ({ page }) => {
   await seedHome(page);
   await startNewIdea(page);
   await answerFirstQuestion(page);
@@ -52,7 +52,7 @@ test("save to GitHub then wait with Start disabled", async ({ page }) => {
   await page.getByTestId("tracker-github").click();
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toContainText(/Saved as acme\/web#/);
-  await expect(page.getByTestId("start-run")).toBeDisabled();
+  await expect(page.getByTestId("start-run")).toBeEnabled();
 });
 
 test("save to Jira", async ({ page }) => {
