@@ -13,3 +13,7 @@ From `docs/DESIGN.md` (Run a change), plus Runs / Archive / caps pulled forward 
 - [x] Runs page + Archive (worktree removed)
 - [x] Per-run and daily dollar caps
 - [x] Demo scripts: question, fail-review ×3, success PR, cap hit
+- [x] Plan/implement/review prompts include the full shaped issue body
+- [x] Reply on needs_dan resumes implement/review (round counter reset)
+- [x] Cap hit records spend; daily spend includes archived runs
+- [x] Start requires a saved issue
