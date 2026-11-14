@@ -58,7 +58,9 @@ describe("run engine (demo)", () => {
     expect(stuck.status).toBe("needs_dan");
     expect(stuck.reviewRound).toBe(3);
     expect(stuck.events.filter((e) => e.title === "review").length).toBe(3);
-    expect(stuck.events.filter((e) => e.title === "review").every((e) => /backoff|5xx|webhook/i.test(e.detail ?? ""))).toBe(true);
+    expect(stuck.events.filter((e) => e.title === "review")[0]?.detail).toMatch(/returns 200/);
+    expect(stuck.events.filter((e) => e.title === "review")[2]?.detail).toMatch(/5xx/);
+    expect(stuck.events.filter((e) => e.title === "review")[2]?.detail).not.toMatch(/returns 200/);
     await replyChange(started.id, "Ship retries without the extra 5xx fixture.");
     await waitForChange(started.id);
     const resumed = getChange(started.id)!;

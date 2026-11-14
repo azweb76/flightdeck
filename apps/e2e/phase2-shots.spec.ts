@@ -27,7 +27,6 @@ async function pair(page: Page, prefix: string): Promise<void> {
   await shot(page, `${prefix}-light`);
   await scheme(page, "dark");
   await shot(page, `${prefix}-dark`);
-  await scheme(page, "light");
 }
 
 test("phase 2 screenshots", async ({ page }) => {

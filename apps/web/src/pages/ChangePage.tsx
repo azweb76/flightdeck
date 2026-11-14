@@ -1,4 +1,4 @@
-import { Alert, Box, Stack, Typography } from "@mui/material";
+import { Alert, Box, Container, Stack, Typography } from "@mui/material";
 import { ContrastAlert } from "../ui/ContrastAlert.tsx";
 import type { AppEvent, Change } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -19,7 +19,8 @@ export function ChangePage() {
   }
 
   return (
-    <Stack spacing={4} sx={{ flex: 1, minHeight: 0, py: 5, px: { xs: 3, md: 4 } }} data-testid="change-page">
+    <Container maxWidth="lg" sx={{ py: 5, px: { xs: 3, md: 4 }, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} data-testid="change-page">
+    <Stack spacing={4} sx={{ flex: 1, minHeight: 0 }}>
       <ChangeHeader change={state.change} onRuns={() => nav("/runs")} onArchive={() => void state.archive()} />
       {state.error ? <Alert severity="error">{state.error}</Alert> : null}
       {state.change.status === "needs_dan" ? (
@@ -45,6 +46,7 @@ export function ChangePage() {
         />
       </Stack>
     </Stack>
+    </Container>
   );
 }
 

@@ -1,6 +1,6 @@
 import type { Change } from "@flightdeck/shared";
 import { applyAgentEvent, emitChange, log, setStage } from "./emit.ts";
-import { MAX_REVIEW_ROUNDS, nextAfterReview } from "./machine.ts";
+import { MAX_REVIEW_ROUNDS, nextAfterReview, reviewLimit } from "./machine.ts";
 import { commentPrLink, openDraftPr } from "./pr.ts";
 import { askEvents, capEvents, implementEvents, planEvents, reviewEvents } from "./script.ts";
 
@@ -50,7 +50,9 @@ export async function runDemo(change: Change, answer?: string): Promise<void> {
 
 async function implementAndReview(change: Change, answer?: string): Promise<void> {
   let guidance = answer;
-  while (change.reviewRound < MAX_REVIEW_ROUNDS) {
+  const extra = Boolean(answer) && change.reviewRound >= MAX_REVIEW_ROUNDS;
+  const limit = reviewLimit(change.reviewRound, extra);
+  while (change.reviewRound < limit) {
     setStage(change, "implementing", "implement", "Implement", `Round ${change.reviewRound + 1}`);
     const usedGuidance = Boolean(guidance);
     const haltImpl = await play(change, implementEvents(change.reviewRound, guidance, { key: change.issueKey, title: change.title }));

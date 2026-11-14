@@ -58,7 +58,7 @@ function dotColor(change: Change, stage: ChangeStage): string {
 
 function caption(change: Change, stage: ChangeStage): string {
   if (stage === "review") return change.reviewRound ? `Round ${change.reviewRound} of 3` : "Waiting";
-  if (stage === "pr") return change.prUrl ? "Opened" : "Opens after review";
+  if (stage === "pr") return change.prUrl ? "Draft PR opened" : "Opens after review";
   if (stage === "ci") return "Phase 4 placeholder";
   if (stage === "plan") {
     if (change.status === "asking") return "Paused for your answer";

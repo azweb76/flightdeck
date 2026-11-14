@@ -9,7 +9,7 @@ test("successful run opens a draft PR", async ({ page }) => {
   await expect(page.getByTestId("pr-link")).toContainText("/pull/42", { timeout: 20_000 });
   await expect(page.getByTestId("change-status")).toContainText("Done");
   await expect(page.getByTestId("stage-ci")).toContainText("Phase 4");
-  await expect(page.getByTestId("stage-pr")).toContainText("Opened");
+  await expect(page.getByTestId("stage-pr")).toContainText("Draft PR opened");
   await expect(page.getByTestId("transcript")).toContainText("Review · Round 1");
 });
 

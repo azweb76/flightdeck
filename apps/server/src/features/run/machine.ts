@@ -4,6 +4,10 @@ export { MAX_REVIEW_ROUNDS };
 
 export type CapHit = "ok" | "run" | "daily";
 
+export function reviewLimit(round: number, extra: boolean): number {
+  return extra && round >= MAX_REVIEW_ROUNDS ? round + 1 : MAX_REVIEW_ROUNDS;
+}
+
 export function nextAfterReview(round: number, passed: boolean): ChangeStatus {
   if (passed) return "opening_pr";
   if (round >= MAX_REVIEW_ROUNDS) return "needs_dan";

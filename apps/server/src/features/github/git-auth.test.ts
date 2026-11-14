@@ -36,6 +36,11 @@ describe("git askpass helper", () => {
       });
       expect(r.stdout).toBe("env-askpass-token");
       expect(r.status).toBe(0);
+      const gh = spawnSync(process.execPath, [env.GIT_ASKPASS ?? "", "Password for github:"], {
+        encoding: "utf8",
+        env: { ...process.env, GITHUB_TOKEN: "", GH_TOKEN: "from-gh-token" },
+      });
+      expect(gh.stdout).toBe("from-gh-token");
     } finally {
       if (prev === undefined) delete process.env.GITHUB_TOKEN;
       else process.env.GITHUB_TOKEN = prev;

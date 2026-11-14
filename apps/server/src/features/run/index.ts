@@ -57,11 +57,10 @@ export async function replyChange(id: string, text: string): Promise<Change> {
   const fromDan = change.status === "needs_dan";
   change.ask = undefined;
   if (fromDan) {
-    change.reviewRound = 0;
     log(change, {
       kind: "system",
       title: "resume",
-      detail: "Starting a new implement/review loop (3 rounds) with your guidance.",
+      detail: "One more implement and review with your guidance.",
     });
   }
   if (asking || fromDan) change.status = "implementing";
