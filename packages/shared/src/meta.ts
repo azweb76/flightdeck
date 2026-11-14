@@ -17,6 +17,12 @@ export function githubTokenSourceLabel(source?: GithubTokenSource): string {
   if (source === "file") return "Using the token from ~/.flightdeck/secrets";
   return "";
 }
+
+export function appendGithubSourceLabel(detail: string, source?: GithubTokenSource): string {
+  const label = githubTokenSourceLabel(source);
+  if (!label || detail.includes(label)) return detail;
+  return `${detail.replace(/\.$/, "")}. ${label}.`;
+}
 export const GITHUB_NEEDED_SCOPES = ["repo", "read:org", "workflow"] as const;
 export const GITHUB_PAT_URL =
   "https://github.com/settings/tokens/new?description=Flightdeck&scopes=repo,read:org,workflow";

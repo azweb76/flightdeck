@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../features/db/index.ts";
 import { seedDemo } from "../features/demo/index.ts";
 import { resetDemoGithubMode } from "../features/github/index.ts";
-import { resetDemoPreflightFixture } from "../features/preflight/index.ts";
+import { preflightBuildCount, resetDemoPreflightFixture, resetPreflightStore } from "../features/preflight/index.ts";
 import { subscribe } from "../features/events/index.ts";
 import { upsertIssue } from "../features/issues/store.ts";
 import { createApp } from "./app.ts";
@@ -18,12 +18,14 @@ describe("http", () => {
     delete process.env.FLIGHTDECK_SEED;
     resetDbForTests(join(dir, "app.sqlite"));
     resetDemoPreflightFixture();
+    resetPreflightStore();
     resetDemoGithubMode();
     seedDemo();
   });
   afterEach(() => {
     closeDb();
     resetDemoPreflightFixture();
+    resetPreflightStore();
     resetDemoGithubMode();
     delete process.env.FLIGHTDECK_DATA_DIR;
     delete process.env.FLIGHTDECK_DEMO;
@@ -36,6 +38,30 @@ describe("http", () => {
     const body = (await res.json()) as { ok: boolean; checks: { id: string; ok: boolean }[] };
     expect(body.ok).toBe(true);
     expect(body.checks.find((c) => c.id === "database")).toMatchObject({ ok: true });
+  });
+
+  it("GET /api/preflight never rebuilds; recheck does", async () => {
+    const app = createApp();
+    const first = (await (await app.request("http://127.0.0.1/api/preflight")).json()) as { checkedAt: string };
+    expect(preflightBuildCount()).toBe(1);
+    const second = (await (await app.request("http://127.0.0.1/api/preflight?refresh=1")).json()) as {
+      checkedAt: string;
+    };
+    expect(second.checkedAt).toBe(first.checkedAt);
+    expect(preflightBuildCount()).toBe(1);
+    const token = await app.request("http://127.0.0.1/api/github/token", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: "ok" }),
+    });
+    expect(token.status).toBe(200);
+    expect(preflightBuildCount()).toBe(1);
+    await new Promise((r) => setTimeout(r, 5));
+    const fresh = (await (
+      await app.request("http://127.0.0.1/api/preflight/recheck", { method: "POST" })
+    ).json()) as { checkedAt: string };
+    expect(fresh.checkedAt).not.toBe(first.checkedAt);
+    expect(preflightBuildCount()).toBe(2);
   });
 
   it("can switch the demo preflight fixture to failing", async () => {

@@ -36,6 +36,7 @@ test("Settings lists every preflight check", async ({ page }) => {
   await expect(page.getByTestId("preflight-section")).toBeVisible();
   await expect(page.getByTestId("preflight-node")).toContainText("Pass");
   await expect(page.getByTestId("preflight-github")).toContainText("dan-demo");
+  await expect(page.getByTestId("preflight-github")).toContainText("Using GITHUB_TOKEN from environment");
   await expect(page.getByTestId("claude-recheck")).toHaveCount(0);
   await page.getByTestId("preflight-section").getByTestId("preflight-recheck").click();
   await expect(page.getByTestId("preflight-claude")).toContainText("Pass");

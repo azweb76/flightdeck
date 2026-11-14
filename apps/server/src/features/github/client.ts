@@ -45,7 +45,6 @@ export async function saveGithubToken(token: string): Promise<void> {
   getCache().invalidate(CACHE_KEYS.githubStatus);
   getCache().invalidate(CACHE_KEYS.githubRepos);
   getCache().invalidate(CACHE_KEYS.githubIssues);
-  getCache().invalidate(CACHE_KEYS.preflight);
 }
 
 export async function clearGithubToken(): Promise<void> {
@@ -53,5 +52,4 @@ export async function clearGithubToken(): Promise<void> {
   getCache().invalidate(CACHE_KEYS.githubStatus);
   getCache().invalidate(CACHE_KEYS.githubRepos);
   getCache().invalidate(CACHE_KEYS.githubIssues);
-  getCache().invalidate(CACHE_KEYS.preflight);
 }

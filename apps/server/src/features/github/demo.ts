@@ -1,4 +1,4 @@
-import { githubTokenSourceLabel, type CatalogRepo, type GithubStatus } from "@flightdeck/shared";
+import { appendGithubSourceLabel, type CatalogRepo, type GithubStatus } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache } from "../cache/index.ts";
 import { envGithubToken } from "./token.ts";
 import type { GhIssue, GithubClient } from "./types.ts";
@@ -14,18 +14,15 @@ export function demoGithubMode(): DemoGithubMode {
 export function setDemoGithubMode(next: DemoGithubMode): void {
   mode = next;
   getCache().invalidate(CACHE_KEYS.githubStatus);
-  getCache().invalidate(CACHE_KEYS.preflight);
 }
 
 export function resetDemoGithubMode(): void {
   mode = "connected";
   getCache().invalidate(CACHE_KEYS.githubStatus);
-  getCache().invalidate(CACHE_KEYS.preflight);
 }
 
 export function demoGithubStatus(): GithubStatus {
   const tokenSource = envGithubToken()?.source;
-  const sourceNote = githubTokenSourceLabel(tokenSource);
   const oauthAvailable = Boolean(process.env.FLIGHTDECK_GITHUB_CLIENT_ID);
   if (mode === "empty") {
     return {
@@ -33,55 +30,48 @@ export function demoGithubStatus(): GithubStatus {
       loggedIn: false,
       hasToken: false,
       oauthAvailable,
-      detail: "Set GITHUB_TOKEN or paste a PAT in Settings",
+      tokenSource,
+      detail: appendGithubSourceLabel("Set GITHUB_TOKEN or paste a PAT in Settings", tokenSource),
     };
   }
   if (mode === "error") {
-    return withDemoSource(
-      {
-        installed: true,
-        loggedIn: false,
-        hasToken: true,
-        oauthAvailable,
-        tokenSource,
-        detail: "GitHub token was rejected (401). Create a new PAT and paste it in Settings.",
-      },
-      sourceNote,
-    );
-  }
-  if (mode === "scopes") {
-    return withDemoSource(
-      {
-        installed: true,
-        loggedIn: false,
-        hasToken: true,
-        user: "dan-demo",
-        scopes: ["repo"],
-        oauthAvailable,
-        tokenSource,
-        detail: "Connected as dan-demo but missing scopes: read:org, workflow. Need repo, read:org, workflow.",
-      },
-      sourceNote,
-    );
-  }
-  return withDemoSource(
-    {
+    return {
       installed: true,
-      loggedIn: true,
+      loggedIn: false,
       hasToken: true,
-      user: "dan-demo",
-      scopes: ["repo", "read:org", "workflow"],
       oauthAvailable,
       tokenSource,
-      detail: "Connected as dan-demo (demo); scopes repo, read:org, workflow",
-    },
-    sourceNote,
-  );
-}
-
-function withDemoSource(status: GithubStatus, sourceNote: string): GithubStatus {
-  if (!sourceNote) return status;
-  return { ...status, detail: `${status.detail.replace(/\.$/, "")}. ${sourceNote}.` };
+      detail: appendGithubSourceLabel(
+        "GitHub token was rejected (401). Create a new PAT and paste it in Settings.",
+        tokenSource,
+      ),
+    };
+  }
+  if (mode === "scopes") {
+    return {
+      installed: true,
+      loggedIn: false,
+      hasToken: true,
+      user: "dan-demo",
+      scopes: ["repo"],
+      oauthAvailable,
+      tokenSource,
+      detail: appendGithubSourceLabel(
+        "Connected as dan-demo but missing scopes: read:org, workflow. Need repo, read:org, workflow.",
+        tokenSource,
+      ),
+    };
+  }
+  return {
+    installed: true,
+    loggedIn: true,
+    hasToken: true,
+    user: "dan-demo",
+    scopes: ["repo", "read:org", "workflow"],
+    oauthAvailable,
+    tokenSource,
+    detail: appendGithubSourceLabel("Connected as dan-demo (demo); scopes repo, read:org, workflow", tokenSource),
+  };
 }
 
 export function createDemoGithubClient(): GithubClient {

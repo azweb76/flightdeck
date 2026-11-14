@@ -1,9 +1,8 @@
-import type { PreflightCheck, PreflightReport } from "@flightdeck/shared";
-import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
+import type { GithubStatus, PreflightCheck, PreflightReport } from "@flightdeck/shared";
 import { databasePreflightCheck, getDb } from "../db/index.ts";
 import { publish } from "../events/index.ts";
 import { checkClaude } from "./check-claude.ts";
-import { checkGithub } from "./check-github.ts";
+import { checkGithub, githubCheckFromStatus } from "./check-github.ts";
 import { checkJira } from "./check-jira.ts";
 import { checkNode } from "./check-node.ts";
 import { checkGit, checkPnpm } from "./check-tools.ts";
@@ -11,9 +10,30 @@ import { liveContext } from "./context.ts";
 import { demoPreflightFixture, demoReport } from "./demo.ts";
 import type { PreflightCtx } from "./types.ts";
 
-export async function getPreflightReport(opts?: { force?: boolean; ctx?: PreflightCtx }): Promise<PreflightReport> {
+let stored: PreflightReport | undefined;
+let builds = 0;
+
+export function resetPreflightStore(): void {
+  stored = undefined;
+  builds = 0;
+}
+
+export function preflightBuildCount(): number {
+  return builds;
+}
+
+/** Snapshot from startup/recheck. Builds once if empty (tests). GET never rebuilds. */
+export async function getPreflightReport(opts?: { ctx?: PreflightCtx }): Promise<PreflightReport> {
   if (opts?.ctx) return buildReport(opts.ctx);
-  return getCache().get(CACHE_KEYS.preflight, () => buildReport(), TTL.preflight, { force: opts?.force });
+  if (stored) return stored;
+  return runChecks();
+}
+
+export async function runChecks(): Promise<PreflightReport> {
+  const report = await buildReport();
+  builds += 1;
+  stored = report;
+  return report;
 }
 
 export async function buildReport(ctx?: PreflightCtx): Promise<PreflightReport> {
@@ -34,15 +54,26 @@ export async function buildReport(ctx?: PreflightCtx): Promise<PreflightReport> 
 }
 
 export async function recheckPreflight(): Promise<PreflightReport> {
-  const report = await getPreflightReport({ force: true });
+  const report = await runChecks();
   publish("preflight.updated", report);
   return report;
 }
 
-export function toReport(checks: PreflightCheck[], demo: boolean): PreflightReport {
+export function patchGithubPreflight(status: GithubStatus): PreflightReport {
+  const check = githubCheckFromStatus(status);
+  const current = stored ?? toReport([check], process.env.FLIGHTDECK_DEMO === "1");
+  const checks = current.checks.some((c) => c.id === "github")
+    ? current.checks.map((c) => (c.id === "github" ? check : c))
+    : [...current.checks, check];
+  stored = toReport(checks, current.demo, current.checkedAt);
+  publish("preflight.updated", stored);
+  return stored;
+}
+
+export function toReport(checks: PreflightCheck[], demo: boolean, checkedAt = new Date().toISOString()): PreflightReport {
   return {
     ok: checks.filter((c) => c.severity === "required").every((c) => c.ok),
-    checkedAt: new Date().toISOString(),
+    checkedAt,
     demo,
     checks,
   };

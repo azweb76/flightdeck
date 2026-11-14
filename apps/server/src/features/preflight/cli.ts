@@ -1,6 +1,6 @@
 import { formatPreflight } from "./print.ts";
-import { getPreflightReport } from "./report.ts";
+import { buildReport } from "./report.ts";
 
-const report = await getPreflightReport({ force: true });
+const report = await buildReport();
 console.info(formatPreflight(report));
 if (!report.ok) process.exit(1);

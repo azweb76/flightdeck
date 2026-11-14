@@ -122,6 +122,9 @@ describe("preflight checks", () => {
     const ok = await checkGithub();
     expect(ok.ok).toBe(true);
     expect(ok.detail).toContain("dan-demo");
+    process.env.GITHUB_TOKEN = "test-env-github-token";
+    expect((await checkGithub()).detail).toContain("Using GITHUB_TOKEN from environment");
+    delete process.env.GITHUB_TOKEN;
     delete process.env.FLIGHTDECK_DEMO;
   });
 

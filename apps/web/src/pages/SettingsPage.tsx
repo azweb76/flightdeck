@@ -15,7 +15,7 @@ export function SettingsPage() {
   const [repos, setRepos] = useState<CatalogRepo[]>([]);
   const [error, setError] = useState("");
   const { setMode } = useColorScheme();
-  const { report, recheck } = usePreflight();
+  const { report } = usePreflight();
   const shown = status ? overlayStatus(status, report) : undefined;
 
   const reload = useCallback(async () => {
@@ -56,10 +56,7 @@ export function SettingsPage() {
       />
       <GithubForm
         status={shown.github}
-        onDone={async () => {
-          await reload();
-          await recheck();
-        }}
+        onDone={() => reload()}
       />
       <CapsForm
         settings={settings}

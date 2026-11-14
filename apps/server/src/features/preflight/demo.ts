@@ -1,6 +1,7 @@
-import type { PreflightCheck, PreflightReport } from "@flightdeck/shared";
-import { CACHE_KEYS, getCache } from "../cache/index.ts";
-import { demoGithubMode } from "../github/demo.ts";
+import { appendGithubSourceLabel, type PreflightCheck, type PreflightReport } from "@flightdeck/shared";
+import { demoGithubStatus } from "../github/demo.ts";
+import { envGithubToken } from "../github/token.ts";
+import { githubCheckFromStatus } from "./check-github.ts";
 import type { DemoPreflightFixture } from "./types.ts";
 
 let fixture: DemoPreflightFixture | undefined;
@@ -13,12 +14,10 @@ export function demoPreflightFixture(): DemoPreflightFixture | undefined {
 
 export function setDemoPreflightFixture(next: DemoPreflightFixture): void {
   fixture = next;
-  getCache().invalidate(CACHE_KEYS.preflight);
 }
 
 export function resetDemoPreflightFixture(): void {
   fixture = undefined;
-  getCache().invalidate(CACHE_KEYS.preflight);
 }
 
 export function passingChecks(database: PreflightCheck): PreflightCheck[] {
@@ -46,7 +45,7 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
       severity: "required",
       ok: false,
       status: "fail",
-      detail: "No GitHub token stored",
+      detail: appendGithubSourceLabel("No GitHub token stored", envGithubToken()?.source),
       fix: "Add a GitHub token in Settings",
       gates: ["shape", "start", "saveGithub"],
     },
@@ -97,36 +96,7 @@ function pass(id: string, label: string, version: string): PreflightCheck {
 }
 
 function githubDemoCheck(): PreflightCheck {
-  const mode = demoGithubMode();
-  if (mode === "connected") return passGithub();
-  const detail =
-    mode === "error"
-      ? "GitHub token was rejected (401). Create a new PAT and paste it in Settings."
-      : mode === "scopes"
-        ? "Connected as dan-demo but missing scopes: read:org, workflow. Need repo, read:org, workflow."
-        : "No GitHub token stored";
-  return {
-    id: "github",
-    label: "GitHub token",
-    severity: "required",
-    ok: false,
-    status: "fail",
-    detail,
-    fix: "Add a GitHub token in Settings",
-    gates: ["shape", "start", "saveGithub"],
-  };
-}
-
-function passGithub(): PreflightCheck {
-  return {
-    id: "github",
-    label: "GitHub token",
-    severity: "required",
-    ok: true,
-    status: "pass",
-    detail: "Connected as dan-demo (demo); scopes repo, read:org, workflow",
-    gates: ["shape", "start", "saveGithub"],
-  };
+  return githubCheckFromStatus(demoGithubStatus());
 }
 
 function passClaude(): PreflightCheck {

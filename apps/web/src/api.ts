@@ -61,7 +61,7 @@ export const api = {
     }),
   claudeLogin: () => req<{ ok: boolean; detail: string }>("/api/claude/login", { method: "POST" }),
   recheckClaude: () => req<ClaudeStatus>("/api/claude/recheck", { method: "POST" }),
-  preflight: (refresh = false) => req<PreflightReport>(`/api/preflight${refresh ? "?refresh=1" : ""}`),
+  preflight: () => req<PreflightReport>("/api/preflight"),
   recheckPreflight: () => req<PreflightReport>("/api/preflight/recheck", { method: "POST" }),
   setDemoPreflight: (fixture: "pass" | "fail") =>
     req<PreflightReport>("/api/demo/preflight", { method: "POST", body: JSON.stringify({ fixture }) }),

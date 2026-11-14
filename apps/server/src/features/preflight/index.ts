@@ -1,4 +1,13 @@
-export { getPreflightReport, buildReport, recheckPreflight, toReport } from "./report.ts";
+export {
+  getPreflightReport,
+  buildReport,
+  recheckPreflight,
+  runChecks,
+  patchGithubPreflight,
+  resetPreflightStore,
+  preflightBuildCount,
+  toReport,
+} from "./report.ts";
 export { runStartupPreflight } from "./startup.ts";
 export { formatPreflight, printPreflight } from "./print.ts";
 export { demoPreflightFixture, setDemoPreflightFixture, resetDemoPreflightFixture } from "./demo.ts";

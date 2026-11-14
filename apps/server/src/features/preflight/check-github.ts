@@ -1,20 +1,26 @@
-import type { PreflightCheck } from "@flightdeck/shared";
+import { appendGithubSourceLabel, type GithubStatus, type PreflightCheck } from "@flightdeck/shared";
 import { createGithubClient } from "../github/index.ts";
 
 const FIX = "Add a GitHub token in Settings";
 const GATES = ["shape", "start", "saveGithub"] as const;
 
 export async function checkGithub(): Promise<PreflightCheck> {
-  const status = await createGithubClient().status();
-  if (!status.hasToken) return fail("No GitHub token. Set GITHUB_TOKEN or paste a PAT in Settings");
-  if (!status.loggedIn) return fail(status.detail);
+  return githubCheckFromStatus(await createGithubClient().status());
+}
+
+export function githubCheckFromStatus(status: GithubStatus): PreflightCheck {
+  const detail = appendGithubSourceLabel(
+    status.detail || "No GitHub token. Set GITHUB_TOKEN or paste a PAT in Settings",
+    status.tokenSource,
+  );
+  if (!status.hasToken || !status.loggedIn) return fail(detail);
   return {
     id: "github",
     label: "GitHub token",
     severity: "required",
     ok: true,
     status: "pass",
-    detail: status.detail,
+    detail,
     gates: [...GATES],
   };
 }

@@ -19,7 +19,6 @@ export function patchSettings(patch: SettingsPatch): Settings {
   const cache = getCache();
   cache.invalidate(CACHE_KEYS.githubStatus);
   cache.invalidate(CACHE_KEYS.claudeConfig);
-  cache.invalidate(CACHE_KEYS.preflight);
   if (jiraPatch(patch)) cache.invalidate(CACHE_KEYS.jiraAll);
   publish("settings.updated");
   return next;

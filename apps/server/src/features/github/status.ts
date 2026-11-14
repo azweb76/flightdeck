@@ -1,5 +1,5 @@
 import type { GithubStatus } from "@flightdeck/shared";
-import { GITHUB_NEEDED_SCOPES, githubTokenSourceLabel } from "@flightdeck/shared";
+import { GITHUB_NEEDED_SCOPES, appendGithubSourceLabel } from "@flightdeck/shared";
 import { createOctokit, githubCall, type FetchFn } from "./octokit.ts";
 import { headerOf, missingScopes, parseScopeHeader } from "./scopes.ts";
 import { resolveGithubToken } from "./token.ts";
@@ -76,7 +76,5 @@ export async function githubStatus(opts: { token?: string; fetch?: FetchFn } = {
 }
 
 function withSource(status: GithubStatus): GithubStatus {
-  const label = githubTokenSourceLabel(status.tokenSource);
-  if (!label || status.detail.includes(label)) return status;
-  return { ...status, detail: `${status.detail.replace(/\.$/, "")}. ${label}.` };
+  return { ...status, detail: appendGithubSourceLabel(status.detail, status.tokenSource) };
 }

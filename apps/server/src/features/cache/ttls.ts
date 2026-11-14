@@ -7,7 +7,6 @@ export const TTL = {
   jiraConnect: 120_000,
   claudeConfig: 120_000,
   cloneFetch: 60_000,
-  preflight: 30_000,
 } as const;
 
 export const CACHE_KEYS = {
@@ -16,7 +15,6 @@ export const CACHE_KEYS = {
   githubRepos: "gh:repos",
   githubIssues: "gh:issues",
   claudeConfig: "claude:config",
-  preflight: "preflight:report",
   jiraAll: "jira:*",
   jiraSearchAll: "jira:search:*",
   cloneFetch: (owner: string, name: string) => `clone:fetch:${owner}/${name}`,
