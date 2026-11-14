@@ -34,7 +34,7 @@ describe("preflight report", () => {
     setDemoPreflightFixture("fail");
     const report = await getPreflightReport({ force: true });
     expect(report.ok).toBe(false);
-    expect(report.checks.find((c) => c.id === "gh")?.fix).toBe("gh auth login");
+    expect(report.checks.find((c) => c.id === "github")?.fix).toBe("Add a GitHub token in Settings");
     expect(formatPreflight(report)).toContain("Fix: brew install git");
     expect(formatPreflight(report)).toContain("Required checks failed");
   });

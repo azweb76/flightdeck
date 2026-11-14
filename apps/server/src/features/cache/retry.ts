@@ -31,6 +31,23 @@ export function parseRetryAfterMs(header: string | null | undefined, now = Date.
   return Math.max(0, date - now);
 }
 
+export function parseResetHeaderMs(reset: string | null | undefined, now = Date.now()): number | undefined {
+  if (!reset?.trim()) return undefined;
+  const unix = Number(reset.trim());
+  if (!Number.isFinite(unix)) return undefined;
+  return Math.max(0, unix * 1000 - now);
+}
+
+export function githubWaitFromHeaders(headers: { get?: (name: string) => string | null; [key: string]: unknown }): number | undefined {
+  const get = (name: string) => {
+    if (typeof headers.get === "function") return headers.get(name);
+    const rec = headers as Record<string, unknown>;
+    const v = rec[name] ?? rec[name.toLowerCase()];
+    return typeof v === "string" ? v : undefined;
+  };
+  return parseRetryAfterMs(get("retry-after")) ?? parseResetHeaderMs(get("x-ratelimit-reset"));
+}
+
 export function waitMsForAttempt(err: unknown, attempt: number): number {
   if (err instanceof RateLimitError && err.retryAfterMs != null) {
     return Math.min(err.retryAfterMs, RATE_LIMIT.capMs);

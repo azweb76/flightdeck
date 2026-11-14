@@ -1,102 +1,106 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetCacheForTests } from "../cache/store.ts";
 import { setSleepForTests } from "../cache/retry.ts";
-import type { ExecFn } from "../exec/index.ts";
-import { createGithubClient, GH_ISSUE_CREATE_ARGS, parseCreatedIssue } from "./index.ts";
+import { createGithubClient } from "./index.ts";
 
-describe("github adapter", () => {
+describe("github octokit adapter", () => {
   beforeEach(() => {
     resetCacheForTests();
     setSleepForTests();
+    delete process.env.FLIGHTDECK_DEMO;
   });
 
-  it("reports gh login and maps assigned issues", async () => {
-    const gh = createGithubClient(statusExec);
+  it("lists assigned issues and reports the login", async () => {
+    const gh = createGithubClient({ token: "t", fetch: mockFetch() });
     const status = await gh.status();
-    expect(status.loggedIn).toBe(true);
-    expect(status.user).toBe("dan");
+    expect(status).toMatchObject({ loggedIn: true, user: "dan" });
+    expect(status.scopes).toEqual(["repo", "read:org", "workflow"]);
     const issues = await gh.listAssignedIssues();
     expect(issues[0]?.id).toBe("github:acme/web#12");
   });
 
-  it("creates an issue with gh args that omit --json and parses the printed URL", async () => {
-    let seen: string[] = [];
-    const exec: ExecFn = async (_file, args) => {
-      seen = args;
-      return { code: 0, stdout: "https://github.com/acme/web/issues/9\n", stderr: "" };
-    };
-    const created = await createGithubClient(exec).createIssue("acme", "web", "T", "B");
-    expect(seen).toEqual(GH_ISSUE_CREATE_ARGS("acme", "web", "T", "B"));
-    expect(seen).not.toContain("--json");
+  it("creates and updates issues", async () => {
+    const seen: string[] = [];
+    const gh = createGithubClient({
+      token: "t",
+      fetch: mockFetch({
+        onRequest: (method, url) => seen.push(`${method} ${url.pathname}`),
+      }),
+    });
+    const created = await gh.createIssue("acme", "web", "T", "B");
     expect(created).toEqual({ number: 9, url: "https://github.com/acme/web/issues/9" });
-    expect(parseCreatedIssue("Created!\nhttps://github.com/acme/web/issues/42")).toMatchObject({ number: 42 });
+    await gh.updateIssue("acme", "web", 9, "T2", "B2");
+    expect(seen).toContain("POST /repos/acme/web/issues");
+    expect(seen).toContain("PATCH /repos/acme/web/issues/9");
   });
 
-  it("caches status and assigned issues", async () => {
-    let n = 0;
-    const exec: ExecFn = async (file, args) => {
-      n += 1;
-      return statusExec(file, args);
-    };
-    const gh = createGithubClient(exec);
-    await gh.status();
-    await gh.status();
-    await gh.listAssignedIssues();
-    await gh.listAssignedIssues();
-    expect(n).toBe(3);
-  });
-
-  it("caches user/repos", async () => {
-    let n = 0;
-    const exec: ExecFn = async (_file, args) => {
-      if (args.includes("--paginate")) {
-        n += 1;
-        return { code: 0, stdout: JSON.stringify([{ full_name: "acme/web" }]), stderr: "" };
-      }
-      return statusExec(_file, args);
-    };
-    const gh = createGithubClient(exec);
-    expect((await gh.listRepos())[0]?.name).toBe("web");
+  it("paginates user repos", async () => {
+    const gh = createGithubClient({ token: "t", fetch: mockFetch() });
+    const repos = await gh.listRepos();
+    expect(repos.map((r) => r.name)).toEqual(["web", "api"]);
     await gh.listRepos();
-    expect(n).toBe(1);
   });
 
-  it("backs off on API rate limit exceeded then succeeds", async () => {
+  it("backs off on 403 primary and 429 secondary rate limits", async () => {
     const sleeps: number[] = [];
     setSleepForTests(async (ms) => {
       sleeps.push(ms);
     });
     let searches = 0;
-    const exec: ExecFn = async (file, args) => {
-      const joined = args.join(" ");
-      if (joined.includes("search issues")) {
-        searches += 1;
-        if (searches === 1) {
-          return { code: 1, stdout: "", stderr: "API rate limit exceeded" };
-        }
-        return { code: 0, stdout: "[]", stderr: "" };
-      }
-      return statusExec(file, args);
-    };
-    const issues = await createGithubClient(exec).listAssignedIssues();
-    expect(issues).toEqual([]);
-    expect(searches).toBe(2);
-    expect(sleeps).toEqual([1_000]);
+    const gh = createGithubClient({
+      token: "t",
+      fetch: mockFetch({
+        search: () => {
+          searches += 1;
+          if (searches === 1) {
+            return json(
+              { message: "API rate limit exceeded" },
+              403,
+              { "x-ratelimit-remaining": "0", "x-ratelimit-reset": String(Math.floor(Date.now() / 1000) + 2) },
+            );
+          }
+          if (searches === 2) {
+            return json({ message: "You have exceeded a secondary rate limit" }, 429, { "retry-after": "1" });
+          }
+          return json({ items: [] });
+        },
+      }),
+    });
+    expect(await gh.listAssignedIssues()).toEqual([]);
+    expect(searches).toBe(3);
+    expect(sleeps.length).toBe(2);
+  });
+
+  it("rejects a bad token", async () => {
+    const bad = createGithubClient({
+      token: "bad",
+      fetch: mockFetch({ user: () => json({ message: "Bad credentials" }, 401) }),
+    });
+    expect((await bad.status()).loggedIn).toBe(false);
+    expect((await bad.status()).detail).toMatch(/401/);
+  });
+
+  it("rejects a token missing required scopes", async () => {
+    const skinny = createGithubClient({
+      token: "t",
+      fetch: mockFetch({ user: () => json({ login: "dan" }, 200, { "x-oauth-scopes": "repo" }) }),
+    });
+    const st = await skinny.status();
+    expect(st.loggedIn).toBe(false);
+    expect(st.detail).toMatch(/missing scopes/);
   });
 
   it("invalidates assigned issues after create", async () => {
     let searches = 0;
-    const exec: ExecFn = async (file, args) => {
-      if (args[0] === "issue" && args[1] === "create") {
-        return { code: 0, stdout: "https://github.com/acme/web/issues/9\n", stderr: "" };
-      }
-      if (args.join(" ").includes("search issues")) {
-        searches += 1;
-        return { code: 0, stdout: "[]", stderr: "" };
-      }
-      return statusExec(file, args);
-    };
-    const gh = createGithubClient(exec);
+    const gh = createGithubClient({
+      token: "t",
+      fetch: mockFetch({
+        search: () => {
+          searches += 1;
+          return json({ items: [] });
+        },
+      }),
+    });
     await gh.listAssignedIssues();
     await gh.createIssue("acme", "web", "T", "B");
     await gh.listAssignedIssues();
@@ -104,25 +108,51 @@ describe("github adapter", () => {
   });
 });
 
-const statusExec: ExecFn = async (file, args) => {
-  const joined = args.join(" ");
-  if (file === "gh" && args[0] === "--version") return { code: 0, stdout: "gh 2.0", stderr: "" };
-  if (joined.includes("auth status")) return { code: 0, stdout: "", stderr: "Logged in to github.com account dan" };
-  if (joined.includes("search issues")) {
-    return {
-      code: 0,
-      stdout: JSON.stringify([
-        {
-          number: 12,
-          title: "Mine",
-          body: "b",
-          url: "https://github.com/acme/web/issues/12",
-          updatedAt: "2026-11-12T00:00:00Z",
-          repository: { nameWithOwner: "acme/web" },
-        },
-      ]),
-      stderr: "",
-    };
-  }
-  return { code: 1, stdout: "", stderr: `unexpected ${joined}` };
-};
+function json(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json", ...headers },
+  });
+}
+
+function mockFetch(opts?: {
+  onRequest?: (method: string, url: URL) => void;
+  user?: () => Response;
+  search?: () => Response;
+}): typeof fetch {
+  return (async (input, init) => {
+    const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
+    const method = (init?.method ?? "GET").toUpperCase();
+    opts?.onRequest?.(method, url);
+    if (url.pathname === "/user" && method === "GET") {
+      return (opts?.user ?? (() => json({ login: "dan" }, 200, { "x-oauth-scopes": "repo,read:org,workflow" })))();
+    }
+    if (url.pathname === "/search/issues") {
+      return (opts?.search ?? (() => json({ items: [searchItem()] })))();
+    }
+    if (url.pathname === "/user/repos") {
+      if (url.searchParams.get("page") === "2") return json([{ full_name: "acme/api" }]);
+      return json([{ full_name: "acme/web" }], 200, {
+        link: `<${url.origin}/user/repos?page=2&per_page=100>; rel="next"`,
+      });
+    }
+    if (url.pathname === "/repos/acme/web/issues" && method === "POST") {
+      return json({ number: 9, html_url: "https://github.com/acme/web/issues/9" }, 201);
+    }
+    if (url.pathname === "/repos/acme/web/issues/9" && method === "PATCH") {
+      return json({ number: 9, html_url: "https://github.com/acme/web/issues/9" });
+    }
+    return json({ message: `unexpected ${method} ${url.pathname}` }, 500);
+  }) as typeof fetch;
+}
+
+function searchItem() {
+  return {
+    number: 12,
+    title: "Mine",
+    body: "b",
+    html_url: "https://github.com/acme/web/issues/12",
+    updated_at: "2026-11-12T00:00:00Z",
+    repository_url: "https://api.github.com/repos/acme/web",
+  };
+}

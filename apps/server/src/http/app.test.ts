@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../features/db/index.ts";
 import { seedDemo } from "../features/demo/index.ts";
+import { resetDemoGithubMode } from "../features/github/index.ts";
 import { resetDemoPreflightFixture } from "../features/preflight/index.ts";
 import { subscribe } from "../features/events/index.ts";
 import { upsertIssue } from "../features/issues/store.ts";
@@ -17,11 +18,13 @@ describe("http", () => {
     delete process.env.FLIGHTDECK_SEED;
     resetDbForTests(join(dir, "app.sqlite"));
     resetDemoPreflightFixture();
+    resetDemoGithubMode();
     seedDemo();
   });
   afterEach(() => {
     closeDb();
     resetDemoPreflightFixture();
+    resetDemoGithubMode();
     delete process.env.FLIGHTDECK_DATA_DIR;
     delete process.env.FLIGHTDECK_DEMO;
   });
@@ -45,7 +48,7 @@ describe("http", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { ok: boolean; checks: { id: string; status: string }[] };
     expect(body.ok).toBe(false);
-    expect(body.checks.find((c) => c.id === "gh")?.status).toBe("fail");
+    expect(body.checks.find((c) => c.id === "github")?.status).toBe("fail");
     const status = (await (await app.request("http://127.0.0.1/api/status")).json()) as {
       claude: { found: boolean };
       github: { loggedIn: boolean };
@@ -133,6 +136,26 @@ describe("http", () => {
     const res = await app.request("http://127.0.0.1/api/claude/recheck", { method: "POST" });
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ found: true, detail: expect.stringContaining("demo") });
+  });
+
+  it("accepts and rejects a demo GitHub token", async () => {
+    const app = createApp();
+    const ok = await app.request("http://127.0.0.1/api/github/token", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: "ghp_demo" }),
+    });
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toMatchObject({ ok: true, status: { user: "dan-demo", loggedIn: true } });
+    const bad = await app.request("http://127.0.0.1/api/github/token", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: "fail" }),
+    });
+    expect(bad.status).toBe(400);
+    await app.request("http://127.0.0.1/api/github/disconnect", { method: "POST" });
+    const status = (await (await app.request("http://127.0.0.1/api/status")).json()) as { github: { loggedIn: boolean } };
+    expect(status.github.loggedIn).toBe(false);
   });
 
   it("rejects a Jira connect with a bad token", async () => {

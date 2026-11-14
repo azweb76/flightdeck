@@ -4,6 +4,8 @@ export {
   RateLimitError,
   isGithubRateLimit,
   parseRetryAfterMs,
+  parseResetHeaderMs,
+  githubWaitFromHeaders,
   rateLimitMessage,
   setSleepForTests,
   withBackoff,

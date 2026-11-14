@@ -4,6 +4,7 @@ import { useColorScheme } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
 import { api, type AppStatus } from "../api.ts";
 import { overlayStatus, PreflightSection, usePreflight } from "../preflight/index.ts";
+import { GithubForm } from "./GithubForm.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
 export function SettingsPage() {
@@ -12,7 +13,7 @@ export function SettingsPage() {
   const [repos, setRepos] = useState<CatalogRepo[]>([]);
   const [error, setError] = useState("");
   const { setMode } = useColorScheme();
-  const { report } = usePreflight();
+  const { report, recheck } = usePreflight();
   const shown = status ? overlayStatus(status, report) : undefined;
 
   const reload = useCallback(async () => {
@@ -50,6 +51,13 @@ export function SettingsPage() {
         status={shown}
         repos={repos}
         onClaudeHint={() => void api.claudeLogin().then((r) => setError(r.detail))}
+      />
+      <GithubForm
+        status={shown.github}
+        onDone={async () => {
+          await reload();
+          await recheck();
+        }}
       />
       <CapsForm
         settings={settings}
@@ -99,9 +107,9 @@ function StatusCards(props: {
         <Typography variant="overline" color="text.secondary">
           GitHub
         </Typography>
-        <Typography variant="h6">{github.loggedIn ? github.user ?? "Logged in" : "Not logged in"}</Typography>
+        <Typography variant="h6">{github.loggedIn ? github.user ?? "Connected" : "Not connected"}</Typography>
         <Typography color="text.secondary" sx={{ mt: 1 }}>
-          {github.loggedIn ? github.detail : `${github.detail}. In a terminal run: gh auth login`}
+          {github.detail}
         </Typography>
       </Paper>
       <Paper sx={{ p: 3, border: 1, borderColor: "divider" }} data-testid="jira-status">

@@ -66,7 +66,7 @@ Throughout, the agent is hands-off but can pause and ask Dan a question when stu
 - TypeScript Node backend with the Claude Agent SDK; React frontend with MUI.
 - SQLite at `~/.flightdeck/app.sqlite`. Schema version is `PRAGMA user_version`. Startup creates missing tables and `ALTER TABLE`s missing columns (checked with `PRAGMA table_info`). An incompatible v1 database is renamed to `app.sqlite.v1-backup-<timestamp>` and replaced with a fresh v2 file — never deleted silently.
 - Claude auth: use `apiKeyHelper` and the API base URL (ANTHROPIC_BASE_URL) from the user's Claude settings (`~/.claude/settings.json`); fall back to the Claude OAuth login when no `apiKeyHelper` is set.
-- GitHub via the `gh` CLI login; Jira Cloud via email + API token.
+- GitHub via a personal access token in Settings (Octokit; git CLI still does clone/fetch/worktree/commit/push). Jira Cloud via email + API token.
 - Per-run and daily dollar caps, plus a max-concurrent-agents setting.
 
 ## Caching
@@ -75,16 +75,16 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 | Call | TTL | Invalidation |
 |---|---|---|
 | Issues tracker sync (`GET /api/issues`) | 60s | `POST /api/issues/sync` (Refresh) forces a sync |
-| `gh auth status` / `gh --version` | 2 min | Settings save |
-| `gh search` assigned issues | 60s | Refresh; after GitHub issue create/update |
-| `gh api user/repos` | 5 min | — |
+| GitHub `GET /user` (token status) | 2 min | Settings token save/disconnect |
+| GitHub assigned issues search | 60s | Refresh; after GitHub issue create/update |
+| GitHub `GET /user/repos` | 5 min | — |
 | Jira JQL search | 60s | Jira settings save/connect; after Jira create/update; Refresh |
 | Jira connect `myself` | 2 min | Jira settings save/connect; after Jira create/update |
 | `detectClaudeConfig` (including apiKeyHelper) | 2 min | Settings save; Settings Re-check |
 | Preflight report (`GET /api/preflight`) | 30s | `?refresh=1`, `POST /api/preflight/recheck`, Settings save |
 | `git fetch origin` | 60s | TTL only |
 
-`issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or gh "API rate limit exceeded" / secondary rate limit, Flightdeck backs off (capped) and returns `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s and gh stderr.
+`issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or GitHub 403/429 (`Retry-After`, `x-ratelimit-reset`, secondary rate limit), Flightdeck backs off (capped) and returns `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s.
 
 ## Preflight
 Startup and `pnpm preflight` run the same checks. Required failures print a one-line fix and do not crash the server (the UI can show them), except Node itself being below `package.json` `engines`. `GET /api/preflight` returns the report; cache keys and logs never include secrets.
@@ -94,7 +94,7 @@ Startup and `pnpm preflight` run the same checks. Required failures print a one-
 | Node.js | required | `process.versions.node` satisfies `engines.node` | `brew install node@22` |
 | pnpm | required | `pnpm --version` satisfies `engines.pnpm` | `corepack enable` |
 | git | required | `git --version` >= 2.20 (semver compare; Apple Git suffixes ignored). Worktrees shipped in 2.5; `git worktree -h` exit 129 is usage, not missing. | `brew install git` |
-| GitHub CLI | required | `gh` installed and `gh auth status` succeeds | `brew install gh` / `gh auth login` |
+| GitHub token | required | PAT present, `GET /user` succeeds, classic scopes include repo, read:org, workflow (fine-grained noted if no scope header) | Add a GitHub token in Settings |
 | Claude auth | required | `apiKeyHelper` (and it runs), API key env, or OAuth credentials | `claude` then `/login` |
 | SQLite schema | required | `PRAGMA user_version` matches and columns exist | Pull latest and restart |
 | Jira | optional | skipped if unset; warn if configured without a working token | Add a Jira API token in Settings |

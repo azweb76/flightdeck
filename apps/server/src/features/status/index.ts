@@ -1,6 +1,6 @@
 import type { ClaudeStatus, GithubStatus } from "@flightdeck/shared";
 import { detectClaudeConfig, CLAUDE_LOGIN_HINT } from "../claude/index.ts";
-import { createGithubClient } from "../github/index.ts";
+import { createGithubClient, demoGithubStatus } from "../github/index.ts";
 import { demoPreflightFixture } from "../preflight/demo.ts";
 import { getSettings } from "../settings/index.ts";
 import { createSecretStore } from "../secrets/index.ts";
@@ -24,7 +24,7 @@ export async function appStatus(): Promise<{
   const configured = settings.jiraConfigured && !jiraLastError && !failDemo;
   return {
     claude: demo ? (failDemo ? failDemoClaude() : demoClaude()) : await detectClaudeConfig(),
-    github: demo ? (failDemo ? failDemoGithub() : demoGithub()) : await createGithubClient().status(),
+    github: demo ? (failDemo ? failDemoGithub() : demoGithubStatus()) : await createGithubClient().status(),
     jira: {
       configured,
       hasToken: Boolean(token),
@@ -48,10 +48,6 @@ function demoClaude(): ClaudeStatus {
   };
 }
 
-function demoGithub(): GithubStatus {
-  return { installed: true, loggedIn: true, user: "dan-demo", detail: "gh logged in as dan-demo (demo)" };
-}
-
 function failDemoClaude(): ClaudeStatus {
   return {
     found: false,
@@ -64,7 +60,12 @@ function failDemoClaude(): ClaudeStatus {
 }
 
 function failDemoGithub(): GithubStatus {
-  return { installed: true, loggedIn: false, detail: "gh is installed but not logged in" };
+  return {
+    installed: false,
+    loggedIn: false,
+    hasToken: false,
+    detail: "No GitHub token stored",
+  };
 }
 
 function jiraDetail(failDemo: boolean, configured: boolean, hasToken: boolean, email: string): string {

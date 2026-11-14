@@ -7,10 +7,10 @@ From `docs/DESIGN.md` (Goal shaping). Each line is **Done** with proof (demo vs 
 - [x] **Done** React frontend with MUI — `apps/web`; screenshots
 - [x] **Done (unit)** Claude auth reads `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json` — `claude.test.ts`. Demo Settings card shows a fake ready status (`settings-light.png`).
 - [x] **Done (detect + instructions, not a 5s subprocess)** Claude OAuth: credentials file counts as logged in (`claude.test.ts`); Settings “How to log in” prints `claude` then `/login`. Demo mode still fakes Ready.
-- [x] **Done (real adapter, demo status in UI)** GitHub via `gh` — `github.test.ts` (exact `gh issue create` args, URL parse). Demo Settings shows `dan-demo`.
+- [x] **Done (real adapter, demo status in UI)** GitHub via Octokit + PAT in Settings — `github.test.ts`. Demo Settings shows `dan-demo`.
 - [x] **Done (real adapter, demo connect in UI)** Jira Cloud email + token — `jira.test.ts`; form + Atlassian link `settings-light.png`. Demo connect success is a success Alert (not a page-level error); failed connect clears Connected (`settings-jira-error-dark.png`). Real Jira `myself` not live-run here.
 - [x] **Done** Per-run / daily / max-concurrent caps in Settings — `settings.test.ts`; e2e blur-save; invalid cap error clears on edit (`phase1.spec.ts`); `settings-light.png`
-- [x] **Done** Home is My issues — e2e; `issues-light.png`. **GET /api/issues calls `syncIssues`**; Refresh button. Demo: seed list. Real: `gh` assigned + Jira JQL (not live-run here).
+- [x] **Done** Home is My issues — e2e; `issues-light.png`. **GET /api/issues calls `syncIssues`**; Refresh button. Demo: seed list. Real: Octokit assigned issues + Jira JQL (not live-run here).
 - [x] **Done** Nav: Issues, Runs, My PRs, Reviews, Settings — e2e; placeholder screenshots
 - [x] **Done** Full-page shaping: chat + draft share the viewport, independent scroll; stacked below `lg` (1024 stacked, 1440 side-by-side) — `shape-draft-light.png` `shape-draft-narrow.png`
 - [x] **Done** Live draft/chat over SSE (`useAppEvents` + `shape.updated` payload) and after each HTTP turn — `apps/web/src/useAppEvents.ts`
@@ -29,7 +29,7 @@ From `docs/DESIGN.md` (Goal shaping). Each line is **Done** with proof (demo vs 
 - [x] **Done** Issues list + empty state — e2e; `issues-empty-light.png`
 - [x] **Done** Error states: missing tracker, failed Jira connect inline — e2e; `settings-jira-error-dark.png`
 - [x] **Done** Demo/fake adapters — `FLIGHTDECK_DEMO=1`
-- [x] **Done** Real `gh` adapter (no `--json` on `issue create`)
+- [x] **Done** Real GitHub adapter via Octokit (no `gh` CLI)
 - [x] **Done** Real Jira REST `POST /rest/api/3/search/jql` + ADF
 - [x] **Done** Real Agent SDK read-only + AskUserQuestion
 - [x] **Done** README Mac run + Playwright Chromium via `pnpm install` / `pnpm check`

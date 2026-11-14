@@ -3,7 +3,7 @@ import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { databasePreflightCheck, getDb } from "../db/index.ts";
 import { publish } from "../events/index.ts";
 import { checkClaude } from "./check-claude.ts";
-import { checkGh } from "./check-gh.ts";
+import { checkGithub } from "./check-github.ts";
 import { checkJira } from "./check-jira.ts";
 import { checkNode } from "./check-node.ts";
 import { checkGit, checkPnpm } from "./check-tools.ts";
@@ -25,7 +25,7 @@ export async function buildReport(ctx?: PreflightCtx): Promise<PreflightReport> 
     checkNode(resolved),
     checkPnpm(resolved),
     checkGit(resolved),
-    checkGh(resolved),
+    checkGithub(),
     checkClaude(resolved),
     checkJira(resolved),
     database,

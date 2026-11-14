@@ -6,7 +6,7 @@ export function overlayStatus(status: AppStatus, report?: PreflightReport): AppS
   return {
     ...status,
     claude: overlayClaude(status.claude, find(report, "claude")),
-    github: overlayGithub(status.github, find(report, "gh")),
+    github: overlayGithub(status.github, find(report, "github")),
     jira: overlayJira(status.jira, find(report, "jira")),
   };
 }
@@ -29,7 +29,7 @@ function overlayClaude(base: ClaudeStatus, check?: PreflightCheck): ClaudeStatus
 
 function overlayGithub(base: GithubStatus, check?: PreflightCheck): GithubStatus {
   if (!check || check.ok) return base;
-  return { installed: true, loggedIn: false, user: undefined, detail: check.detail };
+  return { ...base, loggedIn: false, user: undefined, detail: check.detail };
 }
 
 function overlayJira(

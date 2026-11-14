@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { getDb } from "../db/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
-import { createGithubClient } from "../github/index.ts";
+import { createGithubClient, gitFetch } from "../github/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { reposDir } from "../../paths.ts";
 
@@ -53,7 +53,7 @@ export async function ensureClone(
     rememberRepo(owner, name, dest);
     return { localPath: dest };
   }
-  const cloned = await createGithubClient(exec).cloneRepo(owner, name, dest);
+  const cloned = await createGithubClient({ exec }).cloneRepo(owner, name, dest);
   if (!cloned.ok) throw new Error(cloned.detail);
   rememberRepo(owner, name, dest);
   return { localPath: dest };
@@ -64,8 +64,7 @@ async function fetchOriginIfStale(owner: string, name: string, dest: string, exe
     await getCache().get(
       CACHE_KEYS.cloneFetch(owner, name),
       async () => {
-        const r = await exec("git", ["fetch", "origin"], { cwd: dest, timeoutMs: 60_000 });
-        if (r.code !== 0) throw new Error(r.stderr || "git fetch failed");
+        await gitFetch(exec, dest);
         return true;
       },
       TTL.cloneFetch,

@@ -1,48 +1,90 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { JIRA_TOKEN_ACCOUNT, KEYCHAIN_SERVICE } from "@flightdeck/shared";
-import { defaultExec, type ExecFn } from "../exec/index.ts";
+import { GITHUB_TOKEN_ACCOUNT, JIRA_TOKEN_ACCOUNT, KEYCHAIN_SERVICE } from "@flightdeck/shared";
 import { secretsDir, secretsFile } from "../../paths.ts";
+
+export type SecretStorage = "keychain" | "file";
 
 export type SecretStore = {
   get(account?: string): Promise<string | undefined>;
-  set(value: string, account?: string): Promise<void>;
+  set(value: string, account?: string): Promise<SecretStorage>;
+  remove(account?: string): Promise<void>;
+  storage(account?: string): Promise<SecretStorage | undefined>;
 };
 
-export function createSecretStore(exec: ExecFn = defaultExec): SecretStore {
+export function createSecretStore(): SecretStore {
   return {
-    get: (account = JIRA_TOKEN_ACCOUNT) => readSecret(exec, account),
-    set: (value, account = JIRA_TOKEN_ACCOUNT) => writeSecret(exec, account, value),
+    get: (account = JIRA_TOKEN_ACCOUNT) => readSecret(account),
+    set: (value, account = JIRA_TOKEN_ACCOUNT) => writeSecret(account, value),
+    remove: (account = JIRA_TOKEN_ACCOUNT) => deleteSecret(account),
+    storage: (account = JIRA_TOKEN_ACCOUNT) => detectStorage(account),
   };
 }
 
-async function readSecret(exec: ExecFn, account: string): Promise<string | undefined> {
-  if (process.platform === "darwin") {
-    const r = await exec("security", ["find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", account, "-w"]);
-    if (r.code !== 0) return undefined;
-    const v = r.stdout.trim();
-    return v.length ? v : undefined;
+export { GITHUB_TOKEN_ACCOUNT };
+
+async function readSecret(account: string): Promise<string | undefined> {
+  const fromKeychain = await keychainGet(account);
+  if (fromKeychain) return fromKeychain;
+  return fileGet(account);
+}
+
+async function writeSecret(account: string, value: string): Promise<SecretStorage> {
+  if (await keychainSet(account, value)) {
+    fileDelete(account);
+    return "keychain";
   }
+  fileSet(account, value);
+  return "file";
+}
+
+async function deleteSecret(account: string): Promise<void> {
+  await keychainDelete(account);
+  fileDelete(account);
+}
+
+async function detectStorage(account: string): Promise<SecretStorage | undefined> {
+  if (await keychainGet(account)) return "keychain";
+  if (fileGet(account)) return "file";
+  return undefined;
+}
+
+async function keychainGet(account: string): Promise<string | undefined> {
+  try {
+    const { Entry } = await import("@napi-rs/keyring");
+    const v = new Entry(KEYCHAIN_SERVICE, account).getPassword();
+    return v && v.trim() ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function keychainSet(account: string, value: string): Promise<boolean> {
+  try {
+    const { Entry } = await import("@napi-rs/keyring");
+    new Entry(KEYCHAIN_SERVICE, account).setPassword(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function keychainDelete(account: string): Promise<void> {
+  try {
+    const { Entry } = await import("@napi-rs/keyring");
+    new Entry(KEYCHAIN_SERVICE, account).deletePassword();
+  } catch {
+    /* nothing stored */
+  }
+}
+
+function fileGet(account: string): string | undefined {
   const path = secretsFile(account);
   if (!existsSync(path)) return undefined;
   const v = readFileSync(path, "utf8").trim();
   return v.length ? v : undefined;
 }
 
-async function writeSecret(exec: ExecFn, account: string, value: string): Promise<void> {
-  if (process.platform === "darwin") {
-    const r = await exec("security", [
-      "add-generic-password",
-      "-U",
-      "-s",
-      KEYCHAIN_SERVICE,
-      "-a",
-      account,
-      "-w",
-      value,
-    ]);
-    if (r.code !== 0) throw new Error(`Keychain write failed: ${r.stderr}`);
-    return;
-  }
+function fileSet(account: string, value: string): void {
   const dir = secretsDir();
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   chmodSync(dir, 0o700);
@@ -51,11 +93,7 @@ async function writeSecret(exec: ExecFn, account: string, value: string): Promis
   chmodSync(path, 0o600);
 }
 
-export async function deleteSecret(exec: ExecFn, account: string): Promise<void> {
-  if (process.platform === "darwin") {
-    await exec("security", ["delete-generic-password", "-s", KEYCHAIN_SERVICE, "-a", account]);
-    return;
-  }
+function fileDelete(account: string): void {
   const path = secretsFile(account);
   if (existsSync(path)) unlinkSync(path);
 }

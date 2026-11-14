@@ -47,6 +47,12 @@ export const api = {
     req<ShapeSession>(`/api/shape/${id}/reply`, { method: "POST", body: JSON.stringify({ text }) }),
   saveShape: (id: string, body: { tracker: "jira" | "github"; projectKey?: string; repoSlug?: string }) =>
     req<Issue>(`/api/shape/${id}/save`, { method: "POST", body: JSON.stringify(body) }),
+  saveGithubToken: (token: string) =>
+    req<{ ok: boolean; status: GithubStatus }>("/api/github/token", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
+  disconnectGithub: () => req<{ ok: boolean; status: GithubStatus }>("/api/github/disconnect", { method: "POST" }),
   connectJira: (body: { siteUrl: string; email: string; token?: string; projectKey?: string }) =>
     req<{ ok: boolean; detail: string; settings: Settings }>("/api/jira/connect", {
       method: "POST",
