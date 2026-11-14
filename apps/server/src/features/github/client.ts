@@ -4,6 +4,7 @@ import { GITHUB_TOKEN_ACCOUNT, createSecretStore } from "../secrets/index.ts";
 import { createDemoGithubClient } from "./demo.ts";
 import { gitClone } from "./git-auth.ts";
 import { createIssue, listAssigned, updateIssue } from "./issues.ts";
+import { commentIssue, createDraftPr } from "./prs.ts";
 import { listRepos } from "./repos.ts";
 import { githubStatus, loadGithubToken } from "./status.ts";
 import type { GithubClient, GithubDeps } from "./types.ts";
@@ -25,6 +26,10 @@ export function createGithubClient(deps: GithubDeps = {}): GithubClient {
     },
     updateIssue: async (owner, name, number, title, body) => {
       await updateIssue(await requireToken(tokenOf), fetchFn, owner, name, number, title, body);
+    },
+    createDraftPr: async (owner, name, input) => createDraftPr(await requireToken(tokenOf), fetchFn, owner, name, input),
+    commentIssue: async (owner, name, number, body) => {
+      await commentIssue(await requireToken(tokenOf), fetchFn, owner, name, number, body);
     },
   };
 }

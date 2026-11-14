@@ -1,0 +1,39 @@
+import { describe, expect, it } from "vitest";
+import { canArchive, canReply, checkCaps, nextAfterReview, parseReviewVerdict } from "./machine.ts";
+import { demoScenarioFor } from "./script.ts";
+
+describe("run state machine", () => {
+  it("opens a PR after a passing review and asks Dan after 3 failures", () => {
+    expect(nextAfterReview(1, true)).toBe("opening_pr");
+    expect(nextAfterReview(1, false)).toBe("implementing");
+    expect(nextAfterReview(2, false)).toBe("implementing");
+    expect(nextAfterReview(3, false)).toBe("needs_dan");
+  });
+
+  it("allows replies only when paused and archive when not mid-agent", () => {
+    expect(canReply("asking")).toBe(true);
+    expect(canReply("needs_dan")).toBe(true);
+    expect(canReply("implementing")).toBe(false);
+    expect(canArchive("done")).toBe(true);
+    expect(canArchive("cap_hit")).toBe(true);
+    expect(canArchive("implementing")).toBe(false);
+  });
+
+  it("enforces per-run and daily caps", () => {
+    expect(checkCaps(9, 10, 2, 10, 50)).toBe("run");
+    expect(checkCaps(1, 49, 2, 10, 50)).toBe("daily");
+    expect(checkCaps(1, 10, 2, 10, 50)).toBe("ok");
+  });
+
+  it("parses reviewer verdicts", () => {
+    expect(parseReviewVerdict("APPROVE — all acceptance criteria are met")).toBe(true);
+    expect(parseReviewVerdict("CHANGES_NEEDED\n- missing auth")).toBe(false);
+  });
+
+  it("picks demo scenarios from issue identity", () => {
+    expect(demoScenarioFor({ key: "acme/web#12", title: "Export invoices as CSV" })).toBe("success");
+    expect(demoScenarioFor({ key: "acme/web#15", title: "Clarify CSV refund rows" })).toBe("ask");
+    expect(demoScenarioFor({ key: "acme/web#21", title: "Add retry to webhook handler" })).toBe("fail-review");
+    expect(demoScenarioFor({ key: "acme/api#8", title: "Spend-cap sensitive refactor" })).toBe("cap");
+  });
+});

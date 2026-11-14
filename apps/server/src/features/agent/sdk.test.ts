@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canUseShapeTool, mapSdkMessage, SHAPE_TOOLS } from "./sdk.ts";
+import { canUseShapeTool, canUseTool, mapSdkMessage, SHAPE_TOOLS } from "./sdk.ts";
 
 describe("mapSdkMessage", () => {
   it("maps assistant text and AskUserQuestion", () => {
@@ -40,8 +40,12 @@ describe("canUseShapeTool", () => {
     for (const name of ["Write", "Edit", "Bash"] as const) {
       await expect(canUseShapeTool(name, { command: "rm -rf /" })).resolves.toEqual({
         behavior: "deny",
-        message: "Shaping is read-only",
+        message: "This session is read-only",
       });
     }
+    const write = await canUseTool("implement", "Write", { path: "a.ts" });
+    expect(write).toMatchObject({ behavior: "allow" });
+    const reviewWrite = await canUseTool("review", "Write", { path: "a.ts" });
+    expect(reviewWrite.behavior).toBe("deny");
   });
 });

@@ -71,6 +71,8 @@ export function createDemoGithubClient(): GithubClient {
     cloneRepo: async (_owner, _name, dest) => ({ ok: true, detail: dest }),
     createIssue: async (owner, name) => ({ number: 9, url: `https://github.com/${owner}/${name}/issues/9` }),
     updateIssue: async () => undefined,
+    createDraftPr: async (owner, name) => ({ number: 42, url: `https://github.com/${owner}/${name}/pull/42` }),
+    commentIssue: async () => undefined,
   };
 }
 

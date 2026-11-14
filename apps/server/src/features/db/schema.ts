@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -28,6 +28,38 @@ export const CREATE_SQL = `
     messages_json TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     saved_key TEXT
+  );
+  CREATE TABLE IF NOT EXISTS changes (
+    id TEXT PRIMARY KEY,
+    issue_id TEXT NOT NULL,
+    issue_key TEXT NOT NULL,
+    issue_source TEXT NOT NULL,
+    issue_url TEXT NOT NULL DEFAULT '',
+    repo_slug TEXT NOT NULL,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL,
+    stage TEXT NOT NULL,
+    review_round INTEGER NOT NULL DEFAULT 0,
+    worktree_path TEXT NOT NULL DEFAULT '',
+    branch TEXT NOT NULL DEFAULT '',
+    plan_text TEXT NOT NULL DEFAULT '',
+    cost_usd REAL NOT NULL DEFAULT 0,
+    pr_url TEXT,
+    pr_number INTEGER,
+    scenario TEXT,
+    ask_json TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS change_events (
+    id TEXT PRIMARY KEY,
+    change_id TEXT NOT NULL,
+    at TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    detail TEXT,
+    ask_json TEXT,
+    cost_usd REAL
   );
 `;
 
@@ -62,6 +94,38 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "messages_json", addSql: "messages_json TEXT NOT NULL DEFAULT '[]'" },
     { name: "updated_at", addSql: "updated_at TEXT NOT NULL DEFAULT ''" },
     { name: "saved_key", addSql: "saved_key TEXT" },
+  ],
+  changes: [
+    { name: "id", addSql: "id TEXT" },
+    { name: "issue_id", addSql: "issue_id TEXT NOT NULL DEFAULT ''" },
+    { name: "issue_key", addSql: "issue_key TEXT NOT NULL DEFAULT ''" },
+    { name: "issue_source", addSql: "issue_source TEXT NOT NULL DEFAULT ''" },
+    { name: "issue_url", addSql: "issue_url TEXT NOT NULL DEFAULT ''" },
+    { name: "repo_slug", addSql: "repo_slug TEXT NOT NULL DEFAULT ''" },
+    { name: "title", addSql: "title TEXT NOT NULL DEFAULT ''" },
+    { name: "status", addSql: "status TEXT NOT NULL DEFAULT ''" },
+    { name: "stage", addSql: "stage TEXT NOT NULL DEFAULT ''" },
+    { name: "review_round", addSql: "review_round INTEGER NOT NULL DEFAULT 0" },
+    { name: "worktree_path", addSql: "worktree_path TEXT NOT NULL DEFAULT ''" },
+    { name: "branch", addSql: "branch TEXT NOT NULL DEFAULT ''" },
+    { name: "plan_text", addSql: "plan_text TEXT NOT NULL DEFAULT ''" },
+    { name: "cost_usd", addSql: "cost_usd REAL NOT NULL DEFAULT 0" },
+    { name: "pr_url", addSql: "pr_url TEXT" },
+    { name: "pr_number", addSql: "pr_number INTEGER" },
+    { name: "scenario", addSql: "scenario TEXT" },
+    { name: "ask_json", addSql: "ask_json TEXT" },
+    { name: "created_at", addSql: "created_at TEXT NOT NULL DEFAULT ''" },
+    { name: "updated_at", addSql: "updated_at TEXT NOT NULL DEFAULT ''" },
+  ],
+  change_events: [
+    { name: "id", addSql: "id TEXT" },
+    { name: "change_id", addSql: "change_id TEXT NOT NULL DEFAULT ''" },
+    { name: "at", addSql: "at TEXT NOT NULL DEFAULT ''" },
+    { name: "kind", addSql: "kind TEXT NOT NULL DEFAULT ''" },
+    { name: "title", addSql: "title TEXT NOT NULL DEFAULT ''" },
+    { name: "detail", addSql: "detail TEXT" },
+    { name: "ask_json", addSql: "ask_json TEXT" },
+    { name: "cost_usd", addSql: "cost_usd REAL" },
   ],
 };
 

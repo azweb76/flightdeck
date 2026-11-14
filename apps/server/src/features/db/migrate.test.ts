@@ -143,9 +143,9 @@ describe("sqlite migrations", () => {
     expect(databasePreflightCheck(db).detail).toContain(backup!);
   });
 
-  it("creates a new database at schema version 1", () => {
+  it("creates a new database at the current schema version", () => {
     const db = openDb(tmpDb());
-    expect(userVersion(db)).toBe(1);
+    expect(userVersion(db)).toBe(SCHEMA_VERSION);
     expect(missingColumns(db)).toEqual([]);
     db.close();
   });

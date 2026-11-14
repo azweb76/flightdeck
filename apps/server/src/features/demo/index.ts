@@ -34,7 +34,9 @@ export function resetDemo(opts: { seed: boolean }): void {
   resetDemoGithubMode();
   resetDemoPreflightFixture();
   getCache().invalidate("*");
-  getDb().exec("DELETE FROM issues; DELETE FROM repos; DELETE FROM shape_sessions; DELETE FROM settings;");
+  getDb().exec(
+    "DELETE FROM issues; DELETE FROM repos; DELETE FROM shape_sessions; DELETE FROM settings; DELETE FROM change_events; DELETE FROM changes;",
+  );
   if (opts.seed) {
     process.env.FLIGHTDECK_SEED = "1";
     seedDemo();
@@ -63,6 +65,39 @@ function seedIssues(): Issue[] {
       title: "Invoice CSV on the web app",
       body: "Need an export for finance.",
       url: "https://example.atlassian.net/browse/PROJ-150",
+      updatedAt: NOW,
+      saved: true,
+    },
+    {
+      id: "github:acme/web#15",
+      source: "github",
+      key: "acme/web#15",
+      title: "Clarify CSV refund rows",
+      body: "Should refunded invoices appear in the export?",
+      url: "https://github.com/acme/web/issues/15",
+      repoSlug: "acme/web",
+      updatedAt: NOW,
+      saved: true,
+    },
+    {
+      id: "github:acme/web#21",
+      source: "github",
+      key: "acme/web#21",
+      title: "Add retry to webhook handler",
+      body: "Webhooks fail too easily. Need retries and tests.",
+      url: "https://github.com/acme/web/issues/21",
+      repoSlug: "acme/web",
+      updatedAt: NOW,
+      saved: true,
+    },
+    {
+      id: "github:acme/api#8",
+      source: "github",
+      key: "acme/api#8",
+      title: "Spend-cap sensitive refactor",
+      body: "A large refactor that would blow the dollar cap in demo.",
+      url: "https://github.com/acme/api/issues/8",
+      repoSlug: "acme/api",
       updatedAt: NOW,
       saved: true,
     },
