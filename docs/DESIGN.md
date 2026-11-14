@@ -99,7 +99,7 @@ Startup and `pnpm preflight` run the same checks. Required failures print a one-
 | SQLite schema | required | `PRAGMA user_version` matches and columns exist | Pull latest and restart |
 | Jira | optional | skipped if unset; warn if configured without a working token | Add a Jira API token in Settings |
 
-Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report for screenshots and e2e. The Issues banner lists required failures; Settings → Dependencies lists all checks. Shape / Start / Save to GitHub disable only when that dependency failed.
+Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report (and matching Claude/GitHub/Jira Settings cards) for screenshots and e2e. The Issues banner lists required failures with a high-contrast error alert; Settings → Dependencies lists all checks and is the only Re-check control. Shape / Save to GitHub disable only when that dependency failed. Start stays Phase-2 gated and says so in its tooltip (plus the preflight reason when both apply). Save picks GitHub/Jira from readable cards that explain why a tracker is blocked, not ghosted menu items.
 
 ## Screens
 - Home: My issues, ready to shape or start.
