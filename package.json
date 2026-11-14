@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @flightdeck/server --filter @flightdeck/web --parallel dev",
+    "preflight": "pnpm --filter @flightdeck/server preflight",
     "build": "pnpm -r --if-present build",
     "check": "node scripts/check.mjs",
     "typecheck": "pnpm -r --if-present typecheck",

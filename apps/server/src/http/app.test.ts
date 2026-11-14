@@ -27,10 +27,22 @@ describe("http", () => {
     const app = createApp();
     const res = await app.request("http://127.0.0.1/api/preflight");
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({
-      ok: true,
-      checks: [expect.objectContaining({ id: "database", ok: true, status: "pass" })],
+    const body = (await res.json()) as { ok: boolean; checks: { id: string; ok: boolean }[] };
+    expect(body.ok).toBe(true);
+    expect(body.checks.find((c) => c.id === "database")).toMatchObject({ ok: true });
+  });
+
+  it("can switch the demo preflight fixture to failing", async () => {
+    const app = createApp();
+    const res = await app.request("http://127.0.0.1/api/demo/preflight", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fixture: "fail" }),
     });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; checks: { id: string; status: string }[] };
+    expect(body.ok).toBe(false);
+    expect(body.checks.find((c) => c.id === "gh")?.status).toBe("fail");
   });
 
   it("binds health on the API and lists seeded issues", async () => {

@@ -1,12 +1,13 @@
-import type { PreflightReport } from "@flightdeck/shared";
-import { databasePreflightCheck, getDb } from "../db/index.ts";
-
-export function getPreflightReport(): PreflightReport {
-  const checks = [databasePreflightCheck(getDb())];
-  return {
-    ok: checks.filter((c) => c.severity === "required").every((c) => c.ok),
-    checkedAt: new Date().toISOString(),
-    demo: process.env.FLIGHTDECK_DEMO === "1",
-    checks,
-  };
-}
+export { getPreflightReport, buildReport, recheckPreflight, toReport } from "./report.ts";
+export { runStartupPreflight } from "./startup.ts";
+export { formatPreflight, printPreflight } from "./print.ts";
+export { demoPreflightFixture, setDemoPreflightFixture, resetDemoPreflightFixture } from "./demo.ts";
+export { checkNode, nodeTooOld } from "./check-node.ts";
+export { checkPnpm, checkGit } from "./check-tools.ts";
+export { checkGh } from "./check-gh.ts";
+export { checkClaude } from "./check-claude.ts";
+export { checkJira } from "./check-jira.ts";
+export { liveContext } from "./context.ts";
+export { loadEngines, MIN_GIT } from "./engines.ts";
+export { meetsMin, parseTriple } from "./version.ts";
+export type { PreflightCtx, DemoPreflightFixture } from "./types.ts";

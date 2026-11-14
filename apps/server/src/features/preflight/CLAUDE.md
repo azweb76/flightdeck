@@ -1,3 +1,3 @@
 # preflight
 
-Startup and `GET /api/preflight` dependency checks. Required failures do not crash the server (except an unsupported Node version). Do not put secrets in cache keys or logs. Database schema health lives in `features/db`.
+`GET /api/preflight` (`?refresh=1` or `POST /api/preflight/recheck` bypasses the 30s cache). `pnpm preflight` exits non-zero on required failures. Required: Node, pnpm, git (>=2.20 worktrees), gh auth, Claude, SQLite schema. Optional: Jira (warn). Demo (`FLIGHTDECK_DEMO=1`) fakes pass; `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` shows failures. No secrets in keys or logs.

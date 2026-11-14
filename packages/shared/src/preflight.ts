@@ -31,5 +31,5 @@ export const PreflightReportSchema = z.object({
 export type PreflightReport = z.infer<typeof PreflightReportSchema>;
 
 export function blockedBy(report: PreflightReport, gate: PreflightGate): PreflightCheck | undefined {
-  return report.checks.find((check) => !check.ok && check.severity === "required" && check.gates?.includes(gate));
+  return report.checks.find((check) => !check.ok && check.gates?.includes(gate));
 }

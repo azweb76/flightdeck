@@ -1,5 +1,6 @@
 import type { Issue } from "@flightdeck/shared";
 import { getCache } from "../cache/index.ts";
+import { resetDemoPreflightFixture } from "../preflight/demo.ts";
 import { rememberRepo } from "../clone/index.ts";
 import { getDb } from "../db/index.ts";
 import { upsertIssue } from "../issues/store.ts";
@@ -29,6 +30,7 @@ export function seedDemo(): void {
 
 export function resetDemo(opts: { seed: boolean }): void {
   setJiraLastError(undefined);
+  resetDemoPreflightFixture();
   getCache().invalidate("*");
   getDb().exec("DELETE FROM issues; DELETE FROM repos; DELETE FROM shape_sessions; DELETE FROM settings;");
   if (opts.seed) {
