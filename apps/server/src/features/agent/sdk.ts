@@ -6,12 +6,16 @@ type SdkQuery = (args: {
 }) => AsyncIterable<Record<string, unknown>>;
 
 export const SHAPE_TOOLS = ["Read", "Glob", "Grep", "AskUserQuestion", "AskUser"] as const;
+export const PLAN_TOOLS = SHAPE_TOOLS;
+export const REVIEW_TOOLS = ["Read", "Glob", "Grep", "Bash"] as const;
+export const IMPLEMENT_TOOLS = ["Read", "Glob", "Grep", "Edit", "Write", "Bash", "AskUserQuestion", "AskUser"] as const;
 
 /** Real Agent SDK driver. Shaping is read-only plus AskUserQuestion. */
 export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
   return {
     async *run(opts: AgentRunOpts): AsyncIterable<AgentEvent> {
       const query = queryFn ?? (await loadQuery());
+      const tools = toolsFor(opts.role);
       const handle = query({
         prompt: opts.prompt,
         options: {
@@ -19,9 +23,9 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
           model: opts.model,
           permissionMode: "dontAsk",
           settingSources: ["user", "project"],
-          allowedTools: [...SHAPE_TOOLS],
+          allowedTools: [...tools],
           env: opts.env,
-          canUseTool: canUseShapeTool,
+          canUseTool: (name: string, input: Record<string, unknown>) => canUseTool(opts.role, name, input),
         },
       });
       for await (const msg of handle) {
@@ -35,6 +39,12 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
   };
 }
 
+export function toolsFor(role: AgentRunOpts["role"] = "shape"): readonly string[] {
+  if (role === "implement") return IMPLEMENT_TOOLS;
+  if (role === "review") return REVIEW_TOOLS;
+  return PLAN_TOOLS;
+}
+
 /** PermissionResult.allow requires updatedInput; pass the original tool input through. */
 export async function canUseShapeTool(
   name: string,
@@ -43,8 +53,19 @@ export async function canUseShapeTool(
   | { behavior: "allow"; updatedInput: Record<string, unknown> }
   | { behavior: "deny"; message: string }
 > {
-  if (!(SHAPE_TOOLS as readonly string[]).includes(name)) {
-    return { behavior: "deny", message: "Shaping is read-only" };
+  return canUseTool("shape", name, input);
+}
+
+export async function canUseTool(
+  role: AgentRunOpts["role"] = "shape",
+  name: string,
+  input: Record<string, unknown>,
+): Promise<
+  | { behavior: "allow"; updatedInput: Record<string, unknown> }
+  | { behavior: "deny"; message: string }
+> {
+  if (!toolsFor(role).includes(name)) {
+    return { behavior: "deny", message: role === "implement" ? "Tool not allowed" : "This session is read-only" };
   }
   return { behavior: "allow", updatedInput: input };
 }
@@ -66,7 +87,11 @@ export function* mapSdkMessage(msg: Record<string, unknown>): Generator<AgentEve
       }
     }
   }
-  if (type === "result") yield { kind: "done", title: "session finished", detail: String(msg.result ?? "") };
+  if (type === "result") {
+    const cost = Number(msg.total_cost_usd ?? (msg.usage as { total_cost_usd?: number } | undefined)?.total_cost_usd ?? 0);
+    if (cost > 0) yield { kind: "usage", title: "usage", costUsd: cost };
+    yield { kind: "done", title: "session finished", detail: String(msg.result ?? "") };
+  }
 }
 
 function askFrom(input: Record<string, unknown>): AgentEvent {

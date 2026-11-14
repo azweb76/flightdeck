@@ -3,7 +3,10 @@ export type AgentEvent = {
   title: string;
   detail?: string;
   ask?: { prompt: string; options: { id: string; label: string }[] };
+  costUsd?: number;
 };
+
+export type AgentRole = "shape" | "implement" | "review" | "plan";
 
 export type AgentRunOpts = {
   prompt: string;
@@ -11,6 +14,7 @@ export type AgentRunOpts = {
   model?: string;
   abort?: AbortSignal;
   env?: NodeJS.ProcessEnv;
+  role?: AgentRole;
 };
 
 export type AgentDriver = {

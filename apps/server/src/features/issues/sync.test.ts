@@ -102,6 +102,8 @@ function mocks(): { deps: IssuesDeps; calls: { status: number; issues: number; s
     cloneRepo: async () => ({ ok: true, detail: "" }),
     createIssue: async () => ({ number: 1, url: issue.url }),
     updateIssue: async () => undefined,
+    createDraftPr: async () => ({ number: 42, url: "https://github.com/acme/web/pull/42" }),
+    commentIssue: async () => undefined,
   } satisfies GithubClient;
   const jira = {
     test: async () => ({ ok: true, detail: "ok" }),
@@ -119,6 +121,7 @@ function mocks(): { deps: IssuesDeps; calls: { status: number; issues: number; s
     },
     createIssue: async () => ({ key: "PROJ-1", url: "" }),
     updateIssue: async () => undefined,
+    commentIssue: async () => undefined,
   } satisfies JiraClient;
   return { deps: { github, jira, token: async () => "t" }, calls };
 }

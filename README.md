@@ -1,6 +1,6 @@
 # Flightdeck
 
-Local Mac app that shapes an idea into a Jira or GitHub issue with Claude, then (later phases) runs the change.
+Local Mac app that shapes an idea into a Jira or GitHub issue with Claude, then runs the change in a worktree toward a draft PR.
 
 See [docs/DESIGN.md](docs/DESIGN.md). v1 lives on the `v1-archive` branch.
 

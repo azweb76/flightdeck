@@ -12,14 +12,15 @@ const NAV = [
 export function AppShell() {
   const loc = useLocation();
   const shaping = loc.pathname.startsWith("/shape");
-  const current = NAV.find((n) => n.match.includes(loc.pathname) || shaping) ?? NAV[0];
-  const value = shaping ? "/" : current?.to;
+  const running = /^\/runs\/.+/.test(loc.pathname);
+  const wide = shaping || running;
+  const value = shaping ? "/" : loc.pathname.startsWith("/runs") ? "/runs" : (NAV.find((n) => n.match.includes(loc.pathname))?.to ?? "/");
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        height: shaping ? { lg: "100vh" } : "auto",
+        height: wide ? { lg: "100vh" } : "auto",
         display: "flex",
         flexDirection: "column",
         bgcolor: "background.default",
@@ -48,7 +49,7 @@ export function AppShell() {
           </Tabs>
         </Toolbar>
       </AppBar>
-      {shaping ? (
+      {wide ? (
         <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <Outlet />
         </Box>

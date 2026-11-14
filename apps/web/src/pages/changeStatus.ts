@@ -1,0 +1,22 @@
+import type { ChangeStatus } from "@flightdeck/shared";
+
+export function chipColor(status: ChangeStatus): "default" | "success" | "warning" | "error" | "info" {
+  if (status === "done") return "success";
+  if (status === "asking") return "warning";
+  if (status === "needs_dan" || status === "cap_hit" || status === "error") return "error";
+  if (status === "archived") return "default";
+  return "info";
+}
+
+export function statusChip(status: ChangeStatus): string {
+  if (status === "planning") return "Plan";
+  if (status === "implementing") return "Implement";
+  if (status === "reviewing") return "Review";
+  if (status === "asking") return "Needs you";
+  if (status === "opening_pr") return "Draft PR";
+  if (status === "done") return "Done";
+  if (status === "needs_dan") return "Ask Dan";
+  if (status === "cap_hit") return "Cap hit";
+  if (status === "archived") return "Archived";
+  return "Error";
+}

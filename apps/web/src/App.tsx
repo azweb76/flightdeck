@@ -1,7 +1,9 @@
 import { Route, Routes } from "react-router-dom";
 import { AppShell } from "./layout/AppShell.tsx";
+import { ChangePage } from "./pages/ChangePage.tsx";
 import { IssuesPage } from "./pages/IssuesPage.tsx";
 import { PlaceholderPage } from "./pages/PlaceholderPage.tsx";
+import { RunsPage } from "./pages/RunsPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { ShapePage } from "./pages/ShapePage.tsx";
 import { PreflightProvider } from "./preflight/index.ts";
@@ -13,16 +15,8 @@ export function App() {
         <Route element={<AppShell />}>
           <Route path="/" element={<IssuesPage />} />
           <Route path="/issues" element={<IssuesPage />} />
-          <Route
-            path="/runs"
-            element={
-              <PlaceholderPage
-                title="Runs"
-                phase="Phase 3"
-                detail="Parallel agents, spend caps, and Archive land in Phase 3."
-              />
-            }
-          />
+          <Route path="/runs" element={<RunsPage />} />
+          <Route path="/runs/:id" element={<ChangePage />} />
           <Route
             path="/prs"
             element={

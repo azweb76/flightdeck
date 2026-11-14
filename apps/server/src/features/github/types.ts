@@ -18,6 +18,12 @@ export type GithubClient = {
   cloneRepo(owner: string, name: string, dest: string): Promise<{ ok: boolean; detail: string }>;
   createIssue(owner: string, name: string, title: string, body: string): Promise<{ number: number; url: string }>;
   updateIssue(owner: string, name: string, number: number, title: string, body: string): Promise<void>;
+  createDraftPr(
+    owner: string,
+    name: string,
+    input: { title: string; body: string; head: string; base: string },
+  ): Promise<{ number: number; url: string }>;
+  commentIssue(owner: string, name: string, number: number, body: string): Promise<void>;
 };
 
 export type GithubDeps = {

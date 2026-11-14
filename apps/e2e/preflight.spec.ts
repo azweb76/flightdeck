@@ -21,8 +21,7 @@ test("failing preflight shows the banner, Re-check, and gated Shape", async ({ p
   await page.getByRole("heading", { name: "My issues" }).hover();
   await expect(page.getByRole("tooltip")).toHaveCount(0);
   await page.getByTestId("start-PROJ-150-gate").hover();
-  await expect(page.getByRole("tooltip").filter({ hasText: "Coming in Phase 2" })).toHaveCount(1);
-  await expect(page.getByRole("tooltip").filter({ hasText: "Coming in Phase 2" })).toContainText("brew install git");
+  await expect(page.getByRole("tooltip").filter({ hasText: "brew install git" })).toHaveCount(1);
   await page.getByTestId("preflight-recheck").click();
   await expect(page.getByTestId("preflight-banner")).toBeVisible();
   await setPreflight(page, "pass");

@@ -37,6 +37,8 @@ test("settings GitHub missing scopes", async ({ page }) => {
   await page.getByTestId("github-token").fill("scopes");
   await page.getByTestId("github-save").click();
   await expect(page.getByTestId("github-form-error")).toContainText("missing scopes");
+  await expect(page.getByTestId("github-status")).toContainText("missing scopes");
+  await expect(page.getByTestId("github-status")).not.toContainText("Not connected");
   await expect(page.getByTestId("preflight-github")).toContainText("missing scopes");
   await page.getByTestId("github-form").scrollIntoViewIfNeeded();
   await scheme(page, "light");

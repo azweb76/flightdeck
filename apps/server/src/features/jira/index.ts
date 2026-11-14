@@ -27,6 +27,13 @@ export type JiraClient = {
     title: string;
     body: string;
   }): Promise<void>;
+  commentIssue(opts: {
+    siteUrl: string;
+    email: string;
+    token: string;
+    key: string;
+    body: string;
+  }): Promise<void>;
 };
 
 type FetchFn = typeof fetch;
@@ -44,6 +51,7 @@ export function createJiraClient(fetchFn: FetchFn = fetch): JiraClient {
       ),
     createIssue: (opts) => jiraCreate(fetchFn, opts),
     updateIssue: (opts) => jiraUpdate(fetchFn, opts),
+    commentIssue: (opts) => jiraComment(fetchFn, opts),
   };
 }
 
@@ -104,4 +112,21 @@ async function jiraUpdate(
     "Jira update failed",
   );
   getCache().invalidate(CACHE_KEYS.jiraAll);
+}
+
+async function jiraComment(
+  fetchFn: FetchFn,
+  opts: { siteUrl: string; email: string; token: string; key: string; body: string },
+) {
+  const base = opts.siteUrl.replace(/\/$/, "");
+  await jiraFetch(
+    fetchFn,
+    `${base}/rest/api/3/issue/${opts.key}/comment`,
+    {
+      method: "POST",
+      headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
+      body: JSON.stringify({ body: { ...markdownToAdf(opts.body), version: 1 } }),
+    },
+    "Jira comment failed",
+  );
 }

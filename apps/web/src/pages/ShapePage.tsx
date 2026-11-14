@@ -1,7 +1,7 @@
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import type { AppEvent, ShapeSession } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.ts";
 import { GatedButton } from "../preflight/index.ts";
 import { sessionFromEvent, useAppEvents } from "../useAppEvents.ts";
@@ -11,6 +11,7 @@ import { SaveIssueDialog } from "./SaveIssueDialog.tsx";
 
 export function ShapePage() {
   const { id } = useParams();
+  const nav = useNavigate();
   const [session, setSession] = useState<ShapeSession>();
   const [error, setError] = useState("");
   const [reply, setReply] = useState("");
@@ -57,7 +58,15 @@ export function ShapePage() {
 
   return (
     <Stack spacing={2} sx={{ flex: 1, minHeight: 0, p: { xs: 2, md: 3 } }}>
-      <Header session={session} saved={saved} onSave={() => { setError(""); setSaveOpen(true); }} />
+      <Header
+        session={session}
+        saved={saved}
+        onSave={() => {
+          setError("");
+          setSaveOpen(true);
+        }}
+        onStart={() => void beginRun(session.issueId, nav, setError)}
+      />
       {error ? <Alert severity="error">{error}</Alert> : null}
       {saved ? (
         <Alert severity="success" data-testid="saved-banner">
@@ -87,7 +96,24 @@ export function ShapePage() {
   );
 }
 
-function Header(props: { session: ShapeSession; saved: boolean; onSave: () => void }) {
+async function beginRun(
+  issueId: string | undefined,
+  nav: ReturnType<typeof useNavigate>,
+  setError: (msg: string) => void,
+): Promise<void> {
+  if (!issueId) {
+    setError("Save the issue before starting a change");
+    return;
+  }
+  try {
+    const change = await api.startChange(issueId);
+    nav(`/runs/${change.id}`);
+  } catch (e) {
+    setError(e instanceof Error ? e.message : "Could not start");
+  }
+}
+
+function Header(props: { session: ShapeSession; saved: boolean; onSave: () => void; onStart: () => void }) {
   return (
     <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2} sx={{ flexShrink: 0 }}>
       <Box>
@@ -102,10 +128,11 @@ function Header(props: { session: ShapeSession; saved: boolean; onSave: () => vo
         </Button>
         <GatedButton
           gate="start"
-          variant="text"
+          variant="contained"
           placement="bottom"
-          disabled
-          fallbackTitle="Coming in Phase 2"
+          disabled={!props.saved}
+          fallbackTitle={props.saved ? undefined : "Save the issue first"}
+          onClick={props.onStart}
           testId="start-run"
         >
           Start

@@ -1,5 +1,6 @@
 import type {
   CatalogRepo,
+  Change,
   Issue,
   Settings,
   SettingsPatch,
@@ -66,4 +67,11 @@ export const api = {
     req<PreflightReport>("/api/demo/preflight", { method: "POST", body: JSON.stringify({ fixture }) }),
   resetDemo: (seed: boolean) =>
     req<{ ok: boolean }>("/api/demo/reset", { method: "POST", body: JSON.stringify({ seed }) }),
+  changes: () => req<{ changes: Change[] }>("/api/changes"),
+  startChange: (issueId: string) =>
+    req<Change>("/api/changes", { method: "POST", body: JSON.stringify({ issueId }) }),
+  getChange: (id: string) => req<Change>(`/api/changes/${id}`),
+  replyChange: (id: string, text: string) =>
+    req<Change>(`/api/changes/${id}/reply`, { method: "POST", body: JSON.stringify({ text }) }),
+  archiveChange: (id: string) => req<Change>(`/api/changes/${id}/archive`, { method: "POST" }),
 };

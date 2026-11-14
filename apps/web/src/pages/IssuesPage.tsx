@@ -1,10 +1,11 @@
-import { Alert, Box, Button, Chip, Link, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
 import type { Issue } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { api } from "../api.ts";
 import { GatedButton, PreflightBanner } from "../preflight/index.ts";
 import { useAppEvents } from "../useAppEvents.ts";
+import { IssueList } from "./IssueList.tsx";
 import { RepoPickDialog } from "./RepoPickDialog.tsx";
 import { StartIdeaDialog } from "./StartIdeaDialog.tsx";
 
@@ -15,6 +16,7 @@ export function IssuesPage() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string>();
   const [pick, setPick] = useState<Issue>();
+  const [pickMode, setPickMode] = useState<"shape" | "start">("shape");
 
   const pull = useCallback(async (mode: "get" | "sync") => {
     setError("");
@@ -38,8 +40,10 @@ export function IssuesPage() {
     ),
   );
 
-  async function shapeExisting(issue: Issue, repoSlug?: string) {
-    await startShapeForIssue(issue, repoSlug, { setPick, setBusy, setError, nav });
+  async function go(mode: "shape" | "start", issue: Issue, repoSlug?: string) {
+    setPickMode(mode);
+    if (mode === "start") await startChangeForIssue(issue, repoSlug, { setPick, setBusy, setError, nav, setPickMode });
+    else await startShapeForIssue(issue, repoSlug, { setPick, setBusy, setError, nav });
   }
 
   return (
@@ -49,26 +53,29 @@ export function IssuesPage() {
         <Box>
           <Typography variant="h4">My issues</Typography>
           <Typography color="text.secondary" sx={{ mt: 1 }}>
-            Shape a new idea, or refine something already on GitHub or Jira.
+            Shape a new idea, or start a change on a shaped issue.
           </Typography>
         </Box>
         <Stack direction="row" gap={1}>
           <Button variant="outlined" onClick={() => void pull("sync")} data-testid="refresh-issues">
             Refresh
           </Button>
-          <GatedButton
-            gate="shape"
-            variant="contained"
-            placement="bottom"
-            onClick={() => setOpen(true)}
-            testId="new-idea"
-          >
+          <GatedButton gate="shape" variant="contained" placement="left" onClick={() => setOpen(true)} testId="new-idea">
             New idea
           </GatedButton>
         </Stack>
       </Stack>
       {error ? <Alert severity="error">{error}</Alert> : null}
-      {issues.length === 0 ? <EmptyIssues /> : <IssueList issues={issues} busy={busy} onShape={(i) => void shapeExisting(i)} />}
+      {issues.length === 0 ? (
+        <EmptyIssues />
+      ) : (
+        <IssueList
+          issues={issues}
+          busy={busy}
+          onShape={(i) => void go("shape", i)}
+          onStart={(i) => void go("start", i)}
+        />
+      )}
       <StartIdeaDialog open={open} onClose={() => setOpen(false)} onError={setError} onStarted={(id) => nav(`/shape/${id}`)} />
       <RepoPickDialog
         open={Boolean(pick)}
@@ -77,7 +84,8 @@ export function IssuesPage() {
         onPicked={(slug) => {
           const issue = pick;
           setPick(undefined);
-          if (issue) void shapeExisting(issue, slug);
+          if (!issue) return;
+          void go(pickMode, issue, slug);
         }}
       />
     </Stack>
@@ -112,6 +120,36 @@ async function startShapeForIssue(
   }
 }
 
+async function startChangeForIssue(
+  issue: Issue,
+  repoSlug: string | undefined,
+  ui: {
+    setPick: (issue: Issue | undefined) => void;
+    setBusy: (id: string | undefined) => void;
+    setError: (msg: string) => void;
+    nav: NavigateFunction;
+    setPickMode: (mode: "shape" | "start") => void;
+  },
+): Promise<void> {
+  const repo = repoSlug ?? issue.repoSlug;
+  if (!repo) {
+    ui.setPickMode("start");
+    ui.setPick(issue);
+    return;
+  }
+  ui.setBusy(issue.id);
+  ui.setError("");
+  try {
+    if (!issue.repoSlug) await api.setIssueRepo(issue.id, repo);
+    const change = await api.startChange(issue.id);
+    ui.nav(`/runs/${change.id}`);
+  } catch (e) {
+    ui.setError(e instanceof Error ? e.message : "Could not start the change");
+  } finally {
+    ui.setBusy(undefined);
+  }
+}
+
 function EmptyIssues() {
   return (
     <Paper sx={{ p: 8, textAlign: "center", border: 1, borderColor: "divider" }} data-testid="empty-issues">
@@ -124,63 +162,4 @@ function EmptyIssues() {
       </Typography>
     </Paper>
   );
-}
-
-function IssueList(props: { issues: Issue[]; busy?: string; onShape: (issue: Issue) => void }) {
-  return (
-    <Stack spacing={2}>
-      {props.issues.map((issue) => (
-        <Paper key={issue.id} sx={{ p: 3, border: 1, borderColor: "divider" }} data-testid="issue-row">
-          <Stack direction={{ xs: "column", md: "row" }} gap={2} alignItems={{ md: "center" }}>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.75 }}>
-                <Chip size="small" color={issue.source === "jira" ? "warning" : "info"} label={issue.source === "jira" ? "Jira" : "GitHub"} />
-                {issue.saved ? <Chip size="small" variant="outlined" label="Saved" /> : <Chip size="small" variant="outlined" label="Draft" />}
-                <Typography variant="caption" color="text.secondary">
-                  {issue.key}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Updated {formatWhen(issue.updatedAt)}
-                </Typography>
-              </Stack>
-              <Typography variant="h6">{issue.title}</Typography>
-              {issue.url ? (
-                <Link href={issue.url} target="_blank" rel="noreferrer" underline="hover" variant="body2">
-                  Open on {issue.source === "jira" ? "Jira" : "GitHub"}
-                </Link>
-              ) : null}
-            </Box>
-            <Stack direction="row" gap={1}>
-              <GatedButton
-                gate="shape"
-                variant="outlined"
-                placement="top"
-                disabled={props.busy === issue.id}
-                onClick={() => props.onShape(issue)}
-                testId={`shape-${issue.key}`}
-              >
-                Shape
-              </GatedButton>
-              <GatedButton
-                gate="start"
-                variant="text"
-                placement="top"
-                disabled
-                fallbackTitle="Coming in Phase 2"
-                testId={`start-${issue.key}`}
-              >
-                Start
-              </GatedButton>
-            </Stack>
-          </Stack>
-        </Paper>
-      ))}
-    </Stack>
-  );
-}
-
-function formatWhen(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }

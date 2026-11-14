@@ -2,6 +2,7 @@ import { Alert, Box, Button, Link, Paper, Stack, TextField, Typography } from "@
 import { GITHUB_PAT_URL, type GithubStatus } from "@flightdeck/shared";
 import { useState } from "react";
 import { api } from "../api.ts";
+import { ContrastAlert } from "../ui/ContrastAlert.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
 export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<void> }) {
@@ -42,13 +43,9 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
       </Typography>
       <GithubHelp />
       {err ? (
-        <Alert
-          severity="error"
-          sx={{ mb: 2, bgcolor: "error.main", color: "#fff", "& .MuiAlert-icon": { color: "#fff" } }}
-          data-testid="github-form-error"
-        >
+        <ContrastAlert sx={{ mb: 2 }} data-testid="github-form-error">
           {err}
-        </Alert>
+        </ContrastAlert>
       ) : null}
       {ok ? (
         <Alert severity="success" sx={{ mb: 2 }} data-testid="github-form-success">

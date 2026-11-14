@@ -2,7 +2,7 @@ import { createFakeDriver } from "./fake.ts";
 import { createSdkDriver } from "./sdk.ts";
 import type { AgentDriver } from "./types.ts";
 
-export type { AgentDriver, AgentEvent, AgentRunOpts } from "./types.ts";
+export type { AgentDriver, AgentEvent, AgentRole, AgentRunOpts } from "./types.ts";
 export { createFakeDriver } from "./fake.ts";
 export { createSdkDriver, mapSdkMessage } from "./sdk.ts";
 

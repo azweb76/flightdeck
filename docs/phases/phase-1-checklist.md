@@ -10,7 +10,7 @@ From `docs/DESIGN.md` (Goal shaping). Each line is **Done** with proof (demo vs 
 - [x] **Done (real adapter, demo status in UI)** GitHub via Octokit + PAT in Settings — `github.test.ts`. Demo Settings shows `dan-demo`.
 - [x] **Done (real adapter, demo connect in UI)** Jira Cloud email + token — `jira.test.ts`; form + Atlassian link `settings-light.png`. Demo connect success is a success Alert (not a page-level error); failed connect clears Connected (`settings-jira-error-dark.png`). Real Jira `myself` not live-run here.
 - [x] **Done** Per-run / daily / max-concurrent caps in Settings — `settings.test.ts`; e2e blur-save; invalid cap error clears on edit (`phase1.spec.ts`); `settings-light.png`
-- [x] **Done** Home is My issues — e2e; `issues-light.png`. **GET /api/issues calls `syncIssues`**; Refresh button. Demo: seed list. Real: Octokit assigned issues + Jira JQL (not live-run here).
+- [x] **Done** Home is My issues — e2e; `issues-light.png`. **GET `/api/issues` reads the local store (TTL cache)**; **Refresh** is `POST /api/issues/sync`. Demo: seed list. Real: Octokit assigned issues + Jira JQL (not live-run here).
 - [x] **Done** Nav: Issues, Runs, My PRs, Reviews, Settings — e2e; placeholder screenshots
 - [x] **Done** Full-page shaping: chat + draft share the viewport, independent scroll; stacked below `lg` (1024 stacked, 1440 side-by-side) — `shape-draft-light.png` `shape-draft-narrow.png`
 - [x] **Done** Live draft/chat over SSE (`useAppEvents` + `shape.updated` payload) and after each HTTP turn — `apps/web/src/useAppEvents.ts`
@@ -25,7 +25,7 @@ From `docs/DESIGN.md` (Goal shaping). Each line is **Done** with proof (demo vs 
 - [x] **Done** Save Jira or GitHub each time — e2e; `save-dialog-light.png` `save-github-light.png`
 - [x] **Done** Save can update an existing issue — `shape.test.ts`
 - [x] **Done** Nothing created until Save
-- [x] **Done** After save, Start is a quiet disabled control with “Coming in Phase 2”; `savedKey` from server survives reload — e2e; `shape-saved-light.png`
+- [x] **Done** After save, Start is enabled (Phase 2). `savedKey` from server survives reload — e2e.
 - [x] **Done** Issues list + empty state — e2e; `issues-empty-light.png`
 - [x] **Done** Error states: missing tracker, failed Jira connect inline — e2e; `settings-jira-error-dark.png`
 - [x] **Done** Demo/fake adapters — `FLIGHTDECK_DEMO=1`

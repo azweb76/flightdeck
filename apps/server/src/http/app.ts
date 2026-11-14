@@ -7,6 +7,7 @@ import { mountGithub } from "./routes/github.ts";
 import { mountSettings } from "./routes/settings.ts";
 import { mountIssues } from "./routes/issues.ts";
 import { mountShape } from "./routes/shape.ts";
+import { mountChanges } from "./routes/changes.ts";
 import { mountSse } from "./sse.ts";
 
 export function createApp(): Hono {
@@ -19,6 +20,7 @@ export function createApp(): Hono {
   mountGithub(app);
   mountIssues(app);
   mountShape(app);
+  mountChanges(app);
   mountSse(app);
   return app;
 }
