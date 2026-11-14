@@ -9,12 +9,14 @@ if (/username/i.test(prompt)) {
   process.exit(0);
 }
 
-let token = "";
+let token = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "").trim();
 try {
-  const { Entry } = await import("@napi-rs/keyring");
-  token = new Entry("flightdeck", "github-token").getPassword() ?? "";
+  if (!token) {
+    const { Entry } = await import("@napi-rs/keyring");
+    token = new Entry("flightdeck", "github-token").getPassword() ?? "";
+  }
 } catch {
-  token = "";
+  token = token || "";
 }
 if (!token.trim()) {
   const dir = process.env.FLIGHTDECK_DATA_DIR || join(homedir(), ".flightdeck");

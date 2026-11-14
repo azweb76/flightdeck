@@ -1,18 +1,25 @@
 import { Alert, type AlertProps } from "@mui/material";
 
-/** Error fill that stays >= 4.5:1 in light and dark (MUI error.main on white is ~3.4:1 in dark). */
+const FILLS = {
+  error: { light: "#8b1219", dark: "#5c1014" },
+  warning: { light: "#7a3e00", dark: "#5c2e00" },
+} as const;
+
+/** Fills that stay >= 4.5:1 on white text in light and dark. */
 export function ContrastAlert(props: AlertProps) {
+  const severity = props.severity === "warning" ? "warning" : "error";
+  const fill = FILLS[severity];
   return (
     <Alert
-      severity="error"
-      variant="outlined"
       {...props}
+      severity={severity}
+      variant="outlined"
       sx={{
-        bgcolor: "#8b1219",
+        bgcolor: fill.light,
         color: "#fff",
-        borderColor: "#8b1219",
+        borderColor: fill.light,
         "& .MuiAlert-icon": { color: "#fff" },
-        ".dark &": { bgcolor: "#5c1014", borderColor: "#5c1014", color: "#fff" },
+        ".dark &": { bgcolor: fill.dark, borderColor: fill.dark, color: "#fff" },
         ...((props.sx as object) ?? {}),
       }}
     />

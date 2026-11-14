@@ -23,6 +23,7 @@ const env = {
   FLIGHTDECK_HOST: "127.0.0.1",
   FLIGHTDECK_PORT: apiPort,
   FLIGHTDECK_WEB_PORT: webPort,
+  ...(phase2Shots ? { GITHUB_TOKEN: "test-env-github-token" } : {}),
 };
 
 export default defineConfig({

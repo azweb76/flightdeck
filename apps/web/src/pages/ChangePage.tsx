@@ -1,4 +1,5 @@
-import { Alert, Box, Stack, Typography } from "@mui/material";
+import { Alert, Box, Container, Stack, Typography } from "@mui/material";
+import { ContrastAlert } from "../ui/ContrastAlert.tsx";
 import type { AppEvent, Change } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -18,18 +19,19 @@ export function ChangePage() {
   }
 
   return (
-    <Stack spacing={2} sx={{ flex: 1, minHeight: 0, p: { xs: 2, md: 3 } }} data-testid="change-page">
+    <Container maxWidth="lg" sx={{ py: 5, px: { xs: 3, md: 4 }, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} data-testid="change-page">
+    <Stack spacing={4} sx={{ flex: 1, minHeight: 0 }}>
       <ChangeHeader change={state.change} onRuns={() => nav("/runs")} onArchive={() => void state.archive()} />
       {state.error ? <Alert severity="error">{state.error}</Alert> : null}
       {state.change.status === "needs_dan" ? (
-        <Alert severity="warning" data-testid="needs-dan">
+        <ContrastAlert severity="warning" data-testid="needs-dan">
           Review failed 3 times. Tell me how to proceed, or archive this run.
-        </Alert>
+        </ContrastAlert>
       ) : null}
       {state.change.status === "cap_hit" ? (
-        <Alert severity="warning" data-testid="cap-hit">
+        <ContrastAlert severity="warning" data-testid="cap-hit">
           This run hit a dollar cap. Raise the cap in Settings if you want to try again.
-        </Alert>
+        </ContrastAlert>
       ) : null}
       <Stack direction={{ xs: "column", lg: "row" }} spacing={2} alignItems="stretch" sx={{ flex: { lg: 1 }, minHeight: { lg: 0 } }}>
         <Box sx={{ width: { lg: 320 }, flexShrink: 0 }}>
@@ -44,6 +46,7 @@ export function ChangePage() {
         />
       </Stack>
     </Stack>
+    </Container>
   );
 }
 

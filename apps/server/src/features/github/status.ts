@@ -1,17 +1,18 @@
 import type { GithubStatus } from "@flightdeck/shared";
-import { GITHUB_NEEDED_SCOPES } from "@flightdeck/shared";
-import { GITHUB_TOKEN_ACCOUNT, createSecretStore } from "../secrets/index.ts";
+import { GITHUB_NEEDED_SCOPES, githubTokenSourceLabel } from "@flightdeck/shared";
 import { createOctokit, githubCall, type FetchFn } from "./octokit.ts";
 import { headerOf, missingScopes, parseScopeHeader } from "./scopes.ts";
+import { resolveGithubToken } from "./token.ts";
 
 export async function loadGithubToken(explicit?: string): Promise<string | undefined> {
-  if (explicit) return explicit;
-  return createSecretStore().get(GITHUB_TOKEN_ACCOUNT);
+  if (explicit?.trim()) return explicit.trim();
+  return (await resolveGithubToken())?.token;
 }
 
 export async function githubStatus(opts: { token?: string; fetch?: FetchFn } = {}): Promise<GithubStatus> {
-  const store = createSecretStore();
-  const token = opts.token ?? (await store.get(GITHUB_TOKEN_ACCOUNT));
+  const resolved = await resolveGithubToken();
+  const token = opts.token ?? resolved?.token;
+  const tokenSource = opts.token ? undefined : resolved?.source;
   const oauthAvailable = Boolean(process.env.FLIGHTDECK_GITHUB_CLIENT_ID);
   if (!token) {
     return {
@@ -19,10 +20,10 @@ export async function githubStatus(opts: { token?: string; fetch?: FetchFn } = {
       loggedIn: false,
       hasToken: false,
       oauthAvailable,
-      detail: "Add a GitHub token in Settings",
+      detail: "Set GITHUB_TOKEN or paste a PAT in Settings",
     };
   }
-  const storage = await store.storage(GITHUB_TOKEN_ACCOUNT);
+  const storage = tokenSource === "keychain" || tokenSource === "file" ? tokenSource : undefined;
   try {
     const octokit = createOctokit(token, opts.fetch ?? fetch);
     const res = await githubCall(() => octokit.rest.users.getAuthenticated());
@@ -32,7 +33,7 @@ export async function githubStatus(opts: { token?: string; fetch?: FetchFn } = {
     const fineGrained = scopes.length === 0;
     const fileWarn = storage === "file" ? " Stored in ~/.flightdeck/secrets (keychain unavailable)." : "";
     if (missing.length) {
-      return {
+      return withSource({
         installed: true,
         loggedIn: false,
         hasToken: true,
@@ -40,13 +41,14 @@ export async function githubStatus(opts: { token?: string; fetch?: FetchFn } = {
         scopes,
         storage,
         oauthAvailable,
+        tokenSource,
         detail: `Connected as ${login} but missing scopes: ${missing.join(", ")}. Need ${GITHUB_NEEDED_SCOPES.join(", ")}.`,
-      };
+      });
     }
     const scopeText = fineGrained
       ? "fine-grained token (grant Contents, Issues, Metadata, Pull requests, Workflows)"
       : `scopes ${scopes.join(", ")}`;
-    return {
+    return withSource({
       installed: true,
       loggedIn: true,
       hasToken: true,
@@ -54,19 +56,27 @@ export async function githubStatus(opts: { token?: string; fetch?: FetchFn } = {
       scopes: fineGrained ? ["fine-grained"] : scopes,
       storage,
       oauthAvailable,
+      tokenSource,
       detail: `Connected as ${login}; ${scopeText}.${fileWarn}`,
-    };
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "GitHub login failed";
-    return {
+    return withSource({
       installed: true,
       loggedIn: false,
       hasToken: true,
       storage,
       oauthAvailable,
+      tokenSource,
       detail: /401|bad credentials|unauthorized/i.test(message)
         ? "GitHub token was rejected (401). Create a new PAT and paste it in Settings."
         : message,
-    };
+    });
   }
+}
+
+function withSource(status: GithubStatus): GithubStatus {
+  const label = githubTokenSourceLabel(status.tokenSource);
+  if (!label || status.detail.includes(label)) return status;
+  return { ...status, detail: `${status.detail.replace(/\.$/, "")}. ${label}.` };
 }

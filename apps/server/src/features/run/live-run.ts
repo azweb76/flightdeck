@@ -3,7 +3,7 @@ import { getAgentDriver, type AgentEvent } from "../agent/index.ts";
 import { detectClaudeConfig, claudeSdkEnv } from "../claude/index.ts";
 import { getSettings } from "../settings/index.ts";
 import { applyAgentEvent, emitChange, log, setStage } from "./emit.ts";
-import { MAX_REVIEW_ROUNDS, nextAfterReview, parseReviewVerdict } from "./machine.ts";
+import { MAX_REVIEW_ROUNDS, nextAfterReview, parseReviewVerdict, reviewLimit } from "./machine.ts";
 import { commentPrLink, openDraftPr } from "./pr.ts";
 import { implementPrompt, planPrompt, reviewPrompt } from "./prompts.ts";
 import { commitAll, pushBranch, runGates } from "./worktree.ts";
@@ -24,9 +24,13 @@ export async function runLive(change: Change, answer?: string): Promise<void> {
 
   if (!answer && change.status === "asking") return;
 
-  while (change.reviewRound < MAX_REVIEW_ROUNDS) {
+  let guidance = answer;
+  const extra = Boolean(answer) && change.reviewRound >= MAX_REVIEW_ROUNDS;
+  const limit = reviewLimit(change.reviewRound, extra);
+  while (change.reviewRound < limit) {
     setStage(change, "implementing", "implement", "Implement");
-    await collect(change, "implement", implementPrompt(change, answer), cwd, settings.model, env);
+    await collect(change, "implement", implementPrompt(change, guidance), cwd, settings.model, env);
+    guidance = undefined;
     if (stopped(change)) return;
     const gates = await runGates(cwd);
     log(change, { kind: "system", title: "gates", detail: gates.detail });
@@ -51,6 +55,7 @@ export async function runLive(change: Change, answer?: string): Promise<void> {
       change.prNumber = pr.number;
       await commentPrLink(change, pr.url);
       log(change, { kind: "system", title: "draft pr", detail: `Opened draft PR ${pr.url}` });
+      log(change, { kind: "system", title: "issue comment", detail: `Commented ${pr.url} on ${change.issueKey}.` });
       change.status = "done";
       change.stage = "ci";
       log(change, { kind: "system", title: "ci", detail: "CI watch is a Phase 4 placeholder." });

@@ -7,7 +7,7 @@ type SdkQuery = (args: {
 
 export const SHAPE_TOOLS = ["Read", "Glob", "Grep", "AskUserQuestion", "AskUser"] as const;
 export const PLAN_TOOLS = SHAPE_TOOLS;
-export const REVIEW_TOOLS = ["Read", "Glob", "Grep", "Bash"] as const;
+export const REVIEW_TOOLS = ["Read", "Glob", "Grep"] as const;
 export const IMPLEMENT_TOOLS = ["Read", "Glob", "Grep", "Edit", "Write", "Bash", "AskUserQuestion", "AskUser"] as const;
 
 /** Real Agent SDK driver. Shaping is read-only plus AskUserQuestion. */

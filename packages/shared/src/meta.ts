@@ -7,6 +7,16 @@ export const DEFAULT_HOST = "127.0.0.1";
 export const DEFAULT_THEME = "system" as const;
 export const JIRA_TOKEN_ACCOUNT = "jira-api-token";
 export const GITHUB_TOKEN_ACCOUNT = "github-token";
+
+export type GithubTokenSource = "GITHUB_TOKEN" | "GH_TOKEN" | "keychain" | "file";
+
+export function githubTokenSourceLabel(source?: GithubTokenSource): string {
+  if (source === "GITHUB_TOKEN") return "Using GITHUB_TOKEN from environment";
+  if (source === "GH_TOKEN") return "Using GH_TOKEN from environment";
+  if (source === "keychain") return "Using the token from the Mac keychain";
+  if (source === "file") return "Using the token from ~/.flightdeck/secrets";
+  return "";
+}
 export const GITHUB_NEEDED_SCOPES = ["repo", "read:org", "workflow"] as const;
 export const GITHUB_PAT_URL =
   "https://github.com/settings/tokens/new?description=Flightdeck&scopes=repo,read:org,workflow";

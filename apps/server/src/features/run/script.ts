@@ -29,19 +29,53 @@ export function* askEvents(): Generator<AgentEvent> {
   };
 }
 
-export function* implementEvents(round: number, answer?: string): Generator<AgentEvent> {
+export function* implementEvents(round: number, answer?: string, issue?: { key: string; title: string }): Generator<AgentEvent> {
   const extra = answer ? ` Using your answer: ${answer}.` : "";
-  const pass = round === 0
-    ? `Added export route and a download button.${extra}\nRunning tests, lint, typecheck, and build.`
-    : `Round ${round}: addressed the review notes (auth on the export route, CSV header row).`;
-  yield { kind: "text", title: "implement", detail: pass };
+  yield { kind: "text", title: "implement", detail: implementNotes(round, extra, issue) };
   yield { kind: "tool", title: "Bash", detail: "pnpm test && pnpm lint && pnpm typecheck && pnpm build" };
   yield { kind: "text", title: "gates", detail: "tests, lint, typecheck, and build all passed." };
   yield { kind: "usage", title: "usage", costUsd: 0.35 };
   yield { kind: "done", title: "implement done" };
 }
 
-export function* reviewEvents(round: number, pass: boolean): Generator<AgentEvent> {
+function implementNotes(round: number, extra: string, issue?: { key: string; title: string }): string {
+  const webhook = issue && (/#21\b/.test(issue.key) || /webhook/i.test(issue.title));
+  if (webhook) {
+    return round === 0
+      ? `Added retry with backoff to the webhook handler.${extra}\nRunning tests, lint, typecheck, and build.`
+      : `Round ${round}: still tightening retries and the 5xx-then-success test.${extra}`;
+  }
+  return round === 0
+    ? `Added export route and a download button.${extra}\nRunning tests, lint, typecheck, and build.`
+    : `Round ${round}: addressed the review notes (auth on the export route, CSV header row).${extra}`;
+}
+
+export function reviewFailNotes(issue: { key: string; title: string }, round = 1): string {
+  if (/#21\b/.test(issue.key) || /webhook/i.test(issue.title)) return webhookFailNotes(round);
+  if (/#15\b/.test(issue.key) || /refund/i.test(issue.title)) {
+    return round <= 1
+      ? "- Refunded invoices are still mixed into the paid-only CSV.\n- The refund column has no header."
+      : "- The refund column has no header.";
+  }
+  if (/#12\b/.test(issue.key) || /csv|invoice/i.test(issue.title)) {
+    return round <= 1 ? "- Export is missing auth.\n- CSV has no header row." : "- CSV has no header row.";
+  }
+  return "- Acceptance criteria are not all met.";
+}
+
+function webhookFailNotes(round: number): string {
+  if (round <= 1) {
+    return "- Handler returns 200 even when the downstream POST fails.\n- No exponential backoff or retry budget.\n- Missing a test for 5xx then success.";
+  }
+  if (round === 2) return "- No exponential backoff or retry budget.\n- Missing a test for 5xx then success.";
+  return "- Missing a test for 5xx then success.";
+}
+
+export function* reviewEvents(
+  round: number,
+  pass: boolean,
+  issue: { key: string; title: string } = { key: "", title: "" },
+): Generator<AgentEvent> {
   if (pass) {
     yield {
       kind: "text",
@@ -52,7 +86,7 @@ export function* reviewEvents(round: number, pass: boolean): Generator<AgentEven
     yield {
       kind: "text",
       title: "review",
-      detail: `Review round ${round}: CHANGES_NEEDED.\n- Export is missing auth.\n- CSV has no header row.\nAcceptance criteria are not all met.`,
+      detail: `Review round ${round}: CHANGES_NEEDED.\n${reviewFailNotes(issue, round)}\nAcceptance criteria are not all met.`,
     };
   }
   yield { kind: "usage", title: "usage", costUsd: 0.18 };

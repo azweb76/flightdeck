@@ -27,7 +27,6 @@ async function pair(page: Page, prefix: string): Promise<void> {
   await shot(page, `${prefix}-light`);
   await scheme(page, "dark");
   await shot(page, `${prefix}-dark`);
-  await scheme(page, "light");
 }
 
 test("phase 2 screenshots", async ({ page }) => {
@@ -43,9 +42,9 @@ test("phase 2 screenshots", async ({ page }) => {
 
   await page.goto("/");
   await page.getByTestId("start-acme/web#12").click();
-  await expect(page.getByTestId("transcript")).toContainText(/keep the plan|Implement|Review/i, { timeout: 20_000 });
-  await pair(page, "live-transcript");
   await expect(page.getByTestId("pr-link")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("change-status")).toContainText("Done");
+  await pair(page, "live-transcript");
 
   await page.goto("/");
   await page.getByTestId("start-acme/web#21").click();
@@ -63,4 +62,8 @@ test("phase 2 screenshots", async ({ page }) => {
   await page.getByTestId("archive-acme/web#12").click();
   await expect(page.getByTestId("run-status-acme/web#12")).toContainText("Archived");
   await pair(page, "archive");
+
+  await page.getByRole("tab", { name: "Settings" }).click();
+  await expect(page.getByTestId("github-token-source")).toContainText("Using GITHUB_TOKEN from environment");
+  await pair(page, "settings-github");
 });
