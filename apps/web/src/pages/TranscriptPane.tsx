@@ -35,11 +35,9 @@ export function TranscriptPane(props: {
         Transcript
       </Typography>
       <Stack spacing={1.25} sx={{ flex: 1, minHeight: 0, overflow: "auto", pr: 1 }}>
-        {props.change.events
-          .filter((ev) => ev.kind !== "stage")
-          .map((ev) => (
-            <EventRow key={ev.id} ev={ev} waiting={waiting && !props.busy} onPick={(label) => props.onSend(label)} />
-          ))}
+        {props.change.events.map((ev) => (
+          <EventRow key={ev.id} ev={ev} waiting={waiting && !props.busy} onPick={(label) => props.onSend(label)} />
+        ))}
         <div ref={end} />
       </Stack>
       <Box sx={{ mt: 2 }}>
@@ -72,6 +70,16 @@ export function TranscriptPane(props: {
 }
 
 function EventRow(props: { ev: ChangeEvent; waiting: boolean; onPick: (label: string) => void }) {
+  if (props.ev.kind === "stage") {
+    return (
+      <Box sx={{ py: 0.5 }} data-testid={`event-stage-${props.ev.title}`}>
+        <Typography variant="subtitle2" color="text.secondary">
+          {props.ev.title}
+          {props.ev.detail ? ` · ${props.ev.detail}` : ""}
+        </Typography>
+      </Box>
+    );
+  }
   const mine = props.ev.kind === "user";
   return (
     <Box

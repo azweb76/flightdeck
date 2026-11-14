@@ -16,7 +16,20 @@ export function IssueList(props: {
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.75 }}>
                 <Chip size="small" color={issue.source === "jira" ? "warning" : "info"} label={issue.source === "jira" ? "Jira" : "GitHub"} />
-                {issue.saved ? <Chip size="small" variant="outlined" label="Saved" /> : <Chip size="small" variant="outlined" label="Draft" />}
+                {issue.saved ? (
+                  <Chip size="small" color="success" label="Saved" sx={{ fontWeight: 600 }} />
+                ) : (
+                  <Chip
+                    size="small"
+                    label="Draft"
+                    sx={{
+                      fontWeight: 600,
+                      bgcolor: "action.selected",
+                      color: "text.primary",
+                      ".dark &": { bgcolor: "rgba(245,245,247,0.18)", color: "#f5f5f7" },
+                    }}
+                  />
+                )}
                 <Typography variant="caption" color="text.secondary">
                   {issue.key}
                 </Typography>
@@ -46,7 +59,8 @@ export function IssueList(props: {
                 gate="start"
                 variant="contained"
                 placement="top"
-                disabled={props.busy === issue.id}
+                disabled={props.busy === issue.id || !issue.saved}
+                fallbackTitle={issue.saved ? undefined : "Save the issue first"}
                 onClick={() => props.onStart(issue)}
                 testId={`start-${issue.key}`}
               >

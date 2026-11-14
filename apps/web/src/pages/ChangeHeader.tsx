@@ -1,6 +1,6 @@
 import { Box, Button, Chip, Link, Stack, Typography } from "@mui/material";
 import type { Change } from "@flightdeck/shared";
-import { chipColor, statusChip } from "./changeStatus.ts";
+import { archiveDisabled, chipColor, statusChip } from "./changeStatus.ts";
 
 export function ChangeHeader(props: { change: Change; onRuns: () => void; onArchive: () => void }) {
   const { change } = props;
@@ -11,7 +11,7 @@ export function ChangeHeader(props: { change: Change; onRuns: () => void; onArch
           <Typography variant="h4">{change.title}</Typography>
           <Chip size="small" color={chipColor(change.status)} label={statusChip(change.status)} data-testid="change-status" />
         </Stack>
-        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+        <Typography color="text.secondary" sx={{ mt: 0.5 }} data-testid="change-cost">
           {change.issueKey} · {change.repoSlug} · ${change.costUsd.toFixed(2)} · {change.branch || "no branch yet"}
         </Typography>
         {change.prUrl ? (
@@ -26,7 +26,7 @@ export function ChangeHeader(props: { change: Change; onRuns: () => void; onArch
         </Button>
         <Button
           variant="outlined"
-          disabled={["planning", "implementing", "reviewing", "opening_pr"].includes(change.status)}
+          disabled={archiveDisabled(change.status)}
           onClick={props.onArchive}
           data-testid="archive-change"
         >

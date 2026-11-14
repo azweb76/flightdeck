@@ -46,7 +46,7 @@ function order(stage: ChangeStage): number {
 }
 
 function dotColor(change: Change, stage: ChangeStage): string {
-  if (stage === "ci") return change.status === "done" ? "warning.main" : "action.disabled";
+  if (stage === "ci") return "action.disabled";
   const here = order(change.stage);
   const want = order(stage);
   if (change.status === "needs_dan" && stage === "review") return "error.main";
@@ -58,9 +58,10 @@ function dotColor(change: Change, stage: ChangeStage): string {
 
 function caption(change: Change, stage: ChangeStage): string {
   if (stage === "review") return change.reviewRound ? `Round ${change.reviewRound} of 3` : "Waiting";
-  if (stage === "pr") return change.prUrl ?? "Opens after review";
+  if (stage === "pr") return change.prUrl ? "Opened" : "Opens after review";
   if (stage === "ci") return "Phase 4 placeholder";
   if (stage === "plan") {
+    if (change.status === "asking") return "Paused for your answer";
     if (change.status === "cap_hit") return "Stopped on the dollar cap";
     return change.planText ? "Kept in the app only" : "Not started";
   }

@@ -8,6 +8,10 @@ export function chipColor(status: ChangeStatus): "default" | "success" | "warnin
   return "info";
 }
 
+export function archiveDisabled(status: ChangeStatus): boolean {
+  return ["planning", "implementing", "reviewing", "opening_pr", "archived"].includes(status);
+}
+
 export function statusChip(status: ChangeStatus): string {
   if (status === "planning") return "Plan";
   if (status === "implementing") return "Implement";

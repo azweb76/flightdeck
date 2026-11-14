@@ -1,11 +1,10 @@
 import { Box, Button, Chip, Paper, Stack, Typography } from "@mui/material";
 import type { Change } from "@flightdeck/shared";
 import { Link as RouterLink } from "react-router-dom";
-import { chipColor, statusChip } from "./changeStatus.ts";
+import { archiveDisabled, chipColor, statusChip } from "./changeStatus.ts";
 
 export function RunRow(props: { change: Change; onArchive: (id: string) => void }) {
   const { change } = props;
-  const busy = ["planning", "implementing", "reviewing", "opening_pr"].includes(change.status);
   return (
     <Paper sx={{ p: 3, border: 1, borderColor: "divider" }} data-testid="run-row">
       <Stack direction={{ xs: "column", md: "row" }} gap={2} alignItems={{ md: "center" }}>
@@ -27,7 +26,7 @@ export function RunRow(props: { change: Change; onArchive: (id: string) => void 
           </Button>
           <Button
             variant="outlined"
-            disabled={change.status === "archived" || busy}
+            disabled={archiveDisabled(change.status)}
             onClick={() => props.onArchive(change.id)}
             data-testid={`archive-${change.issueKey}`}
           >
