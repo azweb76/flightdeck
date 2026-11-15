@@ -24,8 +24,8 @@ export function ReviewPage() {
   const review = state.review;
   const approved = review.comments.filter((c) => c.state === "approved").length;
   return (
-    <Container maxWidth="lg" sx={{ py: 5, px: { xs: 3, md: 4 }, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} data-testid="review-page">
-      <Stack spacing={3} sx={{ flex: 1, minHeight: 0 }}>
+    <Container maxWidth="lg" sx={{ py: 5, px: { xs: 3, md: 4 } }} data-testid="review-page">
+      <Stack spacing={3}>
         <ReviewHeader
           review={review}
           onBack={() => nav("/reviews")}
@@ -76,7 +76,7 @@ export function ReviewPage() {
           sendTestId="review-send"
           compact
           autoScroll
-          paperSx={{ flex: 1, minHeight: { xs: 360, lg: 0 } }}
+          paperSx={{ minHeight: 360 }}
         />
       </Stack>
       <PostReviewDialog
