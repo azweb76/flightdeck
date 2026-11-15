@@ -3,6 +3,7 @@ import { getJob, isHeld } from "./jobs.ts";
 import { isAgentRunning } from "./machine.ts";
 
 export function isInterrupted(change: Change): boolean {
+  if (change.ciPhase === "queued") return false;
   return isAgentRunning(change.status) && !getJob(change.id) && !isHeld(change.id);
 }
 

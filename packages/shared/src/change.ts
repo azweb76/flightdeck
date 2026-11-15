@@ -14,7 +14,8 @@ export function extraRoundLabel(round: number): string {
   return round > MAX_REVIEW_ROUNDS ? "Follow-up after Dan answered" : `Round ${round}`;
 }
 
-export function ciRoundCaption(round: number, status?: string): string {
+export function ciRoundCaption(round: number, status?: string, ciPhase?: string): string {
+  if (ciPhase === "queued") return "Waiting for a free slot";
   if (status === "needs_dan") return `Stopped after ${MAX_CI_ROUNDS} failed attempts`;
   if (round <= 0) return "Waiting for checks";
   if (round > MAX_CI_ROUNDS) return "Follow-up after Dan answered";
@@ -71,7 +72,7 @@ export const ChangeSchema = z.object({
   stage: ChangeStageSchema,
   reviewRound: z.number().int().min(0),
   ciRound: z.number().int().min(0).default(0),
-  ciPhase: z.enum(["", "watching", "fixing"]).default(""),
+  ciPhase: z.enum(["", "watching", "fixing", "queued"]).default(""),
   worktreePath: z.string().default(""),
   branch: z.string().default(""),
   planText: z.string().default(""),

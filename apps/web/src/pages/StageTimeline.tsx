@@ -59,7 +59,7 @@ function dotColor(change: Change, stage: ChangeStage): string {
 function caption(change: Change, stage: ChangeStage): string {
   if (stage === "review") return reviewRoundCaption(change.reviewRound);
   if (stage === "pr") return change.prUrl ? "Draft PR opened" : "Opens after review";
-  if (stage === "ci") return ciRoundCaption(change.ciRound, change.status);
+  if (stage === "ci") return ciRoundCaption(change.ciRound, change.status, change.ciPhase);
   if (stage === "plan") {
     if (change.status === "asking") return "Paused for your answer";
     if (change.status === "cap_hit") return "Stopped on the dollar cap";
@@ -70,7 +70,7 @@ function caption(change: Change, stage: ChangeStage): string {
 }
 
 function statusWord(change: Change): string {
-  if (change.status === "queued") return "Waiting for a free slot";
+  if (change.status === "queued" || change.ciPhase === "queued") return "Waiting for a free slot";
   if (change.status === "asking") return "Paused for your answer";
   if (change.status === "cap_hit") return "Stopped on the dollar cap";
   if (change.status === "needs_dan" && change.stage === "ci") return "Stopped after 3 CI attempts";

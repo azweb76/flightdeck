@@ -209,9 +209,11 @@ export function countActive(): number {
 
 export function nextQueued(): Change | undefined {
   const rows = getDb()
-    .prepare(`SELECT * FROM changes WHERE status = 'queued' ORDER BY created_at ASC`)
+    .prepare(
+      `SELECT * FROM changes WHERE status = 'queued' OR ci_phase = 'queued' ORDER BY updated_at ASC, created_at ASC`,
+    )
     .all() as ChangeRow[];
-  const row = rows.find((r) => !hasJob(r.id));
+  const row = rows.find((r) => r.ci_phase === "queued" || !hasJob(r.id));
   return row ? fromRow(row, loadEvents(row.id)) : undefined;
 }
 
@@ -242,7 +244,7 @@ function fromRow(row: ChangeRow, events: ChangeEvent[]): Change {
     stage: row.stage,
     reviewRound: row.review_round,
     ciRound: row.ci_round ?? 0,
-    ciPhase: (row.ci_phase === "watching" || row.ci_phase === "fixing" ? row.ci_phase : "") as Change["ciPhase"],
+    ciPhase: (row.ci_phase === "watching" || row.ci_phase === "fixing" || row.ci_phase === "queued" ? row.ci_phase : "") as Change["ciPhase"],
     worktreePath: row.worktree_path,
     branch: row.branch,
     planText: row.plan_text,

@@ -197,6 +197,37 @@ describe("run engine (demo)", () => {
     expect(left.events.some((e) => e.detail === "Left the failing checks for you.")).toBe(true);
   });
 
+  it("CI auto-fix waits for a slot without advancing ciRound twice", async () => {
+    const { patchSettings } = await import("../settings/index.ts");
+    patchSettings({ maxConcurrentAgents: 1 });
+    const blocker = await startChange("github:acme/web#15");
+    await waitForChange(blocker.id);
+    expect(getChange(blocker.id)?.status).toBe("asking");
+    const issue = loadIssue("github:acme/web#71");
+    const change = insertChange(issue!, "ci-fix", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.ciRound = 1;
+    change.ciPhase = "watching";
+    change.prNumber = 42;
+    saveChange(change);
+    addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 1 of 3" });
+    const pending = resumeChange(change.id).then(() => waitForChange(change.id));
+    await new Promise((r) => setTimeout(r, 40));
+    const waiting = getChange(change.id)!;
+    expect(waiting.ciPhase).toBe("queued");
+    expect(waiting.ciRound).toBe(1);
+    expect(waiting.events.some((e) => e.detail === "Waiting for a free slot")).toBe(true);
+    expect(presentChange(waiting).interrupted).toBe(false);
+    await archiveChange(blocker.id);
+    await pending;
+    const done = getChange(change.id)!;
+    expect(done.status).toBe("done");
+    expect(done.ciRound).toBe(2);
+    expect(
+      done.events.filter((e) => e.kind === "stage" && /^Attempt /.test(e.detail ?? "")).map((e) => e.detail),
+    ).toEqual(["Attempt 1 of 3", "Attempt 2 of 3"]);
+  });
+
   it("Resume continues the in-flight CI attempt after dropJobs", async () => {
     const issue = loadIssue("github:acme/web#71");
     expect(issue).toBeTruthy();

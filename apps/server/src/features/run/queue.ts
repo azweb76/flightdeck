@@ -1,6 +1,7 @@
 import { getSettings } from "../settings/index.ts";
 import { claimNextQueued } from "./claim.ts";
 import { log } from "./emit.ts";
+import { hasJob } from "./jobs.ts";
 import { countActive } from "./store.ts";
 
 let startQueued: (id: string) => void = () => undefined;
@@ -16,6 +17,7 @@ export function pumpQueue(): void {
     const next = claimNextQueued();
     if (!next) return;
     log(next, { kind: "system", title: "dequeue", detail: "A slot opened. Starting this run." });
+    if (hasJob(next.id)) continue;
     startQueued(next.id);
   }
 }

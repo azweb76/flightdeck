@@ -1,4 +1,5 @@
 import { draftToMarkdown, emptyDraft, type Issue, type IssueDraft } from "@flightdeck/shared";
+import { extraCiIssues } from "./seed-issues-ci.ts";
 
 const NOW = "2026-11-12T12:00:00.000Z";
 
@@ -28,6 +29,7 @@ export function seedIssues(): Issue[] {
     sortCsv(),
     ciAsk(),
     ciFix(),
+    ...extraCiIssues(),
   ];
 }
 

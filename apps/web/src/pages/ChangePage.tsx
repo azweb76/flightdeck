@@ -28,7 +28,7 @@ export function ChangePage() {
         onResume={() => void state.resume()}
       />
       {state.error ? <Alert severity="error">{state.error}</Alert> : null}
-      {state.change.status === "queued" ? (
+      {state.change.status === "queued" || state.change.ciPhase === "queued" ? (
         <ContrastAlert severity="info" data-testid="run-queued">
           Waiting for a free agent slot. This starts automatically when another run finishes or is archived.
         </ContrastAlert>

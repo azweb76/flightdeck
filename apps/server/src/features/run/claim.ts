@@ -26,6 +26,12 @@ export function claimNextQueued(): Change | undefined {
     if (countActive() >= getSettings().maxConcurrentAgents) return undefined;
     const next = nextQueued();
     if (!next) return undefined;
+    if (next.ciPhase === "queued") {
+      next.status = "fixing_ci";
+      next.ciPhase = "fixing";
+      saveChange(next);
+      return getChange(next.id);
+    }
     if (!tryClaim(next.id)) return undefined;
     return getChange(next.id);
   });

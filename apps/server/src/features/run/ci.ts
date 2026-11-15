@@ -4,13 +4,13 @@ import { resolveGithubToken } from "../github/token.ts";
 import { getSettings } from "../settings/index.ts";
 import { getAgentDriver, type AgentEvent } from "../agent/index.ts";
 import { applyAgentEvent, emitChange, log, setStage } from "./emit.ts";
-import { claimAgentSlot } from "./claim.ts";
 import { ciLimit } from "./machine.ts";
 import { ciFixPrompt } from "./prompts.ts";
 import { currentRunEpoch, isRunCurrent } from "./jobs.ts";
 import { getChange } from "./store.ts";
 import { commitAll, pushBranch, runGates } from "./worktree.ts";
 import { attachCiPoll, detachCiPoll, waitForChecks, type CiPollDeps } from "./ci-poll.ts";
+import { waitForFixSlot } from "./ci-slot.ts";
 
 export type { CiPollDeps };
 export { abortCiWatch } from "./ci-poll.ts";
@@ -19,9 +19,9 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
   const extra = Boolean(answer) && change.ciRound >= MAX_CI_ROUNDS;
   const limit = ciLimit(change.ciRound, extra);
   const failsBeforePass = failCount(change.scenario);
-  while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing") {
+  while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing" || change.ciPhase === "queued") {
     if (!isRunCurrent(epoch)) return;
-    if (change.ciPhase === "fixing") {
+    if (change.ciPhase === "fixing" || change.ciPhase === "queued") {
       if (!(await waitForFixSlot(change))) return;
       await fixDemoCi(change, epoch, answer);
       if (ciHalted(change)) return;
@@ -47,8 +47,6 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
       askCi(change);
       return;
     }
-    change.ciPhase = "fixing";
-    emitChange(change);
     if (!(await waitForFixSlot(change))) return;
     await fixDemoCi(change, epoch, answer);
     if (ciHalted(change)) return;
@@ -76,9 +74,9 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
   }
   const ac = attachCiPoll(change.id);
   try {
-    while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing") {
+    while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing" || change.ciPhase === "queued") {
       if (ac.signal.aborted) return;
-      if (change.ciPhase === "fixing") {
+      if (change.ciPhase === "fixing" || change.ciPhase === "queued") {
         if (!(await waitForFixSlot(change))) return;
         await fixLiveCi(change, "Resuming the in-flight CI fix.", answer);
         if (ciHalted(change)) return;
@@ -123,8 +121,6 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
         askCi(change);
         return;
       }
-      change.ciPhase = "fixing";
-      emitChange(change);
       if (!(await waitForFixSlot(change))) return;
       await fixLiveCi(change, result.summary, answer);
       if (ciHalted(change)) return;
@@ -135,19 +131,6 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
   } finally {
     detachCiPoll(change.id);
   }
-}
-
-async function waitForFixSlot(change: Change): Promise<boolean> {
-  for (let i = 0; i < 600; i += 1) {
-    const fresh = getChange(change.id);
-    if (!fresh || fresh.status === "archived") return false;
-    if (claimAgentSlot(change.id, "fixing_ci")) {
-      change.status = getChange(change.id)?.status ?? "fixing_ci";
-      return true;
-    }
-    await new Promise((r) => setTimeout(r, process.env.FLIGHTDECK_RUN_FAST === "1" ? 0 : 250));
-  }
-  return false;
 }
 
 function beginWatch(change: Change): void {

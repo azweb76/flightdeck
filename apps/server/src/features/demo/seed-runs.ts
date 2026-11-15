@@ -20,6 +20,20 @@ export function seedDemoRuns(): void {
   seedCapHit(byKey.get("acme/api#43"));
   seedDone(byKey.get("acme/web#44"));
   seedQueued(byKey.get("acme/web#40"));
+  seedWaitingCi(byKey.get("acme/web#73"));
+}
+
+function seedWaitingCi(issue: Issue | undefined): void {
+  const change = base(issue, "ci-fix", "watching_ci");
+  if (!change) return;
+  change.stage = "ci";
+  change.ciRound = 1;
+  change.ciPhase = "queued";
+  change.prUrl = "https://github.com/acme/web/pull/73";
+  change.prNumber = 73;
+  saveChange(change);
+  addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 1 of 3" });
+  addEvent(change, { kind: "system", title: "queued", detail: "Waiting for a free slot" });
 }
 
 function seedQueued(issue: Issue | undefined): void {
