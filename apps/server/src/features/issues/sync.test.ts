@@ -32,11 +32,11 @@ describe("issues sync TTL", () => {
     const published = trackPublishes();
     const first = await listIssues(deps);
     expect(first.map((i) => i.key)).toEqual(["acme/web#1", "PROJ-1"]);
-    expect(calls).toEqual({ status: 1, issues: 1, search: 1 });
+    expect(calls).toEqual({ issues: 1, search: 1 });
     expect(published()).toBe(1);
 
     await listIssues(deps);
-    expect(calls).toEqual({ status: 1, issues: 1, search: 1 });
+    expect(calls).toEqual({ issues: 1, search: 1 });
     expect(published()).toBe(1);
   });
 
@@ -44,7 +44,7 @@ describe("issues sync TTL", () => {
     const { deps, calls } = mocks();
     await listIssues(deps);
     await syncIssues(deps);
-    expect(calls).toEqual({ status: 2, issues: 2, search: 2 });
+    expect(calls).toEqual({ issues: 2, search: 2 });
   });
 
   it("issues.updated handler GET does not re-sync", async () => {
@@ -56,7 +56,7 @@ describe("issues sync TTL", () => {
     await listIssues(deps);
     await Promise.all(pending);
     unsub();
-    expect(calls).toEqual({ status: 1, issues: 1, search: 1 });
+    expect(calls).toEqual({ issues: 1, search: 1 });
   });
 
   it("GET after TTL expiry syncs again", async () => {
@@ -66,6 +66,20 @@ describe("issues sync TTL", () => {
     await listIssues(deps);
     expect(calls.issues).toBe(2);
     expect(calls.search).toBe(2);
+  });
+
+  it("treats 401 from listAssignedIssues as not logged in", async () => {
+    const { deps, calls } = mocks();
+    deps.github = {
+      ...deps.github!,
+      listAssignedIssues: async () => {
+        calls.issues += 1;
+        throw Object.assign(new Error("Bad credentials"), { status: 401 });
+      },
+    };
+    const issues = await listIssues(deps);
+    expect(issues.map((i) => i.key)).toEqual(["PROJ-1"]);
+    expect(calls).toEqual({ issues: 1, search: 1 });
   });
 });
 
@@ -77,8 +91,8 @@ function trackPublishes(): () => number {
   return () => n;
 }
 
-function mocks(): { deps: IssuesDeps; calls: { status: number; issues: number; search: number } } {
-  const calls = { status: 0, issues: 0, search: 0 };
+function mocks(): { deps: IssuesDeps; calls: { issues: number; search: number } } {
+  const calls = { issues: 0, search: 0 };
   const issue: GhIssue = {
     id: "github:acme/web#1",
     number: 1,
@@ -91,8 +105,7 @@ function mocks(): { deps: IssuesDeps; calls: { status: number; issues: number; s
   };
   const github = {
     status: async () => {
-      calls.status += 1;
-      return { installed: true, loggedIn: true, user: "dan", detail: "ok" };
+      throw new Error("GET /user is preflight-only");
     },
     listAssignedIssues: async () => {
       calls.issues += 1;
@@ -116,12 +129,14 @@ function mocks(): { deps: IssuesDeps; calls: { status: number; issues: number; s
           body: "",
           url: "https://ex.atlassian.net/browse/PROJ-1",
           updatedAt: "2026-11-12T00:00:00Z",
+          repoSlug: "acme/web",
         },
       ];
     },
     createIssue: async () => ({ key: "PROJ-1", url: "" }),
     updateIssue: async () => undefined,
     commentIssue: async () => undefined,
+    setRepoLabel: async () => undefined,
   } satisfies JiraClient;
   return { deps: { github, jira, token: async () => "t" }, calls };
 }

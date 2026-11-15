@@ -8,6 +8,19 @@ const inputFocus = {
   "&:has(.MuiInputBase-input:focus-visible)": { outline: "3px solid #2997ff", outlineOffset: 2 },
 };
 
+const containedOff = { backgroundColor: "#c5dcf5", color: "#1d1d1f" };
+const containedOffDark = { backgroundColor: "#2a6cb3", color: "#f5f5f7" };
+const outlinedOff = {
+  border: "1px solid rgba(29,29,31,0.5)",
+  color: "rgba(29,29,31,0.78)",
+  backgroundColor: "transparent",
+};
+const outlinedOffDark = {
+  border: "1px solid #8e8e93",
+  color: "#f5f5f7",
+  backgroundColor: "transparent",
+};
+
 export const theme = createTheme({
   cssVariables: { colorSchemeSelector: "class" },
   colorSchemes: {
@@ -19,6 +32,7 @@ export const theme = createTheme({
         warning: { main: "#e6a700", light: "#ffd60a" },
         text: { primary: "#1d1d1f", secondary: "#6e6e73" },
         divider: "rgba(0,0,0,0.08)",
+        action: { disabled: "rgba(29,29,31,0.78)", disabledBackground: "#c5dcf5" },
       },
     },
     dark: {
@@ -29,7 +43,7 @@ export const theme = createTheme({
         warning: { main: "#ffd60a", light: "#ff9f0a" },
         text: { primary: "#f5f5f7", secondary: "#a1a1a6" },
         divider: "rgba(255,255,255,0.12)",
-        action: { disabled: "#d6ebff", disabledBackground: "rgba(41,151,255,0.45)" },
+        action: { disabled: "#f5f5f7", disabledBackground: "#2a6cb3" },
       },
     },
   },
@@ -58,31 +72,30 @@ export const theme = createTheme({
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
-        root: ({ theme }) => ({
+        root: {
           borderRadius: 10,
           paddingInline: 16,
           paddingBlock: 8,
           ...focus,
-          "&.Mui-disabled": {
-            opacity: 0.55,
-            ...theme.applyStyles("dark", { opacity: 1, color: "#d6ebff" }),
-          },
-        }),
-        contained: ({ theme }) => ({
-          "&.Mui-disabled": theme.applyStyles("dark", {
-            backgroundColor: "rgba(41,151,255,0.45)",
-            color: "#f0f7ff",
-          }),
-        }),
-        outlined: ({ theme }) => ({
-          "&.Mui-disabled": theme.applyStyles("dark", {
-            borderColor: "rgba(245,245,247,0.45)",
-            color: "rgba(245,245,247,0.78)",
-          }),
-        }),
-        text: ({ theme }) => ({
-          "&.Mui-disabled": theme.applyStyles("dark", { color: "rgba(245,245,247,0.72)" }),
-        }),
+          "&.Mui-disabled": { opacity: 1 },
+        },
+        contained: {
+          "&.Mui-disabled": containedOff,
+          "@media (prefers-color-scheme: dark)": { "&.Mui-disabled": containedOffDark },
+          ".dark &.Mui-disabled": containedOffDark,
+          '[data-mui-color-scheme="dark"] &.Mui-disabled': containedOffDark,
+        },
+        outlined: {
+          "&.Mui-disabled": outlinedOff,
+          "@media (prefers-color-scheme: dark)": { "&.Mui-disabled": outlinedOffDark },
+          ".dark &.Mui-disabled": outlinedOffDark,
+          '[data-mui-color-scheme="dark"] &.Mui-disabled': outlinedOffDark,
+        },
+        text: {
+          "&.Mui-disabled": { color: "rgba(29,29,31,0.62)" },
+          "@media (prefers-color-scheme: dark)": { "&.Mui-disabled": { color: "rgba(245,245,247,0.78)" } },
+          ".dark &.Mui-disabled": { color: "rgba(245,245,247,0.78)" },
+        },
       },
     },
     MuiTab: { styleOverrides: { root: { ...focus } } },

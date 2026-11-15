@@ -8,6 +8,7 @@ import { resetDemoGithubMode } from "../features/github/index.ts";
 import { preflightBuildCount, resetDemoPreflightFixture, resetPreflightStore, runChecks } from "../features/preflight/index.ts";
 import { subscribe } from "../features/events/index.ts";
 import { upsertIssue } from "../features/issues/store.ts";
+import { patchSettings } from "../features/settings/index.ts";
 import { createApp } from "./app.ts";
 
 describe("http", () => {
@@ -220,15 +221,41 @@ describe("http settings save without demo", () => {
     delete process.env.FLIGHTDECK_DATA_DIR;
   });
 
+  it("GET /api/issues has no leftover demo seeds", async () => {
+    const gh = process.env.GITHUB_TOKEN;
+    const gh2 = process.env.GH_TOKEN;
+    process.env.FLIGHTDECK_DEMO = "1";
+    seedDemo();
+    delete process.env.FLIGHTDECK_DEMO;
+    delete process.env.GITHUB_TOKEN;
+    delete process.env.GH_TOKEN;
+    patchSettings({ jiraConfigured: false, jiraSiteUrl: "", jiraEmail: "" });
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async () => new Response("stubbed", { status: 401 })) as typeof fetch;
+    try {
+      const app = createApp();
+      const res = await app.request("http://127.0.0.1/api/issues");
+      const body = (await res.json()) as { issues?: { id: string; demo?: boolean; key: string }[]; error?: string };
+      expect(res.status, body.error).toBe(200);
+      expect((body.issues ?? []).filter((i) => i.demo || i.key === "PROJ-150" || i.id.startsWith("github:acme/"))).toEqual(
+        [],
+      );
+    } finally {
+      globalThis.fetch = orig;
+      if (gh) process.env.GITHUB_TOKEN = gh;
+      if (gh2) process.env.GH_TOKEN = gh2;
+    }
+  });
+
   it("stores GitHub and Jira secrets without calling /user, /myself, or Anthropic", async () => {
-    const app = createApp();
     const urls: string[] = [];
     const orig = globalThis.fetch;
-    globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
       urls.push(String(input));
-      return orig(input, init);
+      return new Response("stubbed", { status: 500 });
     }) as typeof fetch;
     try {
+      const app = createApp();
       const gh = await app.request("http://127.0.0.1/api/github/token", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -241,7 +268,7 @@ describe("http settings save without demo", () => {
         body: JSON.stringify({ siteUrl: "https://invalid.example", email: "a@b.c", token: "fail" }),
       });
       expect(jira.status).toBe(200);
-      expect(urls.filter((u) => /github\.com\/user|\/myself|anthropic/i.test(u))).toEqual([]);
+      expect(urls.filter((u) => /github\.com|atlassian|anthropic/i.test(u))).toEqual([]);
     } finally {
       globalThis.fetch = orig;
     }
