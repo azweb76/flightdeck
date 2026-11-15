@@ -1,6 +1,6 @@
 import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { createOctokit, githubCall, type FetchFn } from "./octokit.ts";
-import { etagHit, isNotModified, rememberedEtag, rememberEtag } from "./etag.ts";
+import { etagHit, forgetEtag, isNotModified, rememberedEtag, rememberEtag } from "./etag.ts";
 import { getPullState } from "./prs.ts";
 
 export type ReviewRequest = {
@@ -14,8 +14,16 @@ export type ReviewRequest = {
   updatedAt: string;
 };
 
-export async function listReviewRequests(token: string, fetchFn: FetchFn): Promise<ReviewRequest[]> {
+export async function listReviewRequests(
+  token: string,
+  fetchFn: FetchFn,
+  opts?: { fresh?: boolean },
+): Promise<ReviewRequest[]> {
   const key = CACHE_KEYS.githubReviewRequests;
+  if (opts?.fresh) {
+    getCache().invalidate(key);
+    forgetEtag(key);
+  }
   return getCache().get(key, () => loadRequests(token, fetchFn, key), TTL.githubReviewRequests);
 }
 

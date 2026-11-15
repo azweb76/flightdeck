@@ -19,6 +19,10 @@ export function clearEtags(): void {
   remembered.clear();
 }
 
+export function forgetEtag(key: string): void {
+  remembered.delete(key);
+}
+
 export function isNotModified(err: unknown): boolean {
   return (err as { status?: number }).status === 304;
 }

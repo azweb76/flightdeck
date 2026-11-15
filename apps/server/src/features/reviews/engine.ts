@@ -3,7 +3,6 @@ import { getAgentDriver } from "../agent/index.ts";
 import { detectClaudeConfig, claudeSdkEnv } from "../claude/index.ts";
 import { demoRepoPath, repoPath } from "../clone/index.ts";
 import { postPullReview } from "../github/create-review.ts";
-import { listReviewRequests } from "../github/review-requests.ts";
 import { resolveGithubToken } from "../github/token.ts";
 import { assertPreflightGate } from "../preflight/gate.ts";
 import { currentRunEpoch, getJob, isRunCurrent, setJob } from "../run/jobs.ts";
@@ -13,58 +12,10 @@ import { getSettings } from "../settings/index.ts";
 import { removeWorktree } from "../run/worktree.ts";
 import { fillDemoDraft, runLiveReview } from "./agent.ts";
 import { splitSlug } from "./slug.ts";
-import { demoRequests } from "./demo.ts";
 import { emitReview, mustReview } from "./emit.ts";
-import {
-  addMessage,
-  findReview,
-  getReview,
-  listStoredReviews,
-  nextQueuedReview,
-  saveComment,
-  saveReview,
-  upsertReview,
-} from "./store.ts";
+import { addMessage, getReview, nextQueuedReview, saveComment, saveReview } from "./store.ts";
 
 setReviewPump(claimQueuedReview, kickReview);
-
-export function listReviews(): PrReview[] {
-  return mergeRequests(process.env.FLIGHTDECK_DEMO === "1" ? demoRequests() : []);
-}
-
-export async function refreshReviews(): Promise<PrReview[]> {
-  if (process.env.FLIGHTDECK_DEMO === "1") return listReviews();
-  const token = await resolveGithubToken();
-  if (!token?.token) return listStoredReviews();
-  for (const pr of await listReviewRequests(token.token, fetch)) {
-    const existing = findReview(pr.repoSlug, pr.number);
-    if (existing) {
-      existing.title = pr.title;
-      existing.url = pr.url;
-      existing.author = pr.author;
-      existing.headSha = pr.headSha || existing.headSha;
-      saveReview(existing);
-      continue;
-    }
-    upsertReview({
-      id: pr.id,
-      repoSlug: pr.repoSlug,
-      number: pr.number,
-      title: pr.title,
-      url: pr.url,
-      author: pr.author,
-      headSha: pr.headSha,
-      status: "requested",
-      selected: false,
-      summary: "",
-      skillPath: "",
-      worktreePath: "",
-      costUsd: 0,
-      demo: false,
-    });
-  }
-  return listStoredReviews().filter((r) => r.status !== "archived");
-}
 
 export function selectReview(id: string): PrReview {
   const review = mustReview(id);
@@ -199,33 +150,6 @@ async function driveReview(id: string, epoch: number): Promise<void> {
   } finally {
     if (isRunCurrent(epoch)) pumpQueue();
   }
-}
-
-function mergeRequests(remote: ReturnType<typeof demoRequests>): PrReview[] {
-  const stored = listStoredReviews();
-  if (process.env.FLIGHTDECK_DEMO === "1" && stored.length) return stored.filter((r) => r.status !== "archived");
-  return remote.map((pr) => {
-    const existing = findReview(pr.repoSlug, pr.number);
-    return existing ?? {
-      id: pr.id,
-      repoSlug: pr.repoSlug,
-      number: pr.number,
-      title: pr.title,
-      url: pr.url,
-      author: pr.author,
-      headSha: pr.headSha,
-      status: "requested" as const,
-      selected: false,
-      summary: "",
-      skillPath: "",
-      worktreePath: "",
-      costUsd: 0,
-      comments: [],
-      messages: [],
-      updatedAt: pr.updatedAt,
-      demo: true,
-    };
-  });
 }
 
 function claimQueuedReview(): { id: string } | undefined {

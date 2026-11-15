@@ -14,7 +14,7 @@ import {
 import { fail } from "../errors.ts";
 
 export function mountReviews(app: Hono): void {
-  app.get("/api/reviews", (c) => c.json({ reviews: listReviews() }));
+  app.get("/api/reviews", async (c) => c.json({ reviews: await listReviews() }));
   app.post("/api/reviews/refresh", async (c) => c.json({ reviews: await refreshReviews() }));
   app.get("/api/reviews/:id", (c) => {
     const review = getReview(decodeURIComponent(c.req.param("id")));

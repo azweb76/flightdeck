@@ -87,7 +87,7 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 | GitHub authored open PRs (GraphQL `search`; REST `is:pr is:open author:@me` fallback) | 60s TTL | Token save/disconnect (`gh:pulls`). GraphQL is TTL-only; the REST fallback uses `If-None-Match` / 304 |
 | GitHub combined status + check-runs for a ref | 20s | Token save/disconnect (`gh:checks:*`); CI watch refetches with `fresh` + ETag |
 | GitHub `pulls.get` (PR state for CI watch / parked slot) | 20s | Token save/disconnect (`gh:pull:*`); `If-None-Match` / 304 |
-| GitHub review-requested PRs (`search` `review-requested:@me`, then `pulls.get` for head SHA) | 60s | Token save/disconnect (`gh:reviews`); search uses `If-None-Match` / 304; head SHA reuses `gh:pull:*` |
+| GitHub review-requested PRs (`search` `review-requested:@me`, then `pulls.get` for head SHA) | 60s | `GET /api/reviews` and Reviews Refresh (`POST /api/reviews/refresh` with `fresh`); token save/disconnect (`gh:reviews`); search uses `If-None-Match` / 304; head SHA reuses `gh:pull:*`. Stored non-archived rows are never dropped when GitHub returns none |
 
 `issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or GitHub 403/429 (`Retry-After`, `x-ratelimit-reset`, secondary rate limit), Octokit throttle plugins do not wait: they throw immediately so `withBackoff` owns every retry, capped at 30s, and the UI gets `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s.
 

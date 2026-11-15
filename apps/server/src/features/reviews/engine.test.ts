@@ -7,7 +7,8 @@ import { seedDemo } from "../demo/index.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { dropJobs, getJob } from "../run/jobs.ts";
 import { patchSettings } from "../settings/index.ts";
-import { chatReview, getReview, listReviews, patchComment, postReview, selectReview, startReview } from "./engine.ts";
+import { chatReview, getReview, patchComment, postReview, selectReview, startReview } from "./engine.ts";
+import { listReviews } from "./sync.ts";
 
 describe("reviews engine (demo)", () => {
   beforeEach(async () => {
@@ -29,8 +30,8 @@ describe("reviews engine (demo)", () => {
     delete process.env.FLIGHTDECK_DATA_DIR;
   });
 
-  it("seeds mixed review-requested states", () => {
-    const reviews = listReviews();
+  it("seeds mixed review-requested states", async () => {
+    const reviews = await listReviews();
     expect(reviews.find((r) => r.number === 90)?.status).toBe("selected");
     expect(reviews.find((r) => r.number === 91)?.status).toBe("reviewing");
     expect(reviews.find((r) => r.number === 91)?.skillPath).toBe(".cursor/skills/review/SKILL.md");
