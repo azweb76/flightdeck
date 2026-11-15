@@ -3,7 +3,7 @@
 Decided with Dan on 12 Nov 2026. The previous version is archived on the `v1-archive` branch.
 
 ## Goal
-A local app on my Mac where I go from an idea to a draft PR with Claude, across many repos at once. I shape the goal with Claude, using the GitHub repo for context, and save it as a Jira or GitHub issue. Then an agent works hands-off in its own worktree: it plans, implements, reviews its own work and fixes it up to 3 times, then opens a draft PR. It only stops to ask me when it's stuck. When I'm asked to review someone's PR, Claude gives me a summary and drafts review comments, and nothing gets posted until I approve it.
+A local app on my Mac where I go from an idea to a draft PR with Claude, across many repos at once. I refine the goal with Claude, using the GitHub repo for context, and save it as a Jira or GitHub issue. Then an agent works hands-off in its own worktree: it plans, implements, reviews its own work and fixes it up to 3 times, then opens a draft PR. It only stops to ask me when it's stuck. When I'm asked to review someone's PR, Claude gives me a summary and drafts review comments, and nothing gets posted until I approve it.
 
 - Runs on: Dan's Mac, local agents (Claude Agent SDK)
 - Form: desktop or local web app
@@ -14,8 +14,8 @@ A local app on my Mac where I go from an idea to a draft PR with Claude, across 
 
 ```mermaid
 flowchart TD
-  start[Idea or existing issue] --> shape[Shape with Claude<br/>repo as context]
-  shape --> save[Save issue<br/>Jira or GitHub]
+  start[Idea or existing issue] --> refine[Refine with Claude<br/>repo as context]
+  refine --> save[Save issue<br/>Jira or GitHub]
   save --> wait[Dan clicks Start]
   wait --> plan[Plan]
   plan --> impl[Implement<br/>tests, lint, typecheck, build]
@@ -29,8 +29,8 @@ flowchart TD
   ci -->|pass| done[Done]
 ```
 
-## 1. Shaping a goal into an issue
-- Start from a new idea in a chosen repo, or an existing Jira or GitHub issue to refine.
+## 1. Refining a goal into an issue
+- Start from a new idea in a chosen repo, or an existing Jira or GitHub issue to refine. The UI calls this Refine (routes `/refine/:id`; `/shape/:id` still works).
 - Back-and-forth chat: Claude reads the repo, asks questions, then drafts the issue.
 - Issue contents: goal and background, acceptance criteria, relevant files and code areas, suggested implementation approach, out of scope, test plan.
 - Dan picks Jira or GitHub each time.
@@ -75,9 +75,9 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 | Call | TTL | Invalidation |
 |---|---|---|
 | Issues tracker sync (`GET /api/issues`) | 60s | `POST /api/issues/sync` (Refresh) forces a sync |
-| GitHub `GET /user` (token status) | 2 min | `POST /api/preflight/recheck` drops `gh:status`; token save invalidates the cache without calling GitHub |
+| GitHub `GET /user` (token status) | 2 min | Preflight only (`checkGithub` via startup `runChecks` and `POST /api/preflight/recheck`). Issue sync does not call it; token save invalidates `gh:status` without calling GitHub |
 | GitHub assigned issues search (paginated, 100 per page) | 60s | Refresh; after GitHub issue create/update |
-| GitHub `GET /user/repos` | 5 min | — |
+| GitHub `GET /user/repos` (paginate `/user/repos` with `affiliation=owner,collaborator,organization_member`) | 1 hour (in-memory + SQLite `github_repos_cache`) | Picker Refresh (`GET /api/repos?refresh=1`); token save |
 | Jira JQL search | 60s | After Jira create/update; Refresh |
 | Jira connect `myself` | 2 min | After Jira create/update (not Settings save) |
 | `detectClaudeConfig` (including apiKeyHelper) | 2 min | `POST /api/preflight/recheck` |
@@ -86,7 +86,7 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 `issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or GitHub 403/429 (`Retry-After`, `x-ratelimit-reset`, secondary rate limit), Octokit throttle plugins do not wait: they throw immediately so `withBackoff` owns every retry, capped at 30s, and the UI gets `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s.
 
 ## Preflight
-Startup and `pnpm preflight` run the same checks. Required failures print a one-line fix and do not crash the server (the UI can show them), except Node itself being below `package.json` `engines`. The server keeps an in-memory snapshot: `runChecks()` on startup (and after demo reset), `GET /api/preflight` returns it and never rebuilds (503 if unset), `POST /api/preflight/recheck` rebuilds after dropping the `gh:status` and Claude config caches. There is no `GET /api/status`. Settings save only stores secrets (keychain or `~/.flightdeck/secrets`) — no `GET /user`, scope check, or Jira `myself`. Connectivity runs at startup and when Dan clicks Re-check on the Issues banner. `pnpm preflight` is a separate process and still runs the checks. Cache keys and logs never include secrets.
+Startup and `pnpm preflight` run the same checks. Required failures print a one-line fix and do not crash the server (the UI can show them), except Node itself being below `package.json` `engines`. The server keeps an in-memory snapshot: `runChecks()` on startup (and after demo reset), `GET /api/preflight` returns it and never rebuilds (503 if unset), `POST /api/preflight/recheck` rebuilds after dropping the `gh:status` and Claude config caches. There is no `GET /api/status`. `GET /user` runs only in that preflight path. Settings save only stores secrets (keychain or `~/.flightdeck/secrets`) — no `GET /user`, scope check, or Jira `myself`. Issue sync gates on a local token and treats GitHub 401/403 from `listAssignedIssues` as not logged in. Connectivity runs at startup and when Dan clicks Re-check on the Issues banner. `pnpm preflight` is a separate process and still runs the checks. Cache keys and logs never include secrets.
 
 | Check | Required? | Pass when | Fix if not |
 |---|---|---|---|
@@ -98,18 +98,20 @@ Startup and `pnpm preflight` run the same checks. Required failures print a one-
 | SQLite schema | required | `PRAGMA user_version` matches and columns exist | Pull latest and restart |
 | Jira | optional | skipped if unset; warn if configured without a working token | Add a Jira API token in Settings |
 
-Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report for screenshots and e2e. The Issues banner lists required failures with a high-contrast error alert and a Re-check button. Settings is save-only (GitHub token + source note, Jira site/email/token, Claude model, caps) with no connectivity cards. Shape / Save to GitHub / Start disable only when that dependency failed. Save picks GitHub/Jira from readable cards that explain why a tracker is blocked, not ghosted menu items.
+Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file, seeds issues/repos with `demo=1`, and serves mock repos in the picker. Without that env, startup and `createApp` run `purgeLiveDemoRows`: known leftover seed issue ids and `local_path` under `flightdeck-demo` are marked `demo=1`, then only `demo=1` rows are deleted. Real unmarked rows are never removed. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report for screenshots and e2e. The Issues banner lists required failures with a high-contrast error alert and a Re-check button. Settings is save-only (GitHub token + source note, Jira site/email/token, Claude model, caps) with no connectivity cards. Refine / Save to GitHub / Start disable only when that dependency failed. Save picks GitHub/Jira from readable cards that explain why a tracker is blocked, not ghosted menu items.
+
+Jira repo links are labels `repo:org/repo` (other labels ignored). The Issues UI picker writes that label when linking a Jira issue; search reads it back. The picker searches a cached catalog (Favorites and Recent in SQLite; Recent is last linked/used). Listing repos is not a preflight probe. Demo uses three mock `acme/*` repos. No token: “Add a GitHub token in Settings…”. Empty account: “No repositories found…”.
 
 ## Screens
-- Home: My issues, ready to shape or start.
+- Home: My issues, ready to refine or start.
 - Nav pages: Issues, Runs, My PRs, Reviews, Settings.
 - Change detail page: stage timeline (plan, implement, review rounds, PR, CI), live transcript, reply box.
-- Goal shaping: full-page chat with the issue draft updating live beside it.
+- Goal refining: full-page chat with the issue draft updating live beside it. Searchable repo picker (Recent, Favorites, search over cache).
 - Roomier layout with generous whitespace; follows macOS light/dark. Form inputs use a small static label above the field (GitHub style), never MUI floating/notched labels.
 
 ## Phases
 Each phase is tested by Dan on his Mac before the next starts.
-1. Goal shaping (**done**): app skeleton, Settings (GitHub token, Jira fields, Claude model, caps — no live connectivity checks), clone/fetch a chosen repo into the app's folder for read-only context, full-page chat where Claude reads the repo and asks questions, live issue draft with the six sections, save as a new Jira or GitHub issue (choose each time) or update an existing one, Issues home listing my issues.
+1. Goal refining (**done**): app skeleton, Settings (GitHub token, Jira fields, Claude model, caps — no live connectivity checks), clone/fetch a chosen repo into the app's folder for read-only context, full-page chat where Claude reads the repo and asks questions, live issue draft with the six sections, save as a new Jira or GitHub issue (choose each time) or update an existing one, Issues home listing my issues. Schema version 3 adds `issues.demo` / `repos.demo`, `repo_favorites`, `repo_recent`.
 2. Run a change (**done in demo; live adapters wired, not live-run here**): Start, worktree, plan, implement with tests/lint/typecheck/build gates, fresh-context reviewer, loop up to 3 rounds then ask, draft PR, PR link on issue; change detail page. Caps, Runs page, and Archive are pulled forward from Phase 3 so a single change is operable. CI on the timeline is a Phase 4 placeholder.
 3. Many at once: concurrency limit across several agents (setting exists; simple guard is in), polish for parallel Runs.
 4. CI and My PRs: watch CI and auto-fix up to 3 attempts then ask; My PRs page.
