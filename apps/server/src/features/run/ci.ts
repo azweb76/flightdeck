@@ -14,10 +14,16 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
   const extra = Boolean(answer) && change.ciRound >= MAX_CI_ROUNDS;
   const limit = ciLimit(change.ciRound, extra);
   const failsBeforePass = failCount(change.scenario);
-  while (change.ciRound < limit) {
+  while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing") {
     if (!isRunCurrent(epoch)) return;
-    change.ciRound += 1;
-    setStage(change, "watching_ci", "ci", "CI", ciRoundCaption(change.ciRound));
+    if (change.ciPhase === "fixing") {
+      await fixDemoCi(change, epoch, answer);
+      change.ciPhase = "";
+      emitChange(change);
+      answer = undefined;
+      continue;
+    }
+    beginWatch(change);
     const passing = change.ciRound > failsBeforePass;
     log(change, {
       kind: "system",
@@ -25,6 +31,7 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
       detail: passing ? "All checks passed." : `CI failed on attempt ${change.ciRound}.`,
     });
     if (passing) {
+      change.ciPhase = "";
       change.status = "done";
       emitChange(change);
       return;
@@ -33,7 +40,11 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
       askCi(change);
       return;
     }
+    change.ciPhase = "fixing";
+    emitChange(change);
     await fixDemoCi(change, epoch, answer);
+    change.ciPhase = "";
+    emitChange(change);
     answer = undefined;
   }
 }
@@ -54,12 +65,19 @@ export async function watchLiveCi(change: Change, answer?: string): Promise<void
     emitChange(change);
     return;
   }
-  while (change.ciRound < limit) {
-    change.ciRound += 1;
-    setStage(change, "watching_ci", "ci", "CI", ciRoundCaption(change.ciRound));
+  while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing") {
+    if (change.ciPhase === "fixing") {
+      await fixLiveCi(change, "Resuming the in-flight CI fix.", answer);
+      change.ciPhase = "";
+      emitChange(change);
+      answer = undefined;
+      continue;
+    }
+    beginWatch(change);
     const result = await waitForChecks(token.token, owner, name, change.branch);
     log(change, { kind: "system", title: "ci", detail: result.summary });
     if (result.state === "passing") {
+      change.ciPhase = "";
       change.status = "done";
       emitChange(change);
       return;
@@ -68,9 +86,20 @@ export async function watchLiveCi(change: Change, answer?: string): Promise<void
       askCi(change);
       return;
     }
+    change.ciPhase = "fixing";
+    emitChange(change);
     await fixLiveCi(change, result.summary, answer);
+    change.ciPhase = "";
+    emitChange(change);
     answer = undefined;
   }
+}
+
+function beginWatch(change: Change): void {
+  if (change.ciPhase === "watching") return;
+  change.ciRound += 1;
+  change.ciPhase = "watching";
+  setStage(change, "watching_ci", "ci", "CI", ciRoundCaption(change.ciRound));
 }
 
 function failCount(scenario: string | undefined): number {
@@ -80,6 +109,7 @@ function failCount(scenario: string | undefined): number {
 }
 
 function askCi(change: Change): void {
+  change.ciPhase = "";
   change.status = "needs_dan";
   change.ask = {
     prompt: "CI still fails after 3 automatic fixes. How should I proceed?",

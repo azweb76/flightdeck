@@ -29,6 +29,7 @@ type ChangeRow = {
   updated_at: string;
   demo?: number;
   ci_round?: number;
+  ci_phase?: string;
 };
 
 type EventRow = {
@@ -67,6 +68,7 @@ export function insertChange(
     planText: "",
     costUsd: 0,
     ciRound: 0,
+    ciPhase: "",
     scenario,
     events: [],
     createdAt: now,
@@ -76,8 +78,8 @@ export function insertChange(
   getDb()
     .prepare(
       `INSERT INTO changes (id, issue_id, issue_key, issue_source, issue_url, repo_slug, title, issue_body, status, stage,
-        review_round, worktree_path, branch, plan_text, cost_usd, pr_url, pr_number, scenario, ask_json, created_at, updated_at, demo, ci_round)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        review_round, worktree_path, branch, plan_text, cost_usd, pr_url, pr_number, scenario, ask_json, created_at, updated_at, demo, ci_round, ci_phase)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       change.id,
@@ -103,6 +105,7 @@ export function insertChange(
       change.updatedAt,
       change.demo ? 1 : 0,
       change.ciRound,
+      change.ciPhase ?? "",
     );
   return change;
 }
@@ -142,7 +145,7 @@ export function saveChange(change: Change): void {
   getDb()
     .prepare(
       `UPDATE changes SET status=?, stage=?, review_round=?, worktree_path=?, branch=?, plan_text=?, cost_usd=?,
-        pr_url=?, pr_number=?, scenario=?, ask_json=?, issue_body=?, updated_at=?, ci_round=? WHERE id=?`,
+        pr_url=?, pr_number=?, scenario=?, ask_json=?, issue_body=?, updated_at=?, ci_round=?, ci_phase=? WHERE id=?`,
     )
     .run(
       change.status,
@@ -159,6 +162,7 @@ export function saveChange(change: Change): void {
       change.issueBody,
       change.updatedAt,
       change.ciRound,
+      change.ciPhase ?? "",
       change.id,
     );
 }
@@ -238,6 +242,7 @@ function fromRow(row: ChangeRow, events: ChangeEvent[]): Change {
     stage: row.stage,
     reviewRound: row.review_round,
     ciRound: row.ci_round ?? 0,
+    ciPhase: (row.ci_phase === "watching" || row.ci_phase === "fixing" ? row.ci_phase : "") as Change["ciPhase"],
     worktreePath: row.worktree_path,
     branch: row.branch,
     planText: row.plan_text,

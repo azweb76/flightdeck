@@ -28,6 +28,7 @@ function stub(over: Partial<Change> = {}): Change {
     stage: "plan",
     reviewRound: 1,
     ciRound: 0,
+    ciPhase: "",
     worktreePath: "",
     branch: "",
     planText: "1. Add the export route.",

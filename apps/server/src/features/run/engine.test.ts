@@ -7,9 +7,11 @@ import { seedDemo } from "../demo/index.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { resetDemo } from "../demo/index.ts";
-import { archiveChange, dailySpendUsd, getChange, startChange, waitForChange, replyChange } from "./index.ts";
+import { loadIssue } from "../issues/index.ts";
+import { archiveChange, dailySpendUsd, getChange, resumeChange, startChange, waitForChange, replyChange } from "./index.ts";
 import { bumpRunEpoch, currentRunEpoch, dropJobs, isRunCurrent } from "./jobs.ts";
-import { archiveAllForTests } from "./store.ts";
+import { presentChange } from "./view.ts";
+import { addEvent, archiveAllForTests, insertChange, saveChange } from "./store.ts";
 
 describe("run engine (demo)", () => {
   beforeEach(async () => {
@@ -163,6 +165,30 @@ describe("run engine (demo)", () => {
     expect(resumed.status).toBe("done");
     expect(resumed.ciRound).toBe(4);
     expect(resumed.events.some((e) => e.detail === "Follow-up after Dan answered")).toBe(true);
+  });
+
+  it("Resume continues the in-flight CI attempt after dropJobs", async () => {
+    const issue = loadIssue("github:acme/web#71");
+    expect(issue).toBeTruthy();
+    const change = insertChange(issue!, "ci-fix", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.ciRound = 1;
+    change.ciPhase = "watching";
+    change.prNumber = 42;
+    change.prUrl = "https://github.com/acme/web/pull/42";
+    saveChange(change);
+    addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 1 of 3" });
+    dropJobs();
+    expect(presentChange(getChange(change.id)!).interrupted).toBe(true);
+    await resumeChange(change.id);
+    await waitForChange(change.id);
+    const done = getChange(change.id)!;
+    expect(done.status).toBe("done");
+    expect(done.ciRound).toBe(2);
+    expect(
+      done.events.filter((e) => e.kind === "stage" && /^Attempt /.test(e.detail ?? "")).map((e) => e.detail),
+    ).toEqual(["Attempt 1 of 3", "Attempt 2 of 3"]);
+    expect(done.events.some((e) => e.title === "ci fix")).toBe(true);
   });
 
   it("frees the slot when clone or worktree fails after a claim", async () => {
