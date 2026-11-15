@@ -69,6 +69,12 @@ test("action_required ask is not the gave-up copy", async ({ page }) => {
   await expect(page.getByTestId("change-status")).toHaveText("GitHub action");
 });
 
+test("demo #73 shows a Waiting for slot chip", async ({ page }) => {
+  await seedHome(page);
+  await page.getByRole("tab", { name: "Runs" }).click();
+  await expect(page.getByTestId("run-status-acme/web#73")).toHaveText("Waiting for slot");
+});
+
 test("reviewing seed is Review and queued banner is not error-red", async ({ page }) => {
   await seedHome(page);
   await page.getByRole("tab", { name: "Runs" }).click();
