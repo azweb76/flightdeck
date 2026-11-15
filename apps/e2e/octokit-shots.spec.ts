@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { seedHome, setPreflight } from "./helpers.ts";
+import { seedHome, setPreflight, shotDir } from "./helpers.ts";
 
-const DIR = "/opt/cursor/artifacts/octokit";
+const DIR = shotDir("octokit");
 
 test.beforeAll(() => {
   mkdirSync(DIR, { recursive: true });

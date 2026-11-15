@@ -11,7 +11,7 @@ const preflightShots = process.env.PREFLIGHT_SHOTS === "1";
 const octokitShots = process.env.OCTOKIT_SHOTS === "1";
 const octokitFixes = process.env.OCTOKIT_FIXES === "1";
 const phase2Shots = process.env.PHASE2_SHOTS === "1";
-const reviewShots = process.env.REVIEW_SHOTS === "1";
+const leaveDemoShots = process.env.LEAVE_DEMO_SHOTS === "1";
 const fieldsShots = process.env.FIELDS_SHOTS === "1";
 const phase3Shots = process.env.PHASE3_SHOTS === "1";
 const phase4Shots = process.env.PHASE4_SHOTS === "1";
@@ -42,8 +42,8 @@ export default defineConfig({
           ? ["octokit-fixes.spec.ts"]
           : phase2Shots
             ? ["phase2-shots.spec.ts"]
-            : reviewShots
-              ? ["review-shots.spec.ts"]
+            : leaveDemoShots
+              ? ["leave-demo-shots.spec.ts"]
               : fieldsShots
                 ? ["fields-shots.spec.ts"]
                 : phase3Shots
@@ -60,7 +60,7 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     colorScheme: "light",
   },
-  webServer: reviewShots
+  webServer: leaveDemoShots
     ? [
         {
           command: "node apps/e2e/start-live-after-demo.mjs",

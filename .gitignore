@@ -19,3 +19,4 @@ test-results
 playwright-report
 blob-report
 apps/e2e/.auth
+apps/e2e/.shots
