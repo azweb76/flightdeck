@@ -95,6 +95,13 @@ export async function expectDialogListAboveActions(page: Page): Promise<void> {
   const save = page.getByTestId("confirm-save");
   await expect(cancel).toBeInViewport();
   await expect(save).toBeInViewport();
+  await page.getByTestId("repo-all").evaluate((el) => {
+    el.scrollIntoView({ block: "start", inline: "nearest" });
+  });
+  await expect(page.getByTestId("repo-option-acme/repo-02").first()).toBeInViewport();
+  await expect(page.getByTestId("repo-option-acme/repo-40").first()).not.toBeInViewport();
+  await expect(cancel).toBeInViewport();
+  await expect(save).toBeInViewport();
   const ok = await page.evaluate(() => {
     const content = document.querySelector(".MuiDialogContent-root");
     const actions = document.querySelector(".MuiDialogActions-root");
