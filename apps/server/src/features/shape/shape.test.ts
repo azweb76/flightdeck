@@ -37,6 +37,7 @@ describe("shaping", () => {
     await replyShape(session.id, "Backend API");
     const saved = await saveShapedIssue(session.id, "github", { repoSlug: "acme/web" });
     expect(saved.key).toMatch(/acme\/web#/);
+    expect(saved.demo).toBe(true);
     await expect(replyShape(session.id, "more")).rejects.toThrow(/already saved/i);
   });
 
@@ -46,13 +47,16 @@ describe("shaping", () => {
       source: "jira",
       key: "PROJ-150",
       title: "Export",
-      body: "Need CSV",
+      body: "# Export\n\n## Goal and background\nNeed CSV\n\n## Acceptance criteria\n- Paid only",
       url: "",
       updatedAt: new Date().toISOString(),
       saved: true,
     });
     const session = await startShape({ repoSlug: "acme/web", issueId: "jira:PROJ-150" });
     expect(session.draft.title).toBe("Export");
+    expect(session.draft.goal).toBe("Need CSV");
+    expect(session.draft.acceptance).toBe("- Paid only");
+    expect(session.draft.goal).not.toContain("##");
     const gh = await saveShapedIssue(session.id, "github", { repoSlug: "acme/web" });
     expect(gh.source).toBe("github");
     expect(gh.saved).toBe(true);

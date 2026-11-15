@@ -1,4 +1,4 @@
-import { draftToMarkdown, type ChatMessage, type ShapeSession } from "@flightdeck/shared";
+import { draftToMarkdown, markdownToDraft, type ChatMessage, type ShapeSession } from "@flightdeck/shared";
 import { getAgentDriver, type AgentEvent } from "../agent/index.ts";
 import { detectClaudeConfig, claudeSdkEnv } from "../claude/index.ts";
 import { ensureClone } from "../clone/index.ts";
@@ -20,8 +20,7 @@ export async function startShape(input: { repoSlug: string; issueId?: string; id
   const session = createSession(input.repoSlug, input.issueId);
   const issue = input.issueId ? loadIssue(input.issueId) : undefined;
   if (issue) {
-    session.draft.title = issue.title;
-    session.draft.goal = issue.body;
+    session.draft = markdownToDraft(issue.body, issue.title);
     saveSession(session);
   }
   const opener = input.idea?.trim() || `Refine ${issue?.key}: ${issue?.title}`;

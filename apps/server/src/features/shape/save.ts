@@ -51,6 +51,7 @@ function demoSave(
       url: `https://example.atlassian.net/browse/${key}`,
       updatedAt: now,
       saved: true,
+      demo: true,
     };
   }
   const slug = opts.repoSlug ?? session.repoSlug;
@@ -65,6 +66,7 @@ function demoSave(
     repoSlug: slug,
     updatedAt: now,
     saved: true,
+    demo: true,
   };
 }
 

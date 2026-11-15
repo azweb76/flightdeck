@@ -63,8 +63,8 @@ export function insertChange(issue: Issue, scenario: string, worktreePath: strin
   getDb()
     .prepare(
       `INSERT INTO changes (id, issue_id, issue_key, issue_source, issue_url, repo_slug, title, issue_body, status, stage,
-        review_round, worktree_path, branch, plan_text, cost_usd, pr_url, pr_number, scenario, ask_json, created_at, updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        review_round, worktree_path, branch, plan_text, cost_usd, pr_url, pr_number, scenario, ask_json, created_at, updated_at, demo)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       change.id,
@@ -88,6 +88,7 @@ export function insertChange(issue: Issue, scenario: string, worktreePath: strin
       null,
       change.createdAt,
       change.updatedAt,
+      process.env.FLIGHTDECK_DEMO === "1" || issue.demo ? 1 : 0,
     );
   return change;
 }

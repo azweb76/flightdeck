@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { getDb } from "../db/index.ts";
@@ -18,11 +18,17 @@ export function repoPath(owner: string, name: string): string {
   return join(cloneRoot(), owner, name);
 }
 
+export function demoRepoPath(owner: string, name: string): string {
+  return join(tmpdir(), "flightdeck-demo", owner, name);
+}
+
 export function rememberRepo(owner: string, name: string, localPath: string, demo = false): void {
   getDb()
     .prepare(
       `INSERT INTO repos (owner, name, local_path, demo) VALUES (?,?,?,?)
-       ON CONFLICT(owner, name) DO UPDATE SET local_path = excluded.local_path, demo = excluded.demo`,
+       ON CONFLICT(owner, name) DO UPDATE SET
+         local_path = CASE WHEN repos.demo = 0 AND excluded.demo = 1 THEN repos.local_path ELSE excluded.local_path END,
+         demo = CASE WHEN repos.demo = 0 AND excluded.demo = 1 THEN repos.demo ELSE excluded.demo END`,
     )
     .run(owner, name, localPath, demo ? 1 : 0);
 }
@@ -42,8 +48,8 @@ export async function ensureClone(
   exec: ExecFn = defaultExec,
 ): Promise<{ localPath: string }> {
   if (process.env.FLIGHTDECK_DEMO === "1") {
-    const dest = repoPath(owner, name);
-    rememberRepo(owner, name, dest);
+    const dest = demoRepoPath(owner, name);
+    rememberRepo(owner, name, dest, true);
     return { localPath: dest };
   }
   const dest = repoPath(owner, name);

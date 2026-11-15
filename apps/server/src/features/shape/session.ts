@@ -24,11 +24,12 @@ export function getSession(id: string): ShapeSession | undefined {
 export function saveSession(session: ShapeSession): void {
   getDb()
     .prepare(
-      `INSERT INTO shape_sessions (id, repo_slug, issue_id, status, draft_json, messages_json, updated_at, saved_key)
-       VALUES (?,?,?,?,?,?,?,?)
+      `INSERT INTO shape_sessions (id, repo_slug, issue_id, status, draft_json, messages_json, updated_at, saved_key, demo)
+       VALUES (?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET
          status=excluded.status, draft_json=excluded.draft_json, messages_json=excluded.messages_json,
-         issue_id=excluded.issue_id, updated_at=excluded.updated_at, saved_key=excluded.saved_key`,
+         issue_id=excluded.issue_id, updated_at=excluded.updated_at, saved_key=excluded.saved_key,
+         demo=CASE WHEN excluded.demo = 1 THEN 1 ELSE shape_sessions.demo END`,
     )
     .run(
       session.id,
@@ -39,6 +40,7 @@ export function saveSession(session: ShapeSession): void {
       JSON.stringify(session.messages),
       new Date().toISOString(),
       session.savedKey ?? null,
+      process.env.FLIGHTDECK_DEMO === "1" ? 1 : 0,
     );
 }
 

@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -40,7 +40,8 @@ export const CREATE_SQL = `
     draft_json TEXT NOT NULL,
     messages_json TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    saved_key TEXT
+    saved_key TEXT,
+    demo INTEGER NOT NULL DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS changes (
     id TEXT PRIMARY KEY,
@@ -63,7 +64,8 @@ export const CREATE_SQL = `
     scenario TEXT,
     ask_json TEXT,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    demo INTEGER NOT NULL DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS change_events (
     id TEXT PRIMARY KEY,
@@ -119,6 +121,7 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "messages_json", addSql: "messages_json TEXT NOT NULL DEFAULT '[]'" },
     { name: "updated_at", addSql: "updated_at TEXT NOT NULL DEFAULT ''" },
     { name: "saved_key", addSql: "saved_key TEXT" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],
   changes: [
     { name: "id", addSql: "id TEXT" },
@@ -142,6 +145,7 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "ask_json", addSql: "ask_json TEXT" },
     { name: "created_at", addSql: "created_at TEXT NOT NULL DEFAULT ''" },
     { name: "updated_at", addSql: "updated_at TEXT NOT NULL DEFAULT ''" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],
   change_events: [
     { name: "id", addSql: "id TEXT" },

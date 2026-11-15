@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { rememberRepo } from "../clone/index.ts";
 import { closeDb, getDb, resetDbForTests } from "../db/index.ts";
 import { loadIssues, upsertIssue } from "../issues/store.ts";
+import { startChange, waitForChange } from "../run/index.ts";
+import { listChanges } from "../run/store.ts";
+import { replyShape, saveShapedIssue, startShape } from "../shape/index.ts";
 import { DEMO_ISSUE_IDS, purgeLiveDemoRows } from "./purge.ts";
 import { seedIssues } from "./seed-issues.ts";
 
@@ -15,15 +18,26 @@ describe("purgeLiveDemoRows", () => {
   });
   afterEach(() => closeDb());
 
-  it("drops leftover demo seeds and demo-path repos but keeps real rows", () => {
+  it("drops leftover matching seeds but keeps real rows with the same ids", () => {
     for (const issue of seedIssues()) upsertIssue({ ...issue, demo: false });
     upsertIssue({
-      id: "jira:REAL-1",
+      id: "jira:PROJ-150",
       source: "jira",
-      key: "REAL-1",
-      title: "Production bug",
-      body: "",
-      url: "https://ex.atlassian.net/browse/REAL-1",
+      key: "PROJ-150",
+      title: "Live finance ticket",
+      body: "real",
+      url: "https://corp.atlassian.net/browse/PROJ-150",
+      updatedAt: "2026-11-14T00:00:00Z",
+      saved: true,
+    });
+    upsertIssue({
+      id: "github:acme/web#12",
+      source: "github",
+      key: "acme/web#12",
+      title: "Live GitHub bug",
+      body: "real",
+      url: "https://github.com/acme/web/issues/12",
+      repoSlug: "acme/web",
       updatedAt: "2026-11-14T00:00:00Z",
       saved: true,
     });
@@ -32,10 +46,32 @@ describe("purgeLiveDemoRows", () => {
 
     purgeLiveDemoRows();
 
-    expect(loadIssues().map((i) => i.id)).toEqual(["jira:REAL-1"]);
+    expect(loadIssues().map((i) => i.id).sort()).toEqual(["github:acme/web#12", "jira:PROJ-150"]);
+    expect(loadIssues().find((i) => i.id === "jira:PROJ-150")?.title).toBe("Live finance ticket");
     expect(DEMO_ISSUE_IDS.length).toBeGreaterThan(0);
     const repos = getDb().prepare("SELECT owner, name FROM repos").all() as { owner: string; name: string }[];
     expect(repos).toEqual([{ owner: "dan", name: "app" }]);
+  });
+
+  it("clears demo save, session, run, and clone after leaving demo mode", async () => {
+    process.env.FLIGHTDECK_DEMO = "1";
+    const session = await startShape({ repoSlug: "acme/web", idea: "CSV export" });
+    await replyShape(session.id, "Backend API");
+    await saveShapedIssue(session.id, "github", { repoSlug: "acme/web" });
+    const change = await startChange("github:acme/web#201");
+    await waitForChange(change.id);
+    expect(loadIssues().some((i) => i.id === "github:acme/web#201" && i.demo)).toBe(true);
+    expect(listChanges().length).toBeGreaterThan(0);
+
+    delete process.env.FLIGHTDECK_DEMO;
+    purgeLiveDemoRows();
+
+    expect(loadIssues()).toEqual([]);
+    expect(listChanges()).toEqual([]);
+    const sessions = getDb().prepare("SELECT id FROM shape_sessions").all();
+    expect(sessions).toEqual([]);
+    const repos = getDb().prepare("SELECT owner, name FROM repos").all();
+    expect(repos).toEqual([]);
   });
 
   it("does nothing while demo mode is on", () => {
