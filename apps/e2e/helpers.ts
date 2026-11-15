@@ -37,6 +37,24 @@ export async function startNewIdea(page: Page, idea = "Export invoices as CSV"):
   await expect(page.getByTestId("chat-pane")).toBeVisible();
 }
 
+export async function expectDisabledNotPrimary(page: Page, testId: string): Promise<void> {
+  const btn = page.getByTestId(testId);
+  await expect(btn).toBeDisabled();
+  const bg = await btn.evaluate((el) => getComputedStyle(el).backgroundColor);
+  expect(bg).not.toBe("rgb(0, 113, 227)");
+  expect(bg).not.toBe("rgb(41, 151, 255)");
+}
+
+export function watchRepoCatalogGets(page: Page): { count: () => number } {
+  let n = 0;
+  page.on("request", (req) => {
+    if (req.method() !== "GET") return;
+    const path = new URL(req.url()).pathname;
+    if (path === "/api/repos" || path.endsWith("/api/repos")) n += 1;
+  });
+  return { count: () => n };
+}
+
 export async function answerFirstQuestion(page: Page): Promise<void> {
   await expect(page.getByTestId("option-api")).toBeVisible();
   await page.getByTestId("option-api").click();

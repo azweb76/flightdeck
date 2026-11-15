@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedHome, setPreflight, startNewIdea } from "./helpers.ts";
+import { expectDisabledNotPrimary, seedHome, setPreflight, startNewIdea, watchRepoCatalogGets } from "./helpers.ts";
 
 test("demo home has no preflight banner and Refine stays enabled", async ({ page }) => {
   await seedHome(page);
@@ -75,4 +75,44 @@ test("Save tracker cards explain gated GitHub and Jira", async ({ page }) => {
   await page.getByTestId("tracker-github").click();
   await expect(page.getByTestId("tracker-gate-hint")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("confirm-save")).toBeDisabled();
+  await expectDisabledNotPrimary(page, "confirm-save");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.evaluate(() => {
+    document.documentElement.classList.add("dark");
+    document.documentElement.classList.remove("light");
+    document.documentElement.style.colorScheme = "dark";
+  });
+  await expectDisabledNotPrimary(page, "confirm-save");
+});
+
+test("picker refetches after github fixture without reload", async ({ page }) => {
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await setPreflight(page, "github");
+  await expect(page.getByTestId("preflight-banner")).toBeVisible();
+  await page.getByTestId("new-idea").click();
+  await expect(page.getByTestId("repo-picker-detail")).toContainText("Add a GitHub token in Settings");
+  await expect(page.getByTestId("repo-all")).toHaveCount(0);
+});
+
+test("token save invalidates the repo catalog for the next open", async ({ page }) => {
+  await seedHome(page);
+  const gets = watchRepoCatalogGets(page);
+  await page.getByTestId("new-idea").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  const before = gets.count();
+  expect(before).toBeGreaterThan(0);
+  await page.goto("/settings");
+  await page.getByTestId("github-token").fill("ghp_test");
+  await page.getByTestId("github-save").click();
+  await expect(page.getByTestId("github-form-success")).toBeVisible();
+  await page.goto("/");
+  await page.getByTestId("new-idea").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
+  expect(gets.count()).toBeGreaterThan(before);
 });

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { seedHome, setPreflight, startNewIdea } from "./helpers.ts";
+import { expectDisabledNotPrimary, seedHome, setPreflight, startNewIdea } from "./helpers.ts";
 
 const DIR = "/opt/cursor/artifacts/preflight-fixes";
 
@@ -150,11 +150,13 @@ test("save tracker cards gated", async ({ page }) => {
   await expect(page.getByTestId("tracker-gate-hint")).toBeVisible();
   await expect(page.getByTestId("confirm-save")).toBeDisabled();
   await scheme(page, "light");
+  await expectDisabledNotPrimary(page, "confirm-save");
   await page.setViewportSize({ width: 1440, height: 900 });
   await shot(page, "save-gated-light-1440", false);
   await page.setViewportSize({ width: 1024, height: 900 });
   await shot(page, "save-gated-light-1024", false);
   await scheme(page, "dark");
+  await expectDisabledNotPrimary(page, "confirm-save");
   await page.setViewportSize({ width: 1440, height: 900 });
   await shot(page, "save-gated-dark-1440", false);
   await page.setViewportSize({ width: 1024, height: 900 });
