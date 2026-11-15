@@ -70,5 +70,6 @@ export const ChangeSchema = z.object({
   events: z.array(ChangeEventSchema).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
+  demo: z.boolean().optional(),
 });
 export type Change = z.infer<typeof ChangeSchema>;

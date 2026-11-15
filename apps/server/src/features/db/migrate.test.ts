@@ -144,6 +144,63 @@ describe("sqlite migrations", () => {
     expect(databasePreflightCheck(db).detail).toContain(backup!);
   });
 
+  it("adds change_events.demo and backfills from demo issues", () => {
+    const path = tmpDb();
+    writeRaw(
+      path,
+      `
+      CREATE TABLE issues (
+        id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        key TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL DEFAULT '',
+        url TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL,
+        saved INTEGER NOT NULL DEFAULT 0,
+        demo INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE changes (
+        id TEXT PRIMARY KEY,
+        issue_id TEXT NOT NULL,
+        issue_key TEXT NOT NULL,
+        issue_source TEXT NOT NULL,
+        issue_url TEXT NOT NULL DEFAULT '',
+        repo_slug TEXT NOT NULL,
+        title TEXT NOT NULL,
+        issue_body TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL,
+        stage TEXT NOT NULL,
+        review_round INTEGER NOT NULL DEFAULT 0,
+        worktree_path TEXT NOT NULL DEFAULT '',
+        branch TEXT NOT NULL DEFAULT '',
+        plan_text TEXT NOT NULL DEFAULT '',
+        cost_usd REAL NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        demo INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE change_events (
+        id TEXT PRIMARY KEY,
+        change_id TEXT NOT NULL,
+        at TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        title TEXT NOT NULL
+      );
+      INSERT INTO issues (id, source, key, title, body, url, updated_at, saved, demo)
+      VALUES ('jira:D-1', 'jira', 'D-1', 'Demo', '', '', '2026-11-14T00:00:00Z', 1, 1);
+      INSERT INTO changes (id, issue_id, issue_key, issue_source, issue_url, repo_slug, title, status, stage, created_at, updated_at, demo)
+      VALUES ('chg-1', 'jira:D-1', 'D-1', 'jira', '', 'acme/web', 'Demo', 'planning', 'plan', '2026-11-14T00:00:00Z', '2026-11-14T00:00:00Z', 0);
+      INSERT INTO change_events (id, change_id, at, kind, title)
+      VALUES ('ev-1', 'chg-1', '2026-11-14T00:00:00Z', 'text', 'plan');
+    `,
+    );
+    const db = resetDbForTests(path);
+    expect(tableColumns(db, "change_events").map((c) => c.name)).toContain("demo");
+    expect((db.prepare("SELECT demo FROM changes WHERE id = 'chg-1'").get() as { demo: number }).demo).toBe(1);
+    expect((db.prepare("SELECT demo FROM change_events WHERE id = 'ev-1'").get() as { demo: number }).demo).toBe(1);
+  });
+
   it("creates a new database at the current schema version", () => {
     const db = openDb(tmpDb());
     expect(userVersion(db)).toBe(SCHEMA_VERSION);

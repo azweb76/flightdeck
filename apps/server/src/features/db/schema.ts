@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -24,12 +24,14 @@ export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS repo_favorites (
     owner TEXT NOT NULL,
     name TEXT NOT NULL,
+    demo INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (owner, name)
   );
   CREATE TABLE IF NOT EXISTS repo_recent (
     owner TEXT NOT NULL,
     name TEXT NOT NULL,
     used_at TEXT NOT NULL,
+    demo INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (owner, name)
   );
   CREATE TABLE IF NOT EXISTS shape_sessions (
@@ -75,7 +77,8 @@ export const CREATE_SQL = `
     title TEXT NOT NULL,
     detail TEXT,
     ask_json TEXT,
-    cost_usd REAL
+    cost_usd REAL,
+    demo INTEGER NOT NULL DEFAULT 0
   );
 `;
 
@@ -106,11 +109,13 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
   repo_favorites: [
     { name: "owner", addSql: "owner TEXT NOT NULL DEFAULT ''" },
     { name: "name", addSql: "name TEXT NOT NULL DEFAULT ''" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],
   repo_recent: [
     { name: "owner", addSql: "owner TEXT NOT NULL DEFAULT ''" },
     { name: "name", addSql: "name TEXT NOT NULL DEFAULT ''" },
     { name: "used_at", addSql: "used_at TEXT NOT NULL DEFAULT ''" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],
   shape_sessions: [
     { name: "id", addSql: "id TEXT" },
@@ -156,6 +161,7 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "detail", addSql: "detail TEXT" },
     { name: "ask_json", addSql: "ask_json TEXT" },
     { name: "cost_usd", addSql: "cost_usd REAL" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],
 };
 

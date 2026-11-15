@@ -22,6 +22,7 @@ export function migrateOpenFile(path: string): string | undefined {
 export function applyMigrations(db: DatabaseSync): void {
   db.exec(CREATE_SQL);
   addMissingColumns(db);
+  backfillDemoFlags(db);
   db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
 }
 
@@ -31,5 +32,16 @@ function addMissingColumns(db: DatabaseSync): void {
     for (const col of cols) {
       if (!have.has(col.name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col.addSql}`);
     }
+  }
+}
+
+function backfillDemoFlags(db: DatabaseSync): void {
+  const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => (r as { name: string }).name));
+  if (!tables.has("changes") || !tables.has("issues")) return;
+  db.exec(`
+    UPDATE changes SET demo = 1 WHERE issue_id IN (SELECT id FROM issues WHERE demo = 1);
+  `);
+  if (tables.has("change_events")) {
+    db.exec(`UPDATE change_events SET demo = 1 WHERE change_id IN (SELECT id FROM changes WHERE demo = 1);`);
   }
 }

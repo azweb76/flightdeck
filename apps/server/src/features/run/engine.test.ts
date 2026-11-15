@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { closeDb, resetDbForTests } from "../db/index.ts";
+import { closeDb, getDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "../demo/index.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { archiveChange, dailySpendUsd, getChange, startChange, waitForChange, replyChange } from "./index.ts";
@@ -36,6 +36,10 @@ describe("run engine (demo)", () => {
     expect(done.planText.length).toBeGreaterThan(10);
     expect(done.issueBody).toMatch(/Acceptance criteria/i);
     expect(done.issueBody).toMatch(/paid invoices|CSV/i);
+    expect(done.demo).toBe(true);
+    const evDemo = getDb().prepare("SELECT demo FROM change_events WHERE change_id = ?").all(done.id) as { demo: number }[];
+    expect(evDemo.length).toBeGreaterThan(0);
+    expect(evDemo.every((row) => row.demo === 1)).toBe(true);
   });
 
   it("pauses for a question and continues after Dan replies", async () => {

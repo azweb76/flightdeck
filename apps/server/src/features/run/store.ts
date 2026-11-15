@@ -24,6 +24,7 @@ type ChangeRow = {
   ask_json: string | null;
   created_at: string;
   updated_at: string;
+  demo?: number;
 };
 
 type EventRow = {
@@ -59,6 +60,7 @@ export function insertChange(issue: Issue, scenario: string, worktreePath: strin
     events: [],
     createdAt: now,
     updatedAt: now,
+    demo: process.env.FLIGHTDECK_DEMO === "1" || issue.demo,
   };
   getDb()
     .prepare(
@@ -88,7 +90,7 @@ export function insertChange(issue: Issue, scenario: string, worktreePath: strin
       null,
       change.createdAt,
       change.updatedAt,
-      process.env.FLIGHTDECK_DEMO === "1" || issue.demo ? 1 : 0,
+      change.demo ? 1 : 0,
     );
   return change;
 }
@@ -140,11 +142,23 @@ export function saveChange(change: Change): void {
 
 export function addEvent(change: Change, ev: Omit<ChangeEvent, "id" | "at">): ChangeEvent {
   const full: ChangeEvent = { ...ev, id: randomUUID(), at: new Date().toISOString() };
+  const parent = getDb().prepare("SELECT demo FROM changes WHERE id = ?").get(change.id) as { demo: number } | undefined;
+  const demo = parent?.demo || change.demo ? 1 : 0;
   getDb()
     .prepare(
-      `INSERT INTO change_events (id, change_id, at, kind, title, detail, ask_json, cost_usd) VALUES (?,?,?,?,?,?,?,?)`,
+      `INSERT INTO change_events (id, change_id, at, kind, title, detail, ask_json, cost_usd, demo) VALUES (?,?,?,?,?,?,?,?,?)`,
     )
-    .run(full.id, change.id, full.at, full.kind, full.title, full.detail ?? null, full.ask ? JSON.stringify(full.ask) : null, full.costUsd ?? null);
+    .run(
+      full.id,
+      change.id,
+      full.at,
+      full.kind,
+      full.title,
+      full.detail ?? null,
+      full.ask ? JSON.stringify(full.ask) : null,
+      full.costUsd ?? null,
+      demo,
+    );
   change.events.push(full);
   return full;
 }
@@ -202,5 +216,6 @@ function fromRow(row: ChangeRow, events: ChangeEvent[]): Change {
     events,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    demo: Boolean(row.demo),
   };
 }
