@@ -9,19 +9,19 @@ const inputFocus = {
 };
 
 const containedOff = {
-  "--variant-containedBg": "#d2d2d7 !important",
-  "--variant-containedColor": "#6e6e73 !important",
-  background: "#d2d2d7 !important",
-  backgroundColor: "#d2d2d7 !important",
-  color: "#6e6e73 !important",
+  "--variant-containedBg": "#d2d2d7",
+  "--variant-containedColor": "#6e6e73",
+  background: "#d2d2d7",
+  backgroundColor: "#d2d2d7",
+  color: "#6e6e73",
   boxShadow: "none",
 };
 const containedOffDark = {
-  "--variant-containedBg": "#3a3a3c !important",
-  "--variant-containedColor": "#a1a1a6 !important",
-  background: "#3a3a3c !important",
-  backgroundColor: "#3a3a3c !important",
-  color: "#a1a1a6 !important",
+  "--variant-containedBg": "#3a3a3c",
+  "--variant-containedColor": "#a1a1a6",
+  background: "#3a3a3c",
+  backgroundColor: "#3a3a3c",
+  color: "#a1a1a6",
   boxShadow: "none",
 };
 const outlinedOff = {
@@ -117,7 +117,6 @@ export const theme = createTheme({
     MuiAppBar: { defaultProps: { position: "static" } },
     MuiButton: {
       defaultProps: { disableElevation: true },
-      variants: [{ props: { variant: "contained", disabled: true }, style: containedOff }],
       styleOverrides: {
         root: {
           borderRadius: 10,
@@ -126,10 +125,10 @@ export const theme = createTheme({
           ...focus,
           "&.Mui-disabled": { opacity: 1 },
         },
-        contained: {
+        contained: ({ theme: t }) => ({
           "&.Mui-disabled": containedOff,
-          ".dark &.Mui-disabled": containedOffDark,
-        },
+          ...t.applyStyles("dark", { "&.Mui-disabled": containedOffDark }),
+        }),
         outlined: {
           "&.Mui-disabled": outlinedOff,
           "@media (prefers-color-scheme: dark)": { "&.Mui-disabled": outlinedOffDark },

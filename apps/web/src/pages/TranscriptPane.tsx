@@ -1,6 +1,7 @@
-import { Box, Button, Chip, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Chip, Paper, Stack, TextField, Typography } from "@mui/material";
 import type { Change, ChangeEvent } from "@flightdeck/shared";
 import { useEffect, useRef } from "react";
+import { ContainedButton } from "../ui/ContainedButton.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
 export function TranscriptPane(props: {
@@ -59,9 +60,9 @@ export function TranscriptPane(props: {
               }}
               inputProps={{ "data-testid": "run-reply" }}
             />
-            <Button variant="contained" disabled={!canSend} onClick={() => props.onSend(props.reply)} data-testid="run-send">
+            <ContainedButton disabled={!canSend} onClick={() => props.onSend(props.reply)} data-testid="run-send">
               Send
-            </Button>
+            </ContainedButton>
           </Stack>
         </FormField>
       </Box>

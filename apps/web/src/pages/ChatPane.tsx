@@ -1,6 +1,7 @@
-import { Box, Button, Chip, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Chip, Paper, Stack, TextField, Typography } from "@mui/material";
 import type { ChatMessage, ShapeSession } from "@flightdeck/shared";
 import { useState } from "react";
+import { ContainedButton } from "../ui/ContainedButton.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
 export function ChatPane(props: {
@@ -57,9 +58,9 @@ export function ChatPane(props: {
               }}
               inputProps={{ "data-testid": "chat-input" }}
             />
-            <Button variant="contained" disabled={!canSend} onClick={() => props.onSend(props.reply)} sx={{ mt: 0.25 }}>
+            <ContainedButton disabled={!canSend} onClick={() => props.onSend(props.reply)} sx={{ mt: 0.25 }}>
               Send
-            </Button>
+            </ContainedButton>
           </Stack>
         </FormField>
       </Box>

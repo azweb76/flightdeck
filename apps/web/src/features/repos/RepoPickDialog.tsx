@@ -1,5 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { useEffect, useState } from "react";
+import { ContainedButton } from "../../ui/ContainedButton.tsx";
 import { FormField } from "../../ui/FormField.tsx";
 import { RepoPicker } from "./RepoPicker.tsx";
 
@@ -25,9 +26,9 @@ export function RepoPickDialog(props: {
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
         <Button onClick={props.onClose}>Cancel</Button>
-        <Button variant="contained" disabled={!repo} onClick={() => props.onPicked(repo)} data-testid="confirm-repo">
+        <ContainedButton disabled={!repo} onClick={() => props.onPicked(repo)} data-testid="confirm-repo">
           Continue
-        </Button>
+        </ContainedButton>
       </DialogActions>
     </Dialog>
   );

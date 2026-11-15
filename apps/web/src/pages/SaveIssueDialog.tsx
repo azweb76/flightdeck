@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api.ts";
 import { RepoPicker } from "../features/repos/index.ts";
 import { TrackerChoice, usePreflight } from "../preflight/index.ts";
+import { ContainedButton } from "../ui/ContainedButton.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
 export function SaveIssueDialog(props: {
@@ -86,15 +87,9 @@ function SaveActions(props: { busy: boolean; blocked: boolean; onClose: () => vo
   return (
     <DialogActions sx={{ px: 3, pb: 2.5 }}>
       <Button onClick={props.onClose}>Cancel</Button>
-      <Button
-        key={off ? "off" : "on"}
-        variant="contained"
-        disabled={off}
-        onClick={props.onSave}
-        data-testid="confirm-save"
-      >
+      <ContainedButton key={off ? "off" : "on"} disabled={off} onClick={props.onSave} data-testid="confirm-save">
         Save
-      </Button>
+      </ContainedButton>
     </DialogActions>
   );
 }

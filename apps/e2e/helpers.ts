@@ -25,6 +25,15 @@ export async function scheme(page: Page, mode: "light" | "dark"): Promise<void> 
     root.style.colorScheme = next;
   }, mode);
   await expect(page.locator("html.dark")).toHaveCount(mode === "dark" ? 1 : 0);
+  const loc = page.locator("button.MuiButton-contained.Mui-disabled");
+  const n = await loc.count();
+  if (n === 0) return;
+  const expected = mode === "dark" ? "rgb(58, 58, 60)" : "rgb(210, 210, 215)";
+  for (let i = 0; i < n; i += 1) {
+    await expect
+      .poll(async () => loc.nth(i).evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5_000 })
+      .toBe(expected);
+  }
 }
 
 export async function seedHome(page: Page): Promise<void> {

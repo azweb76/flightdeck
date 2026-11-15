@@ -3,6 +3,7 @@ import { GITHUB_PAT_URL, githubTokenSourceLabel, type GithubTokenSource } from "
 import { useState } from "react";
 import { api } from "../api.ts";
 import { resetRepoCatalogCache } from "../features/repos/index.ts";
+import { ContainedButton } from "../ui/ContainedButton.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
 export function GithubForm(props: {
@@ -70,9 +71,9 @@ export function GithubForm(props: {
         </FormField>
       </Box>
       <Stack direction="row" gap={1}>
-        <Button variant="contained" disabled={busy || !token.trim()} onClick={() => void save()} data-testid="github-save">
+        <ContainedButton disabled={busy || !token.trim()} onClick={() => void save()} data-testid="github-save">
           Save
-        </Button>
+        </ContainedButton>
         {props.hasGithubToken && !envWins ? (
           <Button onClick={() => void disconnect()} data-testid="github-disconnect">
             Clear stored token
