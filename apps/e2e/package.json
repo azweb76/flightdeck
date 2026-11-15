@@ -12,6 +12,7 @@
     "phase2-shots": "PHASE2_SHOTS=1 playwright test",
     "phase3-shots": "PHASE3_SHOTS=1 playwright test",
     "phase4-shots": "PHASE4_SHOTS=1 playwright test",
+    "phase5-shots": "PHASE5_SHOTS=1 playwright test",
     "review-shots": "REVIEW_SHOTS=1 playwright test",
     "postinstall": "playwright install chromium"
   },

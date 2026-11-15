@@ -15,6 +15,7 @@ const reviewShots = process.env.REVIEW_SHOTS === "1";
 const fieldsShots = process.env.FIELDS_SHOTS === "1";
 const phase3Shots = process.env.PHASE3_SHOTS === "1";
 const phase4Shots = process.env.PHASE4_SHOTS === "1";
+const phase5Shots = process.env.PHASE5_SHOTS === "1";
 process.env.FLIGHTDECK_DATA_DIR = dataDir;
 process.env.FLIGHTDECK_DEMO = "1";
 process.env.FLIGHTDECK_PORT = apiPort;
@@ -50,7 +51,9 @@ export default defineConfig({
                   ? ["phase3-shots.spec.ts"]
                   : phase4Shots
                     ? ["phase4-shots.spec.ts"]
-                    : ["phase1.spec.ts", "preflight.spec.ts", "phase2.spec.ts", "phase3.spec.ts", "phase4.spec.ts"],
+                    : phase5Shots
+                      ? ["phase5-shots.spec.ts"]
+                      : ["phase1.spec.ts", "preflight.spec.ts", "phase2.spec.ts", "phase3.spec.ts", "phase4.spec.ts", "phase5.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,
