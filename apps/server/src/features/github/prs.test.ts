@@ -7,12 +7,18 @@ describe("pull state", () => {
 
   it("caches pulls.get and sends If-None-Match on a fresh refetch", async () => {
     const seen: string[] = [];
+    const noneMatch: string[] = [];
     let round = 0;
+    let notModified = 0;
     const fetchFn = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
       seen.push(`${(init?.method ?? "GET").toUpperCase()} ${url.pathname}`);
       const inm = new Headers(init?.headers).get("if-none-match") || new Headers(init?.headers).get("If-None-Match");
-      if (inm === 'W/"p1"' && round > 0) return new Response(null, { status: 304, headers: { etag: 'W/"p1"' } });
+      if (inm) noneMatch.push(inm);
+      if (inm === 'W/"p1"' && round > 0) {
+        notModified += 1;
+        return new Response(null, { status: 304, headers: { etag: 'W/"p1"' } });
+      }
       if (url.pathname.endsWith("/pulls/9")) {
         return json(
           {
@@ -42,7 +48,9 @@ describe("pull state", () => {
     resetCacheForTests();
     const third = await getPullState("t", fetchFn, "acme", "web", 9);
     expect(third.state).toBe("open");
-    expect(seen.filter((s) => s.includes("/pulls/9")).length).toBeGreaterThan(1);
+    expect(third.committedAt).toBe("2026-11-15T00:01:00Z");
+    expect(noneMatch).toContain('W/"p1"');
+    expect(notModified).toBe(1);
   });
 });
 
