@@ -26,6 +26,10 @@ export function writeRepoCache(repos: CatalogRepo[]): Blob {
   return blob;
 }
 
+export function clearRepoCache(): void {
+  getDb().prepare("DELETE FROM settings WHERE key = ?").run(KEY);
+}
+
 export function cacheFresh(blob: Blob | undefined, now = Date.now()): boolean {
   return Boolean(blob && now - blob.at < REPO_CACHE_TTL_MS);
 }

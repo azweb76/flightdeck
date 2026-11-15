@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resetCacheForTests } from "../cache/store.ts";
 import { closeDb, resetDbForTests } from "../db/index.ts";
+import { saveGithubToken } from "../github/client.ts";
 import { listCatalog, setFavorite, touchRecent } from "./index.ts";
 import { cacheFresh, readRepoCache, REPO_CACHE_TTL_MS, writeRepoCache } from "./cache.ts";
 
@@ -51,5 +52,12 @@ describe("repo catalog", () => {
     writeRepoCache([{ owner: "acme", name: "web", localPath: "" }]);
     expect(cacheFresh(readRepoCache())).toBe(true);
     expect(cacheFresh(readRepoCache(), Date.now() + REPO_CACHE_TTL_MS + 1)).toBe(false);
+  });
+
+  it("clears the SQLite repo cache when a GitHub token is saved", async () => {
+    writeRepoCache([{ owner: "acme", name: "web", localPath: "" }]);
+    expect(readRepoCache()?.repos).toHaveLength(1);
+    await saveGithubToken("ghp_test_token");
+    expect(readRepoCache()).toBeUndefined();
   });
 });

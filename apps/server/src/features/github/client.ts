@@ -1,4 +1,5 @@
 import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
+import { clearRepoCache } from "../catalog/cache.ts";
 import { defaultExec } from "../exec/index.ts";
 import { GITHUB_TOKEN_ACCOUNT, createSecretStore } from "../secrets/index.ts";
 import { createDemoGithubClient } from "./demo.ts";
@@ -42,14 +43,17 @@ async function requireToken(load: () => Promise<string | undefined>): Promise<st
 
 export async function saveGithubToken(token: string): Promise<void> {
   await createSecretStore().set(token, GITHUB_TOKEN_ACCOUNT);
-  getCache().invalidate(CACHE_KEYS.githubStatus);
-  getCache().invalidate(CACHE_KEYS.githubRepos);
-  getCache().invalidate(CACHE_KEYS.githubIssues);
+  dropGithubCaches();
 }
 
 export async function clearGithubToken(): Promise<void> {
   await createSecretStore().remove(GITHUB_TOKEN_ACCOUNT);
+  dropGithubCaches();
+}
+
+function dropGithubCaches(): void {
   getCache().invalidate(CACHE_KEYS.githubStatus);
   getCache().invalidate(CACHE_KEYS.githubRepos);
   getCache().invalidate(CACHE_KEYS.githubIssues);
+  clearRepoCache();
 }
