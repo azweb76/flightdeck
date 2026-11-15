@@ -20,7 +20,7 @@ export function demoRequests(): ReviewRequest[] {
 export function seedDemoReviews(): void {
   if (process.env.FLIGHTDECK_DEMO !== "1") return;
   if (listStoredReviews().length > 0) return;
-  seedRow(90, "selected", false);
+  seedRow(90, "selected", true);
   const reviewing = seedRow(91, "reviewing", true);
   holdSlot(reviewing.id);
   addMessage(reviewing.id, { role: "assistant", text: "Reading the diff at the PR head." });
