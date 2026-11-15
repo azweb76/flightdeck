@@ -90,6 +90,27 @@ describe("authored pulls", () => {
     expect(prs[0]?.review).toBe("approved");
     expect(prs[0]?.needsYou).toBe(false);
   });
+
+  it("logs a GraphQL fallback without the token", async () => {
+    const warnings: string[] = [];
+    const orig = console.warn;
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.map(String).join(" "));
+    };
+    const fetchFn = (async (input: string | URL | Request) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
+      if (url.pathname === "/graphql") return json({ message: "gho_SECRETtokenvalue1234567890 failed" }, 500);
+      if (url.pathname === "/search/issues") return json({ items: [] });
+      return json({ message: url.pathname }, 500);
+    }) as typeof fetch;
+    try {
+      await listAuthoredPulls("gho_SECRETtokenvalue1234567890", fetchFn);
+      expect(warnings.join("\n")).toMatch(/GraphQL authored-PR fetch failed/);
+      expect(warnings.join("\n")).not.toMatch(/gho_SECRET/);
+    } finally {
+      console.warn = orig;
+    }
+  });
 });
 
 function json(body: unknown, status = 200): Response {

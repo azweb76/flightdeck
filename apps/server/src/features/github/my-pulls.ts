@@ -24,9 +24,15 @@ export async function listAuthoredPulls(token: string, fetchFn: FetchFn): Promis
 async function loadPulls(token: string, fetchFn: FetchFn, key: string): Promise<OwnPr[]> {
   try {
     return await listAuthoredPullsGql(token, fetchFn);
-  } catch {
+  } catch (err) {
+    console.warn("GitHub GraphQL authored-PR fetch failed; using REST.", redactGithubError(err));
     return loadPullsRest(token, fetchFn, key);
   }
+}
+
+function redactGithubError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  return raw.replace(/(gh[pous]_|github_pat_|Bearer )\S+/gi, "[redacted]");
 }
 
 async function loadPullsRest(token: string, fetchFn: FetchFn, key: string): Promise<OwnPr[]> {
