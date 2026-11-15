@@ -10,7 +10,7 @@ const QUERY = `query($q: String!) {
       ... on PullRequest {
         number title url isDraft updatedAt
         repository { nameWithOwner }
-        reviews(last: 100) { nodes { state author { login } } }
+        latestReviews(first: 20) { nodes { state author { login } } }
         commits(last: 1) {
           nodes {
             commit {
@@ -37,7 +37,7 @@ type GqlPr = {
   isDraft?: boolean;
   updatedAt?: string;
   repository?: { nameWithOwner?: string };
-  reviews?: { nodes?: { state?: string; author?: { login?: string } }[] };
+  latestReviews?: { nodes?: { state?: string; author?: { login?: string } }[] };
   commits?: {
     nodes?: {
       commit?: {
@@ -60,7 +60,7 @@ export async function listAuthoredPullsGql(token: string, fetchFn: FetchFn): Pro
 function toOwnPr(node: GqlPr): OwnPr {
   const repoSlug = node.repository?.nameWithOwner ?? "";
   const number = node.number ?? 0;
-  const review = reduceReviews(node.reviews?.nodes ?? []);
+  const review = reduceReviews(node.latestReviews?.nodes ?? []);
   const commit = node.commits?.nodes?.[0]?.commit;
   const rollup = commit?.statusCheckRollup;
   const contexts = rollup?.contexts ?? [];

@@ -22,11 +22,8 @@ describe("authored pulls", () => {
                   isDraft: true,
                   updatedAt: "2026-11-15T00:00:00Z",
                   repository: { nameWithOwner: "acme/web" },
-                  reviews: {
-                    nodes: [
-                      { state: "CHANGES_REQUESTED", author: { login: "pat" } },
-                      { state: "APPROVED", author: { login: "pat" } },
-                    ],
+                  latestReviews: {
+                    nodes: [{ state: "APPROVED", author: { login: "pat" } }],
                   },
                   commits: {
                     nodes: [
