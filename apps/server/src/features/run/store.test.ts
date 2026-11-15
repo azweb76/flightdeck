@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
-import { getChange, insertChange, saveChange } from "./store.ts";
+import { getChange, insertChange, nextQueued, saveChange } from "./store.ts";
 
 const issue = {
   id: "github:acme/web#1",
@@ -35,5 +35,31 @@ describe("change store", () => {
     closeDb();
     resetDbForTests(path);
     expect(getChange(id)?.ciPushedAt).toBe("2026-11-15T12:00:00.000Z");
+  });
+
+  it("skips terminal rows in nextQueued even when ci_phase is queued", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fd-store-"));
+    process.env.FLIGHTDECK_DATA_DIR = dir;
+    resetDbForTests(join(dir, "app.sqlite"));
+    const archived = insertChange(issue, "live", "", "flightdeck/a", "watching_ci");
+    archived.ciPhase = "queued";
+    archived.status = "archived";
+    saveChange(archived);
+    const waiting = insertChange({ ...issue, id: "github:acme/web#2", key: "acme/web#2" }, "live", "", "flightdeck/b", "queued");
+    expect(nextQueued()?.id).toBe(waiting.id);
+  });
+
+  it("clears ci_phase when a change is archived", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "fd-store-"));
+    process.env.FLIGHTDECK_DATA_DIR = dir;
+    resetDbForTests(join(dir, "app.sqlite"));
+    const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
+    change.ciPhase = "queued";
+    saveChange(change);
+    const { archiveChange } = await import("./index.ts");
+    await archiveChange(change.id);
+    expect(getChange(change.id)?.status).toBe("archived");
+    expect(getChange(change.id)?.ciPhase).toBe("");
+    expect(nextQueued()).toBeUndefined();
   });
 });

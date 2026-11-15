@@ -213,7 +213,8 @@ export function countActive(): number {
 export function nextQueued(): Change | undefined {
   const rows = getDb()
     .prepare(
-      `SELECT * FROM changes WHERE status = 'queued' OR ci_phase = 'queued' ORDER BY updated_at ASC, created_at ASC`,
+      `SELECT * FROM changes WHERE status NOT IN ('archived','done','cap_hit','error')
+        AND (status = 'queued' OR ci_phase = 'queued') ORDER BY updated_at ASC, created_at ASC`,
     )
     .all() as ChangeRow[];
   const row = rows.find((r) => r.ci_phase === "queued" || !hasJob(r.id));

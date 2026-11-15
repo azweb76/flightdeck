@@ -109,6 +109,7 @@ export async function archiveChange(id: string): Promise<Change> {
     throw new Error("Wait until this run pauses or finishes before archiving");
   }
   change.status = "archived";
+  change.ciPhase = "";
   saveChange(change);
   abortCiWatch(id);
   try {
