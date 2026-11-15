@@ -24,7 +24,10 @@ export function linesFromPatch(path: string, patch: string): DiffLine[] {
       oldLine += 1;
       continue;
     }
-    if (raw.startsWith(" ") || raw === "") {
+    if (raw === "") continue;
+    if (raw.startsWith(" ")) {
+      lines.push({ path, line: newLine, side: "RIGHT" });
+      lines.push({ path, line: oldLine, side: "LEFT" });
       oldLine += 1;
       newLine += 1;
     }

@@ -16,6 +16,18 @@ describe("diff comment placement", () => {
     expect(lines.some((l) => l.side === "LEFT" && l.path === "src/checkout.ts")).toBe(true);
   });
 
+  it("treats context lines as both LEFT and RIGHT and ignores a trailing empty split", () => {
+    const lines = linesFromPatch("src/checkout.ts", patch);
+    expect(lines).toContainEqual({ path: "src/checkout.ts", line: 20, side: "RIGHT" });
+    expect(lines).toContainEqual({ path: "src/checkout.ts", line: 20, side: "LEFT" });
+    const placed = placeComments(
+      [{ path: "src/checkout.ts", line: 20, side: "LEFT", body: "On context.", state: "approved", placement: "inline" }],
+      [{ filename: "src/checkout.ts", patch }],
+    );
+    expect(placed[0]?.placement).toBe("inline");
+    expect(placed[0]?.side).toBe("LEFT");
+  });
+
   it("keeps diffable comments inline and folds the rest into summary notes", () => {
     const placed = placeComments(
       [
