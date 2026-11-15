@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "../demo/index.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
-import { patchSettings } from "../settings/index.ts";
+import { getSettings, patchSettings } from "../settings/index.ts";
 import { archiveChange, dropJobs, getChange, presentChange, resumeChange, startChange, waitForChange } from "./index.ts";
-import { countActive, listChanges, saveChange } from "./store.ts";
+import { archiveAllForTests, countActive, listChanges } from "./store.ts";
+import { pumpQueue } from "./queue.ts";
+import { setStage } from "./emit.ts";
 
 describe("run queue and resume", () => {
   beforeEach(async () => {
@@ -75,13 +77,40 @@ describe("run queue and resume", () => {
     await waitForChange(extra.id);
     expect(getChange(extra.id)?.status).toBe("done");
   });
+
+  it("Promise.all starts only one agent when max is 1", async () => {
+    await clearSeededRuns();
+    patchSettings({ maxConcurrentAgents: 1 });
+    const [a, b] = await Promise.all([startChange("github:acme/web#12"), startChange("github:acme/web#50")]);
+    const queued = [a, b].filter((c) => c.status === "queued");
+    const running = [a, b].filter((c) => c.status !== "queued");
+    expect(queued).toHaveLength(1);
+    expect(running).toHaveLength(1);
+  });
+
+  it("startup pump leaves the seeded queued run queued when slots are full", () => {
+    dropJobs();
+    pumpQueue();
+    expect(listChanges().find((c) => c.issueKey === "acme/web#40")?.status).toBe("queued");
+    expect(countActive()).toBe(getSettings().maxConcurrentAgents);
+  });
+
+  it("archiving a queued run is not undone by setStage or pump", async () => {
+    await clearSeededRuns();
+    patchSettings({ maxConcurrentAgents: 1 });
+    const first = await startChange("github:acme/web#12");
+    const queued = await startChange("github:acme/web#50");
+    expect(queued.status).toBe("queued");
+    await archiveChange(queued.id);
+    setStage(queued, "planning", "plan", "Plan");
+    pumpQueue();
+    expect(getChange(queued.id)?.status).toBe("archived");
+    await waitForChange(first.id);
+    expect(getChange(queued.id)?.status).toBe("archived");
+  });
 });
 
 async function clearSeededRuns(): Promise<void> {
   dropJobs();
-  for (const change of listChanges()) {
-    change.status = "archived";
-    change.worktreePath = "";
-    saveChange(change);
-  }
+  archiveAllForTests();
 }

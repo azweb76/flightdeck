@@ -8,7 +8,8 @@ import { upsertIssue } from "../issues/store.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { resetDemo } from "../demo/index.ts";
 import { archiveChange, dailySpendUsd, getChange, startChange, waitForChange, replyChange } from "./index.ts";
-import { bumpRunEpoch, currentRunEpoch, isRunCurrent } from "./jobs.ts";
+import { bumpRunEpoch, currentRunEpoch, dropJobs, isRunCurrent } from "./jobs.ts";
+import { archiveAllForTests } from "./store.ts";
 
 describe("run engine (demo)", () => {
   beforeEach(async () => {
@@ -18,6 +19,8 @@ describe("run engine (demo)", () => {
     process.env.FLIGHTDECK_DATA_DIR = dir;
     resetDbForTests(join(dir, "app.sqlite"));
     seedDemo();
+    dropJobs();
+    archiveAllForTests();
     resetPreflightStore();
     await runChecks();
   });
