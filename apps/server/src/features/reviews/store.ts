@@ -1,5 +1,12 @@
 import { randomUUID } from "node:crypto";
-import type { ChatMessage, PrReview, PrReviewStatus, ReviewComment, ReviewCommentState } from "@flightdeck/shared";
+import type {
+  ChatMessage,
+  PrReview,
+  PrReviewStatus,
+  ReviewComment,
+  ReviewCommentPlacement,
+  ReviewCommentState,
+} from "@flightdeck/shared";
 import { occupiesReviewSlot } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
 
@@ -31,6 +38,7 @@ type CommentRow = {
   side: "LEFT" | "RIGHT";
   body: string;
   state: ReviewCommentState;
+  placement: ReviewCommentPlacement;
   created_at: string;
 };
 
@@ -136,9 +144,20 @@ export function replaceComments(reviewId: string, comments: Omit<ReviewComment, 
     const full: ReviewComment = { ...comment, id: randomUUID() };
     getDb()
       .prepare(
-        `INSERT INTO pr_review_comments (id, review_id, path, line, side, body, state, created_at, demo) VALUES (?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO pr_review_comments (id, review_id, path, line, side, body, state, placement, created_at, demo) VALUES (?,?,?,?,?,?,?,?,?,?)`,
       )
-      .run(full.id, reviewId, full.path, full.line, full.side, full.body, full.state, new Date().toISOString(), demo);
+      .run(
+        full.id,
+        reviewId,
+        full.path,
+        full.line,
+        full.side,
+        full.body,
+        full.state,
+        full.placement ?? "inline",
+        new Date().toISOString(),
+        demo,
+      );
     saved.push(full);
   }
   return saved;
@@ -146,8 +165,8 @@ export function replaceComments(reviewId: string, comments: Omit<ReviewComment, 
 
 export function saveComment(reviewId: string, comment: ReviewComment): void {
   getDb()
-    .prepare(`UPDATE pr_review_comments SET body=?, state=? WHERE id=? AND review_id=?`)
-    .run(comment.body, comment.state, comment.id, reviewId);
+    .prepare(`UPDATE pr_review_comments SET body=?, state=?, placement=? WHERE id=? AND review_id=?`)
+    .run(comment.body, comment.state, comment.placement ?? "inline", comment.id, reviewId);
 }
 
 export function addMessage(reviewId: string, msg: Omit<ChatMessage, "id">): ChatMessage {
@@ -186,7 +205,15 @@ function loadComments(reviewId: string): ReviewComment[] {
   const rows = getDb()
     .prepare("SELECT * FROM pr_review_comments WHERE review_id = ? ORDER BY created_at")
     .all(reviewId) as CommentRow[];
-  return rows.map((r) => ({ id: r.id, path: r.path, line: r.line, side: r.side, body: r.body, state: r.state }));
+  return rows.map((r) => ({
+    id: r.id,
+    path: r.path,
+    line: r.line,
+    side: r.side,
+    body: r.body,
+    state: r.state,
+    placement: r.placement ?? "inline",
+  }));
 }
 
 function loadMessages(reviewId: string): ChatMessage[] {

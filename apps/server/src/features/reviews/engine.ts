@@ -3,7 +3,9 @@ import { getAgentDriver } from "../agent/index.ts";
 import { detectClaudeConfig, claudeSdkEnv } from "../claude/index.ts";
 import { demoRepoPath, repoPath } from "../clone/index.ts";
 import { postPullReview } from "../github/create-review.ts";
+import { listPullFiles } from "../github/pull-files.ts";
 import { resolveGithubToken } from "../github/token.ts";
+import { placeComments, summaryNotes } from "./diff.ts";
 import { assertPreflightGate } from "../preflight/gate.ts";
 import { currentRunEpoch, getJob, isRunCurrent, setJob } from "../run/jobs.ts";
 import { pumpQueue, setReviewPump } from "../run/queue.ts";
@@ -61,16 +63,23 @@ export function patchComment(
 
 export async function postReview(id: string, event: ReviewVerdict): Promise<PrReview> {
   const review = mustReview(id);
-  const comments = review.comments.filter((c) => c.state === "approved");
+  let comments = review.comments.filter((c) => c.state === "approved");
   if (process.env.FLIGHTDECK_DEMO !== "1") {
     const token = await resolveGithubToken();
     if (!token?.token) throw new Error("Set a GitHub token in Settings");
     const [owner, name] = splitSlug(review.repoSlug);
+    comments = placeComments(comments, await listPullFiles(token.token, fetch, owner, name, review.number));
+    for (const comment of comments) saveComment(id, comment);
+    const inline = review.headSha ? comments.filter((c) => c.placement === "inline") : [];
+    const folded = review.headSha ? comments.filter((c) => c.placement === "summary") : comments;
+    const body = [review.summary, summaryNotes(folded.map((c) => ({ ...c, placement: "summary" })))]
+      .filter(Boolean)
+      .join("\n\n");
     await postPullReview(token.token, fetch, owner, name, review.number, {
       event,
-      body: review.summary,
+      body,
       commitId: review.headSha || undefined,
-      comments: comments.map((c) => ({ path: c.path, line: c.line, side: c.side, body: c.body })),
+      comments: inline.map((c) => ({ path: c.path, line: c.line, side: c.side, body: c.body })),
     });
   }
   for (const comment of comments) {

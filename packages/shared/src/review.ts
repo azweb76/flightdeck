@@ -17,6 +17,9 @@ export type PrReviewStatus = z.infer<typeof PrReviewStatusSchema>;
 export const ReviewCommentStateSchema = z.enum(["draft", "approved", "discarded", "posted"]);
 export type ReviewCommentState = z.infer<typeof ReviewCommentStateSchema>;
 
+export const ReviewCommentPlacementSchema = z.enum(["inline", "summary"]);
+export type ReviewCommentPlacement = z.infer<typeof ReviewCommentPlacementSchema>;
+
 export const ReviewCommentSchema = z.object({
   id: z.string(),
   path: z.string(),
@@ -24,6 +27,7 @@ export const ReviewCommentSchema = z.object({
   side: z.enum(["LEFT", "RIGHT"]).default("RIGHT"),
   body: z.string(),
   state: ReviewCommentStateSchema,
+  placement: ReviewCommentPlacementSchema.default("inline"),
 });
 export type ReviewComment = z.infer<typeof ReviewCommentSchema>;
 

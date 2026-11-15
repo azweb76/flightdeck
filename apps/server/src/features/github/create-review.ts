@@ -15,6 +15,12 @@ export async function postPullReview(
   },
 ): Promise<void> {
   const octokit = createOctokit(token, fetchFn);
+  const comments = input.comments.map((c) => ({
+    path: c.path,
+    line: c.line,
+    side: c.side ?? "RIGHT" as const,
+    body: c.body,
+  }));
   await githubCall(() =>
     octokit.rest.pulls.createReview({
       owner,
@@ -23,12 +29,7 @@ export async function postPullReview(
       event: input.event,
       body: input.body,
       commit_id: input.commitId,
-      comments: input.comments.map((c) => ({
-        path: c.path,
-        line: c.line,
-        side: c.side ?? "RIGHT",
-        body: c.body,
-      })),
+      ...(comments.length ? { comments } : {}),
     }),
   );
 }

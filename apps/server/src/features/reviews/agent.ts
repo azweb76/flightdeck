@@ -5,7 +5,10 @@ import { ensureClone } from "../clone/index.ts";
 import { capMessage, evaluateSpend } from "../run/caps.ts";
 import { getSettings } from "../settings/index.ts";
 import { addWorktreeAtCommit, nestedWorktree } from "../run/worktree.ts";
+import { listPullFiles } from "../github/pull-files.ts";
+import { resolveGithubToken } from "../github/token.ts";
 import { parseReviewDraft } from "./parse.ts";
+import { placeComments, summaryNotes } from "./diff.ts";
 import { DEFAULT_REVIEW_PROMPT, detectReviewSkill } from "./skill.ts";
 import { addMessage, replaceComments, saveReview } from "./store.ts";
 import { emitReview, mustReview } from "./emit.ts";
@@ -36,25 +39,36 @@ export async function runLiveReview(review: PrReview): Promise<void> {
     if (review.status === "cap_hit") return;
     if (ev.kind === "text" && ev.detail) text += `${ev.detail}\n`;
   }
-  applyDraft(review, text);
+  await applyDraft(review, text);
 }
 
 export function fillDemoDraft(review: PrReview): void {
   if (review.number === 91) review.skillPath = ".cursor/skills/review/SKILL.md";
   review.costUsd += 0.4;
-  applyDraft(
+  void applyDraft(
     review,
     `Looks solid overall on ${review.repoSlug}#${review.number}. One inline note.\n\`\`\`json\n[{"path":"src/api.ts","line":18,"body":"Guard this branch when the list is empty."}]\n\`\`\``,
   );
 }
 
-function applyDraft(review: PrReview, text: string): void {
+async function applyDraft(review: PrReview, text: string): Promise<void> {
   const parsed = parseReviewDraft(text);
-  review.summary = parsed.summary;
-  review.comments = replaceComments(
-    review.id,
-    parsed.comments.map((c) => ({ ...c, side: "RIGHT" as const, state: "draft" as const })),
-  );
+  let comments = parsed.comments.map((c) => ({
+    ...c,
+    side: "RIGHT" as const,
+    state: "draft" as const,
+    placement: "inline" as const,
+  }));
+  if (process.env.FLIGHTDECK_DEMO !== "1") {
+    const token = await resolveGithubToken();
+    if (token?.token) {
+      const [owner, name] = splitSlug(review.repoSlug);
+      comments = placeComments(comments, await listPullFiles(token.token, fetch, owner, name, review.number));
+    }
+  }
+  const notes = summaryNotes(comments);
+  review.summary = [parsed.summary, notes].filter(Boolean).join("\n\n");
+  review.comments = replaceComments(review.id, comments);
   review.status = "drafts";
   saveReview(review);
   addMessage(review.id, { role: "assistant", text: review.summary });

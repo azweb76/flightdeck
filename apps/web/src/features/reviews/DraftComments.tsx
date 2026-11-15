@@ -34,6 +34,11 @@ function DraftCard(props: {
       <Typography variant="caption" color="text.secondary">
         {comment.path}:{comment.line} · {comment.state}
       </Typography>
+      {comment.placement === "summary" ? (
+        <Typography variant="caption" color="warning.main" data-testid={`draft-summary-note-${comment.line}`}>
+          Will post as a summary note (not on the diff).
+        </Typography>
+      ) : null}
       {editing ? (
         <TextField
           multiline

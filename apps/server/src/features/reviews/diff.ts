@@ -1,0 +1,66 @@
+import type { ReviewComment } from "@flightdeck/shared";
+
+export type DiffLine = { path: string; line: number; side: "LEFT" | "RIGHT" };
+
+export function linesFromPatch(path: string, patch: string): DiffLine[] {
+  const lines: DiffLine[] = [];
+  let oldLine = 0;
+  let newLine = 0;
+  for (const raw of patch.split("\n")) {
+    const hunk = raw.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    if (hunk) {
+      oldLine = Number(hunk[1]);
+      newLine = Number(hunk[2]);
+      continue;
+    }
+    if (raw.startsWith("\\") || raw.startsWith("diff ") || raw.startsWith("index ")) continue;
+    if (raw.startsWith("+")) {
+      lines.push({ path, line: newLine, side: "RIGHT" });
+      newLine += 1;
+      continue;
+    }
+    if (raw.startsWith("-")) {
+      lines.push({ path, line: oldLine, side: "LEFT" });
+      oldLine += 1;
+      continue;
+    }
+    if (raw.startsWith(" ") || raw === "") {
+      oldLine += 1;
+      newLine += 1;
+    }
+  }
+  return lines;
+}
+
+export function placeComments<T extends Omit<ReviewComment, "id"> | ReviewComment>(
+  comments: T[],
+  files: { filename: string; patch?: string }[],
+): T[] {
+  const exact = new Map<string, DiffLine>();
+  const byPathLine = new Map<string, DiffLine>();
+  for (const file of files) {
+    for (const line of linesFromPatch(file.filename, file.patch ?? "")) {
+      exact.set(key(line.path, line.line, line.side), line);
+      const pl = `${line.path}:${line.line}`;
+      if (!byPathLine.has(pl) || line.side === "RIGHT") byPathLine.set(pl, line);
+    }
+  }
+  return comments.map((comment) => {
+    const hit = exact.get(key(comment.path, comment.line, comment.side)) ?? byPathLine.get(`${comment.path}:${comment.line}`);
+    if (!hit) return { ...comment, placement: "summary" as const };
+    return { ...comment, path: hit.path, line: hit.line, side: hit.side, placement: "inline" as const };
+  });
+}
+
+export function summaryNotes(comments: { path: string; line: number; body: string; placement?: string; state?: string }[]): string {
+  const notes = comments.filter((c) => c.placement === "summary" && c.state !== "discarded");
+  if (!notes.length) return "";
+  return [
+    "Notes not attached to the diff:",
+    ...notes.map((c) => `- ${c.path}:${c.line}: ${c.body}`),
+  ].join("\n");
+}
+
+function key(path: string, line: number, side: string): string {
+  return `${path}:${side}:${line}`;
+}

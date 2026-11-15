@@ -58,6 +58,7 @@ function dropGithubCaches(): void {
   getCache().invalidate(CACHE_KEYS.githubIssues);
   getCache().invalidate(CACHE_KEYS.githubPulls);
   getCache().invalidate("gh:pull:*");
+  getCache().invalidate("gh:pull-files:*");
   getCache().invalidate(CACHE_KEYS.githubReviewRequests);
   getCache().invalidate("gh:checks:*");
   clearEtags();

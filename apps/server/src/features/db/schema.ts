@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -125,6 +125,7 @@ export const CREATE_SQL = `
     side TEXT NOT NULL DEFAULT 'RIGHT',
     body TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'draft',
+    placement TEXT NOT NULL DEFAULT 'inline',
     created_at TEXT NOT NULL,
     demo INTEGER NOT NULL DEFAULT 0
   );
@@ -264,6 +265,7 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "side", addSql: "side TEXT NOT NULL DEFAULT 'RIGHT'" },
     { name: "body", addSql: "body TEXT NOT NULL DEFAULT ''" },
     { name: "state", addSql: "state TEXT NOT NULL DEFAULT 'draft'" },
+    { name: "placement", addSql: "placement TEXT NOT NULL DEFAULT 'inline'" },
     { name: "created_at", addSql: "created_at TEXT NOT NULL DEFAULT ''" },
     { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],

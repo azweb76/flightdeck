@@ -74,6 +74,13 @@ describe("reviews engine (demo)", () => {
     const bodies: unknown[] = [];
     globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
+      if (url.pathname.endsWith("/files")) {
+        const plus = Array.from({ length: 50 }, () => "+x").join("\n");
+        return new Response(
+          JSON.stringify([{ filename: "src/checkout.ts", patch: `@@ -0,0 +1,50 @@\n${plus}\n` }]),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
       if (init?.body) bodies.push(JSON.parse(String(init.body)));
       expect(url.pathname).toBe("/repos/acme/web/pulls/92/reviews");
       return new Response(JSON.stringify({ id: 9 }), { status: 200, headers: { "content-type": "application/json" } });
@@ -86,7 +93,10 @@ describe("reviews engine (demo)", () => {
       const posted = await postReview(review.id, "COMMENT");
       expect(posted.status).toBe("posted");
       expect(bodies).toHaveLength(1);
-      expect(bodies[0]).toMatchObject({ event: "COMMENT" });
+      const postedBody = bodies[0] as { event: string; comments: { path: string }[]; body: string };
+      expect(postedBody.event).toBe("COMMENT");
+      expect(postedBody.comments.every((c) => c.path === "src/checkout.ts")).toBe(true);
+      expect(postedBody.body).toContain("internal/notes.md:3");
     } finally {
       globalThis.fetch = origFetch;
       process.env.FLIGHTDECK_DEMO = origDemo;

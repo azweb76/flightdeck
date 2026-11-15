@@ -27,8 +27,16 @@ export function seedDemoReviews(): void {
   const drafts = seedRow(92, "drafts", true);
   drafts.summary = "Looks close. One guard is missing on the empty list.";
   replaceComments(drafts.id, [
-    { path: "src/checkout.ts", line: 24, side: "RIGHT", body: "Return early when items is empty.", state: "draft" },
-    { path: "src/checkout.ts", line: 40, side: "RIGHT", body: "This error message should mention the field name.", state: "draft" },
+    { path: "src/checkout.ts", line: 24, side: "RIGHT", body: "Return early when items is empty.", state: "draft", placement: "inline" },
+    { path: "src/checkout.ts", line: 40, side: "RIGHT", body: "This error message should mention the field name.", state: "draft", placement: "inline" },
+    {
+      path: "internal/notes.md",
+      line: 3,
+      side: "RIGHT",
+      body: "This file is not in the diff; keep it as a summary note.",
+      state: "draft",
+      placement: "summary",
+    },
   ]);
   addMessage(drafts.id, { role: "assistant", text: drafts.summary });
   const posted = seedRow(93, "posted", true);

@@ -24,6 +24,7 @@ export const CACHE_KEYS = {
   cloneFetch: (owner: string, name: string) => `clone:fetch:${owner}/${name}`,
   githubPulls: "gh:pulls",
   githubPull: (owner: string, name: string, number: number) => `gh:pull:${owner}/${name}#${number}`,
+  githubPullFiles: (owner: string, name: string, number: number) => `gh:pull-files:${owner}/${name}#${number}`,
   githubReviewRequests: "gh:reviews",
   githubChecks: (owner: string, name: string, ref: string) => `gh:checks:${owner}/${name}:${ref}`,
   jiraSearch: (site: string, email: string, jql: string) => `jira:search:${site}:${email}:${jql}`,
