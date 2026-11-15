@@ -25,7 +25,7 @@ describe("run state machine", () => {
     expect(canArchive("implementing", true)).toBe(true);
     expect(occupiesSlot("asking")).toBe(true);
     expect(occupiesSlot("needs_dan")).toBe(true);
-    expect(occupiesSlot("watching_ci")).toBe(true);
+    expect(occupiesSlot("watching_ci")).toBe(false);
     expect(occupiesSlot("fixing_ci")).toBe(true);
     expect(occupiesSlot("queued")).toBe(false);
   });

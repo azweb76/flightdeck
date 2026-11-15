@@ -4,6 +4,7 @@ import { resolveGithubToken } from "../github/token.ts";
 import { getSettings } from "../settings/index.ts";
 import { getAgentDriver, type AgentEvent } from "../agent/index.ts";
 import { applyAgentEvent, emitChange, log, setStage } from "./emit.ts";
+import { claimAgentSlot } from "./claim.ts";
 import { ciLimit } from "./machine.ts";
 import { ciFixPrompt } from "./prompts.ts";
 import { currentRunEpoch, isRunCurrent } from "./jobs.ts";
@@ -21,6 +22,7 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
   while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing") {
     if (!isRunCurrent(epoch)) return;
     if (change.ciPhase === "fixing") {
+      if (!(await waitForFixSlot(change))) return;
       await fixDemoCi(change, epoch, answer);
       change.ciPhase = "";
       emitChange(change);
@@ -46,6 +48,7 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
     }
     change.ciPhase = "fixing";
     emitChange(change);
+    if (!(await waitForFixSlot(change))) return;
     await fixDemoCi(change, epoch, answer);
     change.ciPhase = "";
     emitChange(change);
@@ -74,6 +77,7 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
     while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing") {
       if (ac.signal.aborted) return;
       if (change.ciPhase === "fixing") {
+        if (!(await waitForFixSlot(change))) return;
         await fixLiveCi(change, "Resuming the in-flight CI fix.", answer);
         change.ciPhase = "";
         emitChange(change);
@@ -118,6 +122,7 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
       }
       change.ciPhase = "fixing";
       emitChange(change);
+      if (!(await waitForFixSlot(change))) return;
       await fixLiveCi(change, result.summary, answer);
       change.ciPhase = "";
       emitChange(change);
@@ -126,6 +131,19 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
   } finally {
     detachCiPoll(change.id);
   }
+}
+
+async function waitForFixSlot(change: Change): Promise<boolean> {
+  for (let i = 0; i < 600; i += 1) {
+    const fresh = getChange(change.id);
+    if (!fresh || fresh.status === "archived") return false;
+    if (claimAgentSlot(change.id, "fixing_ci")) {
+      change.status = getChange(change.id)?.status ?? "fixing_ci";
+      return true;
+    }
+    await new Promise((r) => setTimeout(r, process.env.FLIGHTDECK_RUN_FAST === "1" ? 0 : 250));
+  }
+  return false;
 }
 
 function beginWatch(change: Change): void {

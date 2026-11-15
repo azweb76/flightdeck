@@ -12,7 +12,7 @@ const AGENT_RUNNING: ChangeStatus[] = [
   "watching_ci",
   "fixing_ci",
 ];
-const SLOT: ChangeStatus[] = [...AGENT_RUNNING, "asking", "needs_dan"];
+const SLOT: ChangeStatus[] = ["planning", "implementing", "reviewing", "opening_pr", "fixing_ci", "asking", "needs_dan"];
 
 export function reviewLimit(round: number, extra: boolean): number {
   return extra && round >= MAX_REVIEW_ROUNDS ? round + 1 : MAX_REVIEW_ROUNDS;
