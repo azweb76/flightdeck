@@ -19,6 +19,7 @@ async function play(
 ): Promise<PlayHalt> {
   for (const ev of events) {
     if (!isRunCurrent(epoch)) return "aborted";
+    if (change.status === "archived" || change.status === "queued") return "aborted";
     if (ev.kind !== "usage") await delay();
     if (!isRunCurrent(epoch)) return "aborted";
     const result = applyAgentEvent(change, ev as never);
@@ -29,6 +30,7 @@ async function play(
 
 export async function runDemo(change: Change, answer?: string, epoch = currentRunEpoch()): Promise<void> {
   if (!isRunCurrent(epoch)) return;
+  if (change.status === "archived" || change.status === "queued") return;
   if (change.scenario === "cap") {
     setStage(change, "planning", "plan", "Plan");
     const halt = await play(change, capEvents(), epoch);

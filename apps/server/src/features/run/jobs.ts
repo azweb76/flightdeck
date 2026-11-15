@@ -18,6 +18,10 @@ export function getJob(id: string): Promise<void> | undefined {
   return jobs.get(id);
 }
 
+export function hasJob(id: string): boolean {
+  return jobs.has(id);
+}
+
 export function setJob(id: string, job: Promise<void>): void {
   jobs.set(id, job);
 }

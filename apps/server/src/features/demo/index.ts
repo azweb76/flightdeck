@@ -1,5 +1,6 @@
 import { getCache } from "../cache/index.ts";
 import { bumpRunEpoch } from "../run/jobs.ts";
+import { pumpQueue } from "../run/queue.ts";
 import { resetDemoPreflightFixture } from "../preflight/demo.ts";
 import { resetPreflightStore, runChecks } from "../preflight/report.ts";
 import { rememberRepo } from "../clone/index.ts";
@@ -29,6 +30,7 @@ export function seedDemo(): void {
   rememberRepo("acme", "api", "/tmp/flightdeck-demo/acme/api", true);
   for (const issue of seedIssues()) upsertIssue({ ...issue, demo: true });
   seedDemoRuns();
+  pumpQueue();
 }
 
 export async function resetDemo(opts: { seed: boolean }): Promise<void> {

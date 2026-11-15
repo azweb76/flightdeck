@@ -11,6 +11,7 @@ export { getLastBackupPath, resetBackupPathForTests } from "./backup.ts";
 export { userVersion, missingColumns, isIncompatibleV1 } from "./inspect.ts";
 
 let instance: Db | undefined;
+let txDepth = 0;
 
 export function openDb(path = dbPath()): Db {
   mkdirSync(dirname(path), { recursive: true });
@@ -29,10 +30,34 @@ export function getDb(): Db {
 export function resetDbForTests(path: string): Db {
   instance?.close();
   instance = openDb(path);
+  txDepth = 0;
   return instance;
 }
 
 export function closeDb(): void {
   instance?.close();
   instance = undefined;
+  txDepth = 0;
+}
+
+/** One SQLite writer at a time. Nested calls reuse the open transaction. */
+export function withTransaction<T>(fn: () => T): T {
+  const db = getDb();
+  if (txDepth > 0) return fn();
+  db.exec("BEGIN IMMEDIATE");
+  txDepth += 1;
+  try {
+    const out = fn();
+    db.exec("COMMIT");
+    return out;
+  } catch (err) {
+    try {
+      db.exec("ROLLBACK");
+    } catch {
+      /* already rolled back */
+    }
+    throw err;
+  } finally {
+    txDepth = 0;
+  }
 }

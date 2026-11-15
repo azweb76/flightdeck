@@ -1,6 +1,7 @@
 import type { Change, ChangeAsk, Issue } from "@flightdeck/shared";
 import { addEvent, insertChange, listChanges, saveChange } from "../run/store.ts";
-import { demoWorktree } from "../run/worktree.ts";
+import { nestedWorktree } from "../run/worktree.ts";
+import { demoRepoPath } from "../clone/index.ts";
 import { seedIssues } from "./seed-issues.ts";
 
 export function seedDemoRuns(): void {
@@ -9,6 +10,7 @@ export function seedDemoRuns(): void {
   const byKey = new Map(seedIssues().map((issue) => [issue.key, issue]));
   seedInterrupted(byKey.get("acme/web#41"));
   seedAsking(byKey.get("acme/web#42"));
+  seedReviewing(byKey.get("acme/web#45"));
   seedCapHit(byKey.get("acme/api#43"));
   seedDone(byKey.get("acme/web#44"));
   seedQueued(byKey.get("acme/web#40"));
@@ -28,6 +30,16 @@ function seedInterrupted(issue: Issue | undefined): void {
   saveChange(change);
   addEvent(change, { kind: "stage", title: "implement", detail: "Round 1" });
   addEvent(change, { kind: "text", title: "implement", detail: "Adding the parallel checkout path." });
+}
+
+function seedReviewing(issue: Issue | undefined): void {
+  const change = base(issue, "success", "reviewing");
+  if (!change) return;
+  change.stage = "review";
+  change.reviewRound = 1;
+  change.planText = "Third worktree on acme/web holding a slot.";
+  saveChange(change);
+  addEvent(change, { kind: "stage", title: "review", detail: "Round 1" });
 }
 
 function seedAsking(issue: Issue | undefined): void {
@@ -75,8 +87,9 @@ function seedDone(issue: Issue | undefined): void {
 function base(issue: Issue | undefined, scenario: string, status: Change["status"]): Change | undefined {
   if (!issue?.repoSlug) return undefined;
   const [owner, name] = issue.repoSlug.split("/");
+  if (!owner || !name) return undefined;
   const change = insertChange(issue, scenario, "", "", status);
-  const wt = demoWorktree(change.id, `${owner}-${name}`);
+  const wt = nestedWorktree(demoRepoPath(owner, name), change.id);
   change.worktreePath = wt.path;
   change.branch = wt.branch;
   saveChange(change);

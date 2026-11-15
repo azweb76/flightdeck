@@ -21,6 +21,7 @@ export function log(change: Change, ev: Omit<ChangeEvent, "id" | "at">): ChangeE
 }
 
 export function applyAgentEvent(change: Change, ev: AgentEvent): "ask" | "cap" | "ok" {
+  if (frozen(change)) return "ok";
   const add = eventCost(ev);
   if (add > 0 && applySpend(change, add) === "cap") return "cap";
   if (ev.kind === "ask" && ev.ask) {
@@ -51,8 +52,19 @@ function applySpend(change: Change, add: number): "cap" | "ok" {
 }
 
 export function setStage(change: Change, status: ChangeStatus, stage: Change["stage"], title: string, detail?: string): void {
+  if (frozen(change)) return;
   change.status = status;
   change.stage = stage;
   change.ask = undefined;
   log(change, { kind: "stage", title, detail });
+}
+
+function frozen(change: Change): boolean {
+  if (change.status === "archived" || change.status === "queued") return true;
+  const stored = getChange(change.id);
+  if (stored?.status === "archived") {
+    change.status = "archived";
+    return true;
+  }
+  return false;
 }

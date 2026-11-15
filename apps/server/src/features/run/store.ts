@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { Change, ChangeAsk, ChangeEvent, ChangeStatus, Issue } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
+import { localDayKey } from "./day.ts";
+import { hasJob } from "./jobs.ts";
 import { occupiesSlot } from "./machine.ts";
 
 type ChangeRow = {
@@ -112,6 +114,14 @@ export function listChanges(): Change[] {
   return rows.map((row) => fromRow(row, loadEvents(row.id)));
 }
 
+export function archiveAllForTests(): void {
+  for (const change of listChanges()) {
+    change.status = "archived";
+    change.worktreePath = "";
+    saveChange(change);
+  }
+}
+
 export function findActiveForIssue(issueId: string): Change | undefined {
   const row = getDb()
     .prepare(
@@ -123,6 +133,8 @@ export function findActiveForIssue(issueId: string): Change | undefined {
 }
 
 export function saveChange(change: Change): void {
+  const prev = getDb().prepare("SELECT status FROM changes WHERE id = ?").get(change.id) as { status: ChangeStatus } | undefined;
+  if (prev?.status === "archived") change.status = "archived";
   change.updatedAt = new Date().toISOString();
   getDb()
     .prepare(
@@ -147,8 +159,8 @@ export function saveChange(change: Change): void {
     );
 }
 
-export function addEvent(change: Change, ev: Omit<ChangeEvent, "id" | "at">): ChangeEvent {
-  const full: ChangeEvent = { ...ev, id: randomUUID(), at: new Date().toISOString() };
+export function addEvent(change: Change, ev: Omit<ChangeEvent, "id" | "at"> & { at?: string }): ChangeEvent {
+  const full: ChangeEvent = { ...ev, id: randomUUID(), at: ev.at ?? new Date().toISOString() };
   const parent = getDb().prepare("SELECT demo FROM changes WHERE id = ?").get(change.id) as { demo: number } | undefined;
   const demo = parent?.demo || change.demo ? 1 : 0;
   getDb()
@@ -170,11 +182,16 @@ export function addEvent(change: Change, ev: Omit<ChangeEvent, "id" | "at">): Ch
   return full;
 }
 
-export function dailySpendUsd(day = new Date().toISOString().slice(0, 10)): number {
-  const row = getDb()
-    .prepare(`SELECT COALESCE(SUM(cost_usd), 0) AS n FROM change_events WHERE substr(at, 1, 10) = ?`)
-    .get(day) as { n: number };
-  return row.n;
+export function dailySpendUsd(day = localDayKey()): number {
+  const rows = getDb().prepare(`SELECT at, cost_usd FROM change_events WHERE cost_usd IS NOT NULL`).all() as {
+    at: string;
+    cost_usd: number;
+  }[];
+  return rows.reduce((sum, row) => {
+    const at = new Date(row.at);
+    if (Number.isNaN(at.getTime()) || localDayKey(at) !== day) return sum;
+    return sum + row.cost_usd;
+  }, 0);
 }
 
 export function countActive(): number {
@@ -183,9 +200,10 @@ export function countActive(): number {
 }
 
 export function nextQueued(): Change | undefined {
-  const row = getDb()
-    .prepare(`SELECT * FROM changes WHERE status = 'queued' ORDER BY created_at ASC LIMIT 1`)
-    .get() as ChangeRow | undefined;
+  const rows = getDb()
+    .prepare(`SELECT * FROM changes WHERE status = 'queued' ORDER BY created_at ASC`)
+    .all() as ChangeRow[];
+  const row = rows.find((r) => !hasJob(r.id));
   return row ? fromRow(row, loadEvents(row.id)) : undefined;
 }
 

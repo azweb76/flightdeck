@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { DEFAULT_HOST, DEFAULT_PORT } from "@flightdeck/shared";
 import { applyDemoLifecycle } from "./features/demo/index.ts";
 import { runStartupPreflight } from "./features/preflight/index.ts";
+import { startRunQueue } from "./features/run/index.ts";
 import { createApp } from "./http/app.ts";
 
 applyDemoLifecycle();
@@ -13,4 +14,5 @@ const app = createApp();
 
 serve({ fetch: app.fetch, hostname, port }, (info) => {
   console.info(`Flightdeck API http://${info.address}:${info.port}`);
+  startRunQueue();
 });

@@ -22,6 +22,7 @@ export function seedIssues(): Issue[] {
     queueWeb(),
     parallelWeb(),
     waitingWeb(),
+    occupyingReview(),
     capApi(),
     doneWeb(),
     sortCsv(),
@@ -175,6 +176,25 @@ function waitingWeb(): Issue {
       testPlan: "Reply from change detail.",
     }),
     url: "https://github.com/acme/web/issues/42",
+    repoSlug: "acme/web",
+  });
+}
+
+function occupyingReview(): Issue {
+  return issue({
+    id: "github:acme/web#45",
+    source: "github",
+    key: "acme/web#45",
+    title: "Reviewing a third web checkout",
+    body: shaped("Reviewing a third web checkout", {
+      goal: "Hold a concurrent slot so a queued run stays queued after pump.",
+      acceptance: "- Occupies a slot while reviewing.",
+      files: "apps/server/src/features/run/queue.ts",
+      approach: "Stay in review until archived or resumed.",
+      outOfScope: "Opening a PR from this seed.",
+      testPlan: "Runs list shows Review; queue survives startup pump.",
+    }),
+    url: "https://github.com/acme/web/issues/45",
     repoSlug: "acme/web",
   });
 }
