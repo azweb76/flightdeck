@@ -1,6 +1,7 @@
 import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { createOctokit, githubCall, type FetchFn } from "./octokit.ts";
 import { etagHit, forgetEtag, isNotModified, rememberedEtag, rememberEtag } from "./etag.ts";
+import { headerOf } from "./scopes.ts";
 import { getPullState } from "./prs.ts";
 
 export type ReviewRequest = {
@@ -30,25 +31,33 @@ export async function listReviewRequests(
 async function loadRequests(token: string, fetchFn: FetchFn, key: string): Promise<ReviewRequest[]> {
   const octokit = createOctokit(token, fetchFn);
   const etag = rememberedEtag(key);
-  const headers = etag ? { "If-None-Match": etag } : {};
-  try {
-    const res = await githubCall(() =>
-      octokit.rest.search.issuesAndPullRequests({
-        q: "is:pr is:open review-requested:@me archived:false",
-        per_page: 50,
-        headers,
-      }),
-    );
-    const items = (res.data.items ?? []) as SearchItem[];
-    const prs = await Promise.all(items.map((item) => toRequest(token, fetchFn, item)));
-    return rememberEtag(key, String(res.headers.etag ?? ""), prs);
-  } catch (err) {
-    if (isNotModified(err)) {
-      const hit = etagHit<ReviewRequest[]>(key);
-      if (hit) return hit;
+  const items: SearchItem[] = [];
+  let pageEtag = "";
+  for (let page = 1; page <= 10; page++) {
+    const headers = page === 1 && etag ? { "If-None-Match": etag } : {};
+    let res: Awaited<ReturnType<typeof octokit.rest.search.issuesAndPullRequests>>;
+    try {
+      res = await githubCall(() =>
+        octokit.rest.search.issuesAndPullRequests({
+          q: "is:pr is:open review-requested:@me archived:false",
+          per_page: 100,
+          page,
+          headers,
+        }),
+      );
+    } catch (err) {
+      if (page === 1 && isNotModified(err)) {
+        const hit = etagHit<ReviewRequest[]>(key);
+        if (hit) return hit;
+      }
+      throw err;
     }
-    throw err;
+    if (page === 1) pageEtag = String(res.headers.etag ?? "");
+    items.push(...((res.data.items ?? []) as SearchItem[]));
+    if (!/rel="next"/.test(headerOf(res.headers, "link") ?? "")) break;
   }
+  const prs = await Promise.all(items.map((item) => toRequest(token, fetchFn, item)));
+  return rememberEtag(key, pageEtag, prs);
 }
 
 type SearchItem = {
