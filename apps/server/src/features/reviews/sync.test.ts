@@ -32,6 +32,24 @@ describe("review list sync", () => {
     delete process.env.FLIGHTDECK_DATA_DIR;
   });
 
+  it("does not move headSha after Review has started", () => {
+    upsertReview({ ...stored(7, "selected"), status: "drafts", headSha: "oldsha" });
+    const merged = mergeRequests([
+      {
+        id: "github:acme/web#7",
+        repoSlug: "acme/web",
+        number: 7,
+        title: "Please review",
+        url: "https://github.com/acme/web/pull/7",
+        author: "alex",
+        headSha: "newsha",
+        updatedAt: "2026-11-15T00:00:00Z",
+      },
+    ]);
+    expect(merged[0]?.headSha).toBe("oldsha");
+    expect(merged[0]?.title).toBe("Please review");
+  });
+
   it("keeps stored rows when GitHub returns none", () => {
     upsertReview(stored(7, "selected"));
     const merged = mergeRequests([]);
@@ -73,6 +91,33 @@ describe("review list sync", () => {
     expect(second).toHaveLength(1);
     expect(second[0]?.number).toBe(7);
     expect(second[0]?.status).toBe("requested");
+  });
+
+  it("persists title updates without moving a drafts headSha", async () => {
+    upsertReview({ ...stored(7, "selected"), status: "drafts", headSha: "oldsha" });
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
+      if (url.pathname === "/search/issues") {
+        return json({
+          items: [
+            {
+              number: 7,
+              title: "Please review",
+              html_url: "https://github.com/acme/web/pull/7",
+              updated_at: "2026-11-15T00:00:00Z",
+              user: { login: "alex" },
+              repository_url: "https://api.github.com/repos/acme/web",
+            },
+          ],
+        });
+      }
+      if (url.pathname === "/repos/acme/web/pulls/7") {
+        return json({ head: { sha: "newsha" }, state: "open", merged: false });
+      }
+      return json({ message: url.pathname }, 500);
+    }) as typeof fetch;
+    const listed = await refreshReviews();
+    expect(listed[0]).toMatchObject({ headSha: "oldsha", title: "Please review", status: "drafts" });
   });
 });
 
