@@ -32,10 +32,15 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
     }
     beginWatch(change);
     const passing = change.ciRound > failsBeforePass;
+    const action = change.scenario === "ci-action";
     log(change, {
       kind: "system",
       title: "ci",
-      detail: passing ? "All checks passed." : `CI failed on attempt ${change.ciRound}.`,
+      detail: passing
+        ? "All checks passed."
+        : action
+          ? "A check needs a GitHub action."
+          : `CI failed on attempt ${change.ciRound}.`,
     });
     if (passing) {
       change.ciPhase = "";
@@ -43,7 +48,7 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
       emitChange(change);
       return;
     }
-    if (change.scenario === "ci-action") {
+    if (action) {
       askActionRequired(change);
       return;
     }

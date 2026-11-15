@@ -92,6 +92,15 @@ describe("run engine CI (demo)", () => {
     expect(left.events.some((e) => e.detail === "Left the failing checks for you.")).toBe(true);
   });
 
+  it("action_required does not log a CI failure before the ask", async () => {
+    const started = await startChange("github:acme/web#72");
+    await waitForChange(started.id);
+    const stuck = getChange(started.id)!;
+    expect(stuck.status).toBe("needs_dan");
+    expect(stuck.events.some((e) => e.detail === "CI failed on attempt 1.")).toBe(false);
+    expect(stuck.events.some((e) => e.detail === "A check needs a GitHub action.")).toBe(true);
+  });
+
   it("CI auto-fix waits for a slot without advancing ciRound twice", async () => {
     const { patchSettings } = await import("../settings/index.ts");
     patchSettings({ maxConcurrentAgents: 1 });
