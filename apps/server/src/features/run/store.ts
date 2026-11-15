@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Change, ChangeAsk, ChangeEvent, ChangeStatus, Issue } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
 import { localDayKey } from "./day.ts";
-import { hasJob } from "./jobs.ts";
+import { hasJob, isHeld } from "./jobs.ts";
 import { occupiesSlot } from "./machine.ts";
 
 type ChangeRow = {
@@ -213,9 +213,12 @@ export function countActive(): number {
   const rows = getDb().prepare("SELECT status FROM changes").all() as { status: ChangeStatus }[];
   const changes = rows.filter((row) => occupiesSlot(row.status)).length;
   const reviews = getDb()
-    .prepare("SELECT status FROM pr_reviews")
-    .all() as { status: string }[];
-  return changes + reviews.filter((row) => row.status === "reviewing").length;
+    .prepare("SELECT id, status FROM pr_reviews")
+    .all() as { id: string; status: string }[];
+  return (
+    changes +
+    reviews.filter((row) => row.status === "reviewing" && (hasJob(row.id) || isHeld(row.id))).length
+  );
 }
 
 export function nextQueued(): Change | undefined {

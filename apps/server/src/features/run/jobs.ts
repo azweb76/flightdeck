@@ -36,7 +36,8 @@ export function isHeld(id: string): boolean {
   return held.has(id);
 }
 
-/** Drop in-memory jobs without bumping epoch (simulates an app restart). */
+/** Drop in-memory jobs and held demo slots without bumping epoch (simulates an app restart). */
 export function dropJobs(): void {
   jobs.clear();
+  held.clear();
 }

@@ -32,8 +32,14 @@ export function ReviewPage() {
           onStart={() => void state.start()}
           onPost={() => state.setPostOpen(true)}
           onArchive={() => void state.archive()}
+          onResume={() => void state.start()}
         />
         {state.error ? <Alert severity="error">{state.error}</Alert> : null}
+        {review.interrupted ? (
+          <ContrastAlert severity="warning" data-testid="review-interrupted">
+            This review stopped when the app restarted. Resume to continue, or Archive to free the row.
+          </ContrastAlert>
+        ) : null}
         {review.status === "queued" ? (
           <ContrastAlert severity="info" data-testid="review-queued">
             Waiting for a free agent slot. This starts automatically when another run finishes, is archived, or starts watching CI.

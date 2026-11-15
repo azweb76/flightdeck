@@ -3,7 +3,12 @@ import type { PrReview } from "@flightdeck/shared";
 import { useNavigate } from "react-router-dom";
 import { reviewChipSx, reviewStatusColor, reviewStatusLabel } from "./reviewChips.ts";
 
-export function ReviewRow(props: { review: PrReview; onSelect: (id: string) => void }) {
+export function ReviewRow(props: {
+  review: PrReview;
+  onSelect: (id: string) => void;
+  onResume: (id: string) => void;
+  onArchive: (id: string) => void;
+}) {
   const { review } = props;
   const nav = useNavigate();
   return (
@@ -30,18 +35,27 @@ export function ReviewRow(props: { review: PrReview; onSelect: (id: string) => v
             {review.skillPath ? ` · ${review.skillPath}` : ""}
           </Typography>
         </Box>
-        {!review.selected ? (
-          <Button
-            variant="outlined"
-            data-testid={`select-review-${review.number}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              props.onSelect(review.id);
-            }}
-          >
-            Select
-          </Button>
-        ) : null}
+        <Stack direction="row" gap={1} onClick={(e) => e.stopPropagation()}>
+          {review.interrupted ? (
+            <Button variant="contained" data-testid={`resume-review-${review.number}`} onClick={() => props.onResume(review.id)}>
+              Resume
+            </Button>
+          ) : null}
+          {review.interrupted ? (
+            <Button variant="outlined" data-testid={`archive-review-${review.number}`} onClick={() => props.onArchive(review.id)}>
+              Archive
+            </Button>
+          ) : null}
+          {!review.selected ? (
+            <Button
+              variant="outlined"
+              data-testid={`select-review-${review.number}`}
+              onClick={() => props.onSelect(review.id)}
+            >
+              Select
+            </Button>
+          ) : null}
+        </Stack>
       </Stack>
     </Paper>
   );

@@ -1,6 +1,7 @@
 import type { PrReview } from "@flightdeck/shared";
 import { listReviewRequests, type ReviewRequest } from "../github/review-requests.ts";
 import { resolveGithubToken } from "../github/token.ts";
+import { presentReview } from "./emit.ts";
 import { findReview, listStoredReviews, saveReview, upsertReview } from "./store.ts";
 import { demoRequests } from "./demo.ts";
 
@@ -20,19 +21,19 @@ export function mergeRequests(remote: ReviewRequest[]): PrReview[] {
     if (byId.has(pr.id)) continue;
     merged.push(stubFrom(pr));
   }
-  return merged;
+  return merged.map(presentReview);
 }
 
 async function loadReviews(fresh: boolean): Promise<PrReview[]> {
   if (process.env.FLIGHTDECK_DEMO === "1") return mergeRequests(demoRequests());
   const token = await resolveGithubToken();
-  if (!token?.token) return listStoredReviews().filter((r) => r.status !== "archived");
+  if (!token?.token) return listStoredReviews().filter((r) => r.status !== "archived").map(presentReview);
   try {
     persistRemote(await listReviewRequests(token.token, fetch, { fresh }));
   } catch {
     /* keep stored rows if GitHub is down */
   }
-  return listStoredReviews().filter((r) => r.status !== "archived");
+  return listStoredReviews().filter((r) => r.status !== "archived").map(presentReview);
 }
 
 function persistRemote(remote: ReviewRequest[]): void {

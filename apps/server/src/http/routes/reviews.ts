@@ -7,6 +7,7 @@ import {
   listReviews,
   patchComment,
   postReview,
+  presentReview,
   refreshReviews,
   selectReview,
   startReview,
@@ -19,7 +20,7 @@ export function mountReviews(app: Hono): void {
   app.get("/api/reviews/:id", (c) => {
     const review = getReview(decodeURIComponent(c.req.param("id")));
     if (!review) fail("Review not found", 404);
-    return c.json(review);
+    return c.json(presentReview(review));
   });
   app.post("/api/reviews/:id/select", (c) => c.json(selectReview(decodeURIComponent(c.req.param("id")))));
   app.post("/api/reviews/:id/start", async (c) => c.json(await startReview(decodeURIComponent(c.req.param("id")))));

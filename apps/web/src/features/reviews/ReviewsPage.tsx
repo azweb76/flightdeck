@@ -50,6 +50,18 @@ export function ReviewsPage() {
                   .then((next) => setReviews((cur) => cur.map((r) => (r.id === next.id ? next : r))))
                   .catch((e: Error) => setError(e.message));
               }}
+              onResume={(id) => {
+                void api
+                  .startReview(id)
+                  .then((next) => setReviews((cur) => cur.map((r) => (r.id === next.id ? next : r))))
+                  .catch((e: Error) => setError(e.message));
+              }}
+              onArchive={(id) => {
+                void api
+                  .archiveReview(id)
+                  .then((next) => setReviews((cur) => cur.filter((r) => r.id !== next.id)))
+                  .catch((e: Error) => setError(e.message));
+              }}
             />
           ))}
         </Stack>

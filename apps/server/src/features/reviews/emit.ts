@@ -3,9 +3,16 @@ import { publish } from "../events/index.ts";
 import { hasJob, isHeld } from "../run/jobs.ts";
 import { getReview } from "./store.ts";
 
+export function isInterruptedReview(review: PrReview): boolean {
+  return review.status === "reviewing" && !hasJob(review.id) && !isHeld(review.id);
+}
+
+export function presentReview(review: PrReview): PrReview {
+  return { ...review, interrupted: isInterruptedReview(review) };
+}
+
 export function emitReview(review: PrReview): PrReview {
-  const interrupted = review.status === "reviewing" && !hasJob(review.id) && !isHeld(review.id);
-  const view = { ...review, interrupted };
+  const view = presentReview(review);
   publish("review.updated", { id: review.id, review: view });
   return view;
 }

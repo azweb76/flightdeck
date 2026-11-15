@@ -8,6 +8,7 @@ export function ReviewHeader(props: {
   onStart: () => void;
   onPost: () => void;
   onArchive: () => void;
+  onResume: () => void;
 }) {
   const { review } = props;
   return (
@@ -33,6 +34,11 @@ export function ReviewHeader(props: {
         <Button variant="outlined" onClick={props.onBack}>
           All reviews
         </Button>
+        {review.interrupted ? (
+          <Button variant="contained" data-testid="resume-review" onClick={props.onResume}>
+            Resume
+          </Button>
+        ) : null}
         {review.status === "selected" || review.status === "requested" || review.status === "error" ? (
           <Button variant="contained" data-testid="start-review" onClick={props.onStart}>
             Review

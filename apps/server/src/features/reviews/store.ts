@@ -9,6 +9,7 @@ import type {
 } from "@flightdeck/shared";
 import { occupiesReviewSlot } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
+import { hasJob, isHeld } from "../run/jobs.ts";
 
 type ReviewRow = {
   id: string;
@@ -45,8 +46,8 @@ type CommentRow = {
 type MessageRow = { id: string; review_id: string; role: string; text: string; at: string };
 
 export function countReviewing(): number {
-  const rows = getDb().prepare("SELECT status FROM pr_reviews").all() as { status: PrReviewStatus }[];
-  return rows.filter((r) => occupiesReviewSlot(r.status)).length;
+  const rows = getDb().prepare("SELECT id, status FROM pr_reviews").all() as { id: string; status: PrReviewStatus }[];
+  return rows.filter((r) => occupiesReviewSlot(r.status) && (hasJob(r.id) || isHeld(r.id))).length;
 }
 
 export function listStoredReviews(): PrReview[] {
