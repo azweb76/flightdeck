@@ -46,7 +46,7 @@ function DraftCard(props: {
         />
       ) : (
         <Box sx={{ mt: 1 }}>
-          <Markdown>{comment.body}</Markdown>
+          <Markdown text={comment.body} />
         </Box>
       )}
       {locked ? null : (

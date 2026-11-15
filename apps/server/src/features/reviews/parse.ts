@@ -2,7 +2,8 @@ export type DraftComment = { path: string; line: number; body: string };
 
 export function parseReviewDraft(text: string): { summary: string; comments: DraftComment[] } {
   const fence = text.match(/```json\s*([\s\S]*?)```/i);
-  const comments = fence ? commentsFrom(fence[1]) : [];
+  const raw = fence?.[1];
+  const comments = raw ? commentsFrom(raw) : [];
   const summary = text.replace(/```json[\s\S]*?```/gi, "").trim() || "Claude drafted a review.";
   return { summary: summary.slice(0, 4000), comments };
 }

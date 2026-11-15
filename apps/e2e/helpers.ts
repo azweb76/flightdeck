@@ -49,7 +49,10 @@ export async function archiveAllChanges(page: Page): Promise<void> {
       changes: { id: string; status: string }[];
     };
     const open = body.changes.filter((c) => c.status !== "archived");
-    if (open.length === 0) return;
+    if (open.length === 0) {
+      await archiveOccupyingReviews(api, page);
+      return;
+    }
     const queued = open.filter((c) => c.status === "queued");
     const rest = open.filter((c) => c.status !== "queued");
     let archived = 0;
@@ -63,6 +66,16 @@ export async function archiveAllChanges(page: Page): Promise<void> {
     changes: { id: string; status: string }[];
   };
   expect(left.changes.every((c) => c.status === "archived")).toBeTruthy();
+  await archiveOccupyingReviews(api, page);
+}
+
+async function archiveOccupyingReviews(api: string, page: Page): Promise<void> {
+  const body = (await (await page.request.get(`${api}/api/reviews`)).json()) as {
+    reviews: { id: string; status: string }[];
+  };
+  for (const review of body.reviews.filter((r) => r.status === "reviewing" || r.status === "queued")) {
+    await page.request.post(`${api}/api/reviews/${encodeURIComponent(review.id)}/archive`);
+  }
 }
 
 export async function openRepoPicker(page: Page): Promise<void> {

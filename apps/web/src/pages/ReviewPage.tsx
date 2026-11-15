@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Chip, Container, Link, Stack, Typography } from "@mui/material";
+import { Alert, Box, Container, Link, Stack, Typography } from "@mui/material";
 import type { AppEvent, PrReview, ReviewVerdict } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,7 +9,7 @@ import { useAppEvents } from "../useAppEvents.ts";
 import { ContrastAlert } from "../ui/ContrastAlert.tsx";
 import { DraftComments } from "./DraftComments.tsx";
 import { PostReviewDialog } from "./PostReviewDialog.tsx";
-import { reviewChipSx, reviewStatusColor, reviewStatusLabel } from "./reviewChips.ts";
+import { ReviewHeader } from "./ReviewHeader.tsx";
 
 export function ReviewPage() {
   const { id } = useParams();
@@ -26,43 +26,13 @@ export function ReviewPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 5, px: { xs: 3, md: 4 }, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} data-testid="review-page">
       <Stack spacing={3} sx={{ flex: 1, minHeight: 0 }}>
-        <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
-          <Stack spacing={1}>
-            <Typography variant="h4">{review.title}</Typography>
-            <Typography color="text.secondary">
-              {review.repoSlug}#{review.number}
-              {review.author ? ` · ${review.author}` : ""}
-            </Typography>
-            <Stack direction="row" gap={0.75} flexWrap="wrap">
-              <Chip
-                size="small"
-                color={reviewStatusColor(review.status, review.interrupted)}
-                label={reviewStatusLabel(review.status, review.interrupted)}
-                data-testid="review-detail-status"
-                sx={reviewChipSx(review.status, review.interrupted)}
-              />
-              {review.skillPath ? <Chip size="small" variant="outlined" label={review.skillPath} data-testid="review-skill" /> : null}
-            </Stack>
-          </Stack>
-          <Stack direction="row" gap={1} flexWrap="wrap">
-            <Button variant="outlined" onClick={() => nav("/reviews")}>
-              All reviews
-            </Button>
-            {review.status === "selected" || review.status === "requested" || review.status === "error" ? (
-              <Button variant="contained" data-testid="start-review" onClick={() => void state.start()}>
-                Review
-              </Button>
-            ) : null}
-            {review.status === "drafts" ? (
-              <Button variant="contained" data-testid="open-post-review" onClick={() => state.setPostOpen(true)}>
-                Post review
-              </Button>
-            ) : null}
-            <Button variant="outlined" data-testid="archive-review" onClick={() => void state.archive()}>
-              Archive
-            </Button>
-          </Stack>
-        </Stack>
+        <ReviewHeader
+          review={review}
+          onBack={() => nav("/reviews")}
+          onStart={() => void state.start()}
+          onPost={() => state.setPostOpen(true)}
+          onArchive={() => void state.archive()}
+        />
         {state.error ? <Alert severity="error">{state.error}</Alert> : null}
         {review.status === "queued" ? (
           <ContrastAlert severity="info" data-testid="review-queued">
@@ -77,7 +47,7 @@ export function ReviewPage() {
             <Typography variant="h6" sx={{ mb: 1 }}>
               Summary
             </Typography>
-            <Markdown>{review.summary}</Markdown>
+            <Markdown text={review.summary} />
           </Box>
         ) : null}
         {review.status === "drafts" || review.status === "posted" ? (

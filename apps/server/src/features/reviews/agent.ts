@@ -9,9 +9,10 @@ import { parseReviewDraft } from "./parse.ts";
 import { DEFAULT_REVIEW_PROMPT, detectReviewSkill } from "./skill.ts";
 import { addMessage, replaceComments, saveReview } from "./store.ts";
 import { emitReview, mustReview } from "./emit.ts";
+import { splitSlug } from "./slug.ts";
 
 export async function runLiveReview(review: PrReview): Promise<void> {
-  const [owner, name] = review.repoSlug.split("/");
+  const [owner, name] = splitSlug(review.repoSlug);
   const clone = await ensureClone(owner, name);
   const wt = nestedWorktree(clone.localPath, `review-${review.id}`);
   await addWorktreeAtCommit(clone.localPath, wt.path, review.headSha || "HEAD");

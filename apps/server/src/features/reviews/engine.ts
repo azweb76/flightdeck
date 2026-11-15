@@ -12,6 +12,7 @@ import { countActive } from "../run/store.ts";
 import { getSettings } from "../settings/index.ts";
 import { removeWorktree } from "../run/worktree.ts";
 import { fillDemoDraft, runLiveReview } from "./agent.ts";
+import { splitSlug } from "./slug.ts";
 import { demoRequests } from "./demo.ts";
 import { emitReview, mustReview } from "./emit.ts";
 import {
@@ -76,6 +77,9 @@ export function selectReview(id: string): PrReview {
 export async function startReview(id: string): Promise<PrReview> {
   assertPreflightGate("start");
   const review = mustReview(id);
+  if (review.status === "drafts" || review.status === "posted" || review.status === "reviewing") {
+    return emitReview(review);
+  }
   review.selected = true;
   if (countActive() >= getSettings().maxConcurrentAgents) {
     review.status = "queued";
@@ -85,7 +89,8 @@ export async function startReview(id: string): Promise<PrReview> {
   review.status = "reviewing";
   saveReview(review);
   kickReview(id);
-  return emitReview(getReview(id) ?? review);
+  if (process.env.FLIGHTDECK_DEMO === "1") await (getJob(id) ?? Promise.resolve());
+  return emitReview(mustReview(id));
 }
 
 export function patchComment(
@@ -109,7 +114,7 @@ export async function postReview(id: string, event: ReviewVerdict): Promise<PrRe
   if (process.env.FLIGHTDECK_DEMO !== "1") {
     const token = await resolveGithubToken();
     if (!token?.token) throw new Error("Set a GitHub token in Settings");
-    const [owner, name] = review.repoSlug.split("/");
+    const [owner, name] = splitSlug(review.repoSlug);
     await postPullReview(token.token, fetch, owner, name, review.number, {
       event,
       body: review.summary,
@@ -156,7 +161,7 @@ export async function archiveReview(id: string): Promise<PrReview> {
   const review = mustReview(id);
   review.status = "archived";
   saveReview(review);
-  const [owner, name] = review.repoSlug.split("/");
+  const [owner, name] = splitSlug(review.repoSlug);
   const root = process.env.FLIGHTDECK_DEMO === "1" ? demoRepoPath(owner, name) : repoPath(owner, name);
   await removeWorktree(root, review.worktreePath);
   review.worktreePath = "";
