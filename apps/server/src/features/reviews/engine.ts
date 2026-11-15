@@ -12,9 +12,10 @@ import { pumpQueue, setReviewPump } from "../run/queue.ts";
 import { countActive } from "../run/store.ts";
 import { getSettings } from "../settings/index.ts";
 import { removeWorktree } from "../run/worktree.ts";
-import { fillDemoDraft, runLiveReview } from "./agent.ts";
+import { applyCost, fillDemoDraft, runLiveReview } from "./agent.ts";
+import { capMessage, evaluateSpend } from "../run/caps.ts";
 import { splitSlug } from "./slug.ts";
-import { emitReview, mustReview } from "./emit.ts";
+import { emitReview, isInterruptedReview, mustReview } from "./emit.ts";
 import { addMessage, getReview, nextQueuedReview, saveComment, saveReview } from "./store.ts";
 
 setReviewPump(claimQueuedReview, kickReview);
@@ -30,6 +31,11 @@ export function selectReview(id: string): PrReview {
 export async function startReview(id: string): Promise<PrReview> {
   assertPreflightGate("start");
   const review = mustReview(id);
+  if (isInterruptedReview(review)) {
+    kickReview(id);
+    if (process.env.FLIGHTDECK_DEMO === "1") await (getJob(id) ?? Promise.resolve());
+    return emitReview(mustReview(id));
+  }
   if (review.status === "drafts" || review.status === "posted" || review.status === "reviewing") {
     return emitReview(review);
   }
@@ -97,20 +103,31 @@ export async function postReview(id: string, event: ReviewVerdict): Promise<PrRe
 export async function chatReview(id: string, text: string): Promise<PrReview> {
   const review = mustReview(id);
   addMessage(id, { role: "user", text });
+  const blocked = evaluateSpend(review.costUsd, 0);
+  if (blocked !== "ok") {
+    review.status = "cap_hit";
+    saveReview(review);
+    addMessage(id, { role: "assistant", text: capMessage(blocked) });
+    return emitReview(mustReview(id));
+  }
   if (process.env.FLIGHTDECK_DEMO === "1") {
     addMessage(id, { role: "assistant", text: `On ${review.repoSlug}#${review.number}: ${text.slice(0, 120)}` });
     return emitReview(mustReview(id));
   }
   const settings = getSettings();
   const env = claudeSdkEnv(await detectClaudeConfig());
+  const ac = new AbortController();
   let reply = "";
   for await (const ev of getAgentDriver().run({
     prompt: `PR ${review.repoSlug}#${review.number}\n${review.summary}\n\nDan: ${text}`,
     cwd: review.worktreePath || undefined,
     model: settings.model,
     env,
+    abort: ac.signal,
     role: "pr-review",
   })) {
+    if (ev.costUsd) applyCost(review, ev.costUsd, ac);
+    if (review.status === "cap_hit") return emitReview(mustReview(id));
     if (ev.kind === "text" && ev.detail) reply += ev.detail;
   }
   addMessage(id, { role: "assistant", text: reply.trim() || "I read the PR. What else should I look at?" });

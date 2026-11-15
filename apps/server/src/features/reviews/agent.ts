@@ -81,7 +81,7 @@ async function applyDraft(review: PrReview, text: string): Promise<void> {
   emitReview(mustReview(review.id));
 }
 
-function applyCost(review: PrReview, add: number, ac: AbortController): void {
+export function applyCost(review: PrReview, add: number, ac: AbortController): void {
   const hit = evaluateSpend(review.costUsd, add);
   addReviewCost(review, add);
   if (hit === "ok") return;

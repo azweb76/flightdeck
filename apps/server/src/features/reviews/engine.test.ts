@@ -5,8 +5,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "../demo/index.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
+import { setAgentDriver } from "../agent/index.ts";
 import { dropJobs, getJob } from "../run/jobs.ts";
 import { patchSettings } from "../settings/index.ts";
+import { countActive } from "../run/store.ts";
+import { countReviewing } from "./store.ts";
 import { chatReview, getReview, patchComment, postReview, selectReview, startReview } from "./engine.ts";
 import { listReviews } from "./sync.ts";
 
@@ -28,6 +31,17 @@ describe("reviews engine (demo)", () => {
     resetPreflightStore();
     delete process.env.FLIGHTDECK_DEMO;
     delete process.env.FLIGHTDECK_DATA_DIR;
+    setAgentDriver(undefined);
+  });
+
+  it("marks a reviewing row interrupted after a restart and resumes", async () => {
+    const listed = await listReviews();
+    const stuck = listed.find((r) => r.number === 91)!;
+    expect(stuck.interrupted).toBe(true);
+    expect(countReviewing()).toBe(0);
+    const resumed = await startReview(stuck.id);
+    expect(resumed.status).toBe("drafts");
+    expect(resumed.interrupted).toBe(false);
   });
 
   it("seeds mixed review-requested states", async () => {
@@ -102,5 +116,26 @@ describe("reviews engine (demo)", () => {
       process.env.FLIGHTDECK_DEMO = origDemo;
       delete process.env.GITHUB_TOKEN;
     }
+  });
+
+  it("applies dollar caps and abort to PR chat without taking a slot", async () => {
+    const origDemo = process.env.FLIGHTDECK_DEMO;
+    delete process.env.FLIGHTDECK_DEMO;
+    patchSettings({ dollarCapUsd: 0.05, dailyDollarCapUsd: 10 });
+    const before = countActive();
+    setAgentDriver({
+      async *run(opts) {
+        yield { kind: "usage", title: "usage", costUsd: 1 };
+        expect(opts.abort?.aborted).toBe(true);
+        yield { kind: "text", title: "text", detail: "should not land" };
+      },
+    });
+    const next = await chatReview("github:acme/web#92", "Walk the guard");
+    expect(next.status).toBe("cap_hit");
+    expect(next.messages.map((m) => m.text).join("\n")).toMatch(/dollar cap/);
+    expect(next.messages.some((m) => m.text === "should not land")).toBe(false);
+    expect(countActive()).toBe(before);
+    expect(countReviewing()).toBe(0);
+    process.env.FLIGHTDECK_DEMO = origDemo;
   });
 });
