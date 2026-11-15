@@ -153,6 +153,16 @@ Gating (how failed checks surface):
 - `git worktree prune` finishes before `pumpQueue` on listen.
 - A clone/worktree failure after a slot claim marks the run `error` so the slot frees.
 
+## Issue workspace (decided 15 Nov 2026, not built yet)
+Replaces the flat Issues cards and the separate Refine screen.
+- **Issues list:** a dense table. Columns: tracker icon + key, title, repo, one state chip. States: Idea, Refining, Ready, Queued, Running, Needs you, PR open, Done. Filters: All, Needs refining, Ready to start, In flight. No preview pane for now; add one later only if the full page proves too slow to reach.
+- **Issue page `/issues/:id`:** always split, chat on the left and draft on the right (as Refine is today). `/refine/:id` and `/shape/:id` redirect here. No Read/Refine toggle.
+- **Ready checklist** on the draft pane: repo set, acceptance criteria present, test plan present. Start is the primary button, enabled when it passes, and shows queue state ("will queue, 3/3 slots in use").
+- **Editable draft:** each section has an inline edit. Edits stay local until Dan clicks Save issue, which writes to Jira or GitHub; nothing is autosaved to the tracker.
+- **Locked sections:** a section Dan edits is marked and Claude proposes changes to it as a suggestion Dan accepts or rejects, instead of rewriting it.
+- **Change markers:** sections Claude changed in its last turn show "Changed" with a one-click view of the previous text. Claude's open questions show as a count on the draft.
+- **Build order (small commits):** state chip and repo column; unified issue page with checklist and Start state; editable sections with change markers; locked sections and suggestions.
+
 ## Screens
 - Home: My issues, ready to refine or start.
 - Nav pages: Issues, Runs, My PRs, Reviews, Settings.
