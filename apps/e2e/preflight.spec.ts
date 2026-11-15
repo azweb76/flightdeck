@@ -166,12 +166,14 @@ test("open repo picker never covers dialog actions", async ({ page }) => {
   }
   await startNewIdea(page);
   await page.getByTestId("save-issue").click();
-  await page.getByTestId("tracker-jira").click();
-  for (const { width, height } of [
-    { width: 1280, height: 800 },
-    { width: 1440, height: 900 },
-  ]) {
-    await page.setViewportSize({ width, height });
-    await expectPickerNotOverActions(page);
+  for (const tracker of ["tracker-jira", "tracker-github"] as const) {
+    await page.getByTestId(tracker).click();
+    for (const { width, height } of [
+      { width: 1280, height: 800 },
+      { width: 1440, height: 900 },
+    ]) {
+      await page.setViewportSize({ width, height });
+      await expectPickerNotOverActions(page);
+    }
   }
 });

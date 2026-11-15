@@ -146,6 +146,15 @@ test("Cancel Enter closes the dialog while the menu is open", async ({ page }) =
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
+test("sticky All header stays when the list is scrolled to the selection", async ({ page }) => {
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await pickRepo(page);
+  await openRepoPicker(page);
+  await expect(page.getByTestId("repo-all")).toContainText("All");
+  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
+});
+
 test("last refine question stays above the composer at 1280", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await seedHome(page);

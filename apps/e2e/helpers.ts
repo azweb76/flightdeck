@@ -102,18 +102,6 @@ export async function mockRepoCatalog(page: Page, count: number): Promise<void> 
   });
 }
 
-async function clipToContent(
-  page: Page,
-  list: ReturnType<Page["locator"]>,
-): Promise<{ x: number; y: number; width: number; height: number } | null> {
-  return list.evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    const content = el.closest(".MuiDialogContent-root")?.getBoundingClientRect();
-    const bottom = content ? Math.min(r.bottom, content.bottom) : r.bottom;
-    return { x: r.x, y: r.y, width: r.width, height: Math.max(0, bottom - r.y) };
-  });
-}
-
 function overlap(
   a: { x: number; y: number; width: number; height: number },
   b: { x: number; y: number; width: number; height: number },
@@ -121,12 +109,20 @@ function overlap(
   return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
-export async function expectPickerNotOverActions(page: Page): Promise<void> {
-  await openRepoPicker(page);
+export async function scrollPickerToEnd(page: Page): Promise<void> {
   const list = page.locator("#repo-listbox");
   await expect(list).toBeVisible();
-  await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
-  const listBox = await clipToContent(page, list);
+  await list.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeVisible();
+}
+
+export async function expectPickerNotOverActions(page: Page): Promise<void> {
+  await openRepoPicker(page);
+  await scrollPickerToEnd(page);
+  const list = page.locator("#repo-listbox");
+  const listBox = await list.boundingBox();
   const actionBox = await page.locator(".MuiDialogActions-root").boundingBox();
   expect(listBox && actionBox).toBeTruthy();
   expect(overlap(listBox!, actionBox!)).toBe(false);
@@ -147,9 +143,7 @@ async function listTopmostIsInside(page: Page): Promise<boolean> {
     const el = document.getElementById("repo-listbox");
     if (!el) return false;
     const r = el.getBoundingClientRect();
-    const content = el.closest(".MuiDialogContent-root")?.getBoundingClientRect();
-    const bottom = content ? Math.min(r.bottom, content.bottom) : r.bottom;
-    const hit = document.elementFromPoint(r.left + r.width / 2, bottom - 6);
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.bottom - 6);
     return Boolean(hit && el.contains(hit));
   });
 }

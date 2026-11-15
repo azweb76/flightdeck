@@ -7,6 +7,7 @@ import {
   openRepoPicker,
   pickRepo,
   scheme,
+  scrollPickerToEnd,
   seedHome,
   startNewIdea,
 } from "./helpers.ts";
@@ -95,10 +96,37 @@ test("three dialogs keep a 40-repo menu inside content at 1280", async ({ page }
   await page.getByTestId("tracker-jira").click();
   await expectPickerNotOverActions(page);
   await scheme(page, "light");
-  await shot1280(page, "picker-save-open-light");
+  await shot1280(page, "picker-save-jira-bottom-light");
   await scheme(page, "dark");
   await openRepoPicker(page);
-  await shot1280(page, "picker-save-open-dark");
+  await scrollPickerToEnd(page);
+  await shot1280(page, "picker-save-jira-bottom-dark");
+  await dismissDialog(page);
+
+  await page.getByTestId("save-issue").click();
+  await page.getByTestId("tracker-github").click();
+  await expectPickerNotOverActions(page);
+  await scheme(page, "light");
+  await shot1280(page, "picker-save-github-bottom-light");
+  await scheme(page, "dark");
+  await openRepoPicker(page);
+  await scrollPickerToEnd(page);
+  await shot1280(page, "picker-save-github-bottom-dark");
+});
+
+test("group header stays visible when scrolled to the selection", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await pickRepo(page);
+  await openRepoPicker(page);
+  await expect(page.getByTestId("repo-all")).toContainText("All");
+  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
+  await scheme(page, "light");
+  await shot1280(page, "picker-selection-header-light");
+  await scheme(page, "dark");
+  await openRepoPicker(page);
+  await shot1280(page, "picker-selection-header-dark");
 });
 
 test("chat and markdown draft look unchanged", async ({ page }) => {
@@ -126,4 +154,19 @@ test("change-detail last ask stays visible at 1280", async ({ page }) => {
   await shot1280(page, "change-chat-light");
   await scheme(page, "dark");
   await shot1280(page, "change-chat-dark");
+});
+
+test("chat after scrolling up at 1280", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await seedHome(page);
+  await page.getByTestId("start-acme/web#12").click();
+  const scroller = page.getByTestId("chat-scroller");
+  await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.clientHeight > 48)).toBe(true);
+  await scroller.evaluate((el) => {
+    el.scrollTop = 24;
+  });
+  await scheme(page, "light");
+  await shot1280(page, "chat-scrolled-up-light");
+  await scheme(page, "dark");
+  await shot1280(page, "chat-scrolled-up-dark");
 });

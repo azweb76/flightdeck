@@ -14,6 +14,23 @@ test("successful run opens a draft PR", async ({ page }) => {
   await expect(page.getByTestId("event-usage").first()).toBeVisible();
 });
 
+test("transcript keeps scrollTop when a new event arrives while reading", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await seedHome(page);
+  await page.getByTestId("start-acme/web#12").click();
+  const scroller = page.getByTestId("chat-scroller");
+  await expect(scroller).toBeVisible();
+  await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.clientHeight > 48)).toBe(true);
+  await scroller.evaluate((el) => {
+    el.scrollTop = 24;
+  });
+  const top = await scroller.evaluate((el) => el.scrollTop);
+  expect(top).toBeGreaterThan(0);
+  const n = await scroller.locator("[data-testid^='event-']").count();
+  await expect.poll(async () => scroller.locator("[data-testid^='event-']").count()).toBeGreaterThan(n);
+  expect(await scroller.evaluate((el) => el.scrollTop)).toBe(top);
+});
+
 test("run can pause for a question and continue after a reply", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await seedHome(page);
