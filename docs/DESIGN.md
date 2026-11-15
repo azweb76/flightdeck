@@ -84,7 +84,7 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 | Jira connect `myself` | 2 min | After Jira create/update (not Settings save) |
 | `detectClaudeConfig` (including apiKeyHelper) | 2 min | `POST /api/preflight/recheck` |
 | `git fetch origin` | 60s | TTL only |
-| GitHub authored open PRs (`search` `is:pr is:open author:@me`) | 60s | Token save/disconnect (`gh:pulls`); `If-None-Match` / 304 |
+| GitHub authored open PRs (GraphQL `search`; REST `is:pr is:open author:@me` fallback) | 60s TTL | Token save/disconnect (`gh:pulls`). GraphQL is TTL-only; the REST fallback uses `If-None-Match` / 304 |
 | GitHub combined status + check-runs for a ref | 20s | Token save/disconnect (`gh:checks:*`); CI watch refetches with `fresh` + ETag |
 | GitHub `pulls.get` (PR state for CI watch / parked slot) | 20s | Token save/disconnect (`gh:pull:*`); `If-None-Match` / 304 |
 
