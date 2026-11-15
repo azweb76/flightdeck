@@ -4,7 +4,6 @@ import { resetPreflightStore, runChecks } from "../preflight/report.ts";
 import { rememberRepo } from "../clone/index.ts";
 import { getDb } from "../db/index.ts";
 import { upsertIssue } from "../issues/store.ts";
-import { patchSettings } from "../settings/index.ts";
 import { resetDemoGithubMode } from "../github/index.ts";
 import { seedIssues } from "./seed-issues.ts";
 
@@ -17,13 +16,6 @@ export function shouldSeed(): boolean {
 export function seedDemo(): void {
   const count = (getDb().prepare("SELECT COUNT(*) AS n FROM issues").get() as { n: number }).n;
   if (count > 0) return;
-  patchSettings({
-    jiraSiteUrl: "https://example.atlassian.net",
-    jiraEmail: "dan@example.com",
-    jiraConfigured: true,
-    jiraProjectKey: "PROJ",
-    theme: "system",
-  });
   rememberRepo("acme", "web", "/tmp/flightdeck-demo/acme/web", true);
   rememberRepo("acme", "api", "/tmp/flightdeck-demo/acme/api", true);
   for (const issue of seedIssues()) upsertIssue({ ...issue, demo: true });

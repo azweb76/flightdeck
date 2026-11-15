@@ -1,5 +1,6 @@
-import { appendGithubSourceLabel, githubEnvFailDetail, type CatalogRepo, type GithubStatus } from "@flightdeck/shared";
+import { appendGithubSourceLabel, githubEnvFailDetail, type GithubStatus } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache } from "../cache/index.ts";
+import { DEMO_REPOS } from "../catalog/demo-repos.ts";
 import { envGithubToken } from "./token.ts";
 import type { GhIssue, GithubClient } from "./types.ts";
 
@@ -72,20 +73,13 @@ export function createDemoGithubClient(): GithubClient {
   return {
     status: async () => demoGithubStatus(),
     listAssignedIssues: async () => demoIssues(),
-    listRepos: async () => demoRepos(),
+    listRepos: async () => DEMO_REPOS,
     cloneRepo: async (_owner, _name, dest) => ({ ok: true, detail: dest }),
     createIssue: async (owner, name) => ({ number: 9, url: `https://github.com/${owner}/${name}/issues/9` }),
     updateIssue: async () => undefined,
     createDraftPr: async (owner, name) => ({ number: 42, url: `https://github.com/${owner}/${name}/pull/42` }),
     commentIssue: async () => undefined,
   };
-}
-
-function demoRepos(): CatalogRepo[] {
-  return [
-    { owner: "acme", name: "web", localPath: "" },
-    { owner: "acme", name: "api", localPath: "" },
-  ];
 }
 
 function demoIssues(): GhIssue[] {

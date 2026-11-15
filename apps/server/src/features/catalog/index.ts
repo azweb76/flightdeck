@@ -2,25 +2,24 @@ import type { CatalogRepo, CatalogView } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache } from "../cache/index.ts";
 import { listRememberedRepos } from "../clone/index.ts";
 import { createGithubClient, resolveGithubToken } from "../github/index.ts";
+import { demoGithubMode } from "../github/demo.ts";
 import { cacheFresh, readRepoCache, writeRepoCache } from "./cache.ts";
+import { DEMO_REPOS } from "./demo-repos.ts";
 import { listFavorites, listRecent, setFavorite, touchRecent } from "./stars.ts";
 
-export { setFavorite, touchRecent };
+export { setFavorite, touchRecent, DEMO_REPOS };
 
-const DEMO: CatalogRepo[] = [
-  { owner: "acme", name: "web", localPath: "" },
-  { owner: "acme", name: "api", localPath: "" },
-  { owner: "acme", name: "mobile", localPath: "" },
-];
+const NO_TOKEN = "Add a GitHub token in Settings to list repositories you can access.";
 
 export async function listCatalog(opts: { refresh?: boolean } = {}): Promise<CatalogView> {
   const favorites = listFavorites();
   const recent = listRecent();
   if (process.env.FLIGHTDECK_DEMO === "1") {
-    return view(merge(DEMO, listRememberedRepos()), favorites, recent, new Date().toISOString());
+    if (demoGithubMode() === "empty") return view([], favorites, recent, undefined, NO_TOKEN);
+    return view(merge(DEMO_REPOS, listRememberedRepos()), favorites, recent, new Date().toISOString());
   }
   if (!(await resolveGithubToken())) {
-    return view(listRememberedRepos(), favorites, recent, undefined, "Add a GitHub token in Settings to list repositories you can access.");
+    return view(listRememberedRepos(), favorites, recent, undefined, NO_TOKEN);
   }
   try {
     const repos = await loadRemote(Boolean(opts.refresh));

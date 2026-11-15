@@ -1,4 +1,5 @@
 import { draftToMarkdown, type Issue, type ShapeSession } from "@flightdeck/shared";
+import { DEMO_JIRA_SITE } from "../demo/seed-jira.ts";
 import { createGithubClient } from "../github/index.ts";
 import { createJiraClient } from "../jira/index.ts";
 import { upsertIssue } from "../issues/store.ts";
@@ -48,7 +49,7 @@ function demoSave(
       key,
       title: session.draft.title,
       body,
-      url: `https://example.atlassian.net/browse/${key}`,
+      url: `${DEMO_JIRA_SITE}/browse/${key}`,
       updatedAt: now,
       saved: true,
       demo: true,

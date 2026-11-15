@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resetCacheForTests } from "../cache/store.ts";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import { saveGithubToken } from "../github/client.ts";
+import { resetDemoGithubMode, setDemoGithubMode } from "../github/demo.ts";
 import { listCatalog, setFavorite, touchRecent } from "./index.ts";
 import { cacheFresh, readRepoCache, REPO_CACHE_TTL_MS, writeRepoCache } from "./cache.ts";
 
@@ -24,6 +25,7 @@ describe("repo catalog", () => {
     delete process.env.FLIGHTDECK_DEMO;
     delete process.env.GITHUB_TOKEN;
     delete process.env.FLIGHTDECK_DATA_DIR;
+    resetDemoGithubMode();
   });
 
   it("uses mock repos in demo mode", async () => {
@@ -31,6 +33,15 @@ describe("repo catalog", () => {
     const view = await listCatalog();
     expect(view.repos.map((r) => `${r.owner}/${r.name}`)).toEqual(["acme/api", "acme/mobile", "acme/web"]);
     expect(view.detail).toBeUndefined();
+  });
+
+  it("explains a missing GitHub token in demo github-empty mode", async () => {
+    process.env.FLIGHTDECK_DEMO = "1";
+    setDemoGithubMode("empty");
+    const view = await listCatalog();
+    expect(view.repos).toEqual([]);
+    expect(view.detail).toMatch(/Add a GitHub token/i);
+    setDemoGithubMode("connected");
   });
 
   it("explains a missing GitHub token", async () => {

@@ -3,13 +3,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { rememberRepo } from "../clone/index.ts";
+import { setFavorite, touchRecent } from "../catalog/stars.ts";
 import { closeDb, getDb, resetDbForTests } from "../db/index.ts";
 import { loadIssues, upsertIssue } from "../issues/store.ts";
 import { startChange, waitForChange } from "../run/index.ts";
 import { listChanges } from "../run/store.ts";
+import { getSettings, patchSettings } from "../settings/index.ts";
 import { replyShape, saveShapedIssue, startShape } from "../shape/index.ts";
 import { DEMO_ISSUE_IDS, purgeLiveDemoRows } from "./purge.ts";
 import { seedIssues } from "./seed-issues.ts";
+import { DEMO_JIRA_EMAIL, DEMO_JIRA_SITE } from "./seed-jira.ts";
 
 describe("purgeLiveDemoRows", () => {
   beforeEach(() => {
@@ -72,6 +75,69 @@ describe("purgeLiveDemoRows", () => {
     expect(sessions).toEqual([]);
     const repos = getDb().prepare("SELECT owner, name FROM repos").all();
     expect(repos).toEqual([]);
+  });
+
+  it("clears leftover demo Jira settings and keeps real Jira settings", () => {
+    patchSettings({
+      jiraSiteUrl: DEMO_JIRA_SITE,
+      jiraEmail: DEMO_JIRA_EMAIL,
+      jiraConfigured: true,
+      theme: "dark",
+      jiraProjectKey: "KEEP",
+    });
+    purgeLiveDemoRows();
+    expect(getSettings()).toMatchObject({
+      jiraSiteUrl: "",
+      jiraEmail: "",
+      jiraConfigured: false,
+      theme: "dark",
+      jiraProjectKey: "KEEP",
+    });
+
+    patchSettings({
+      jiraSiteUrl: "https://corp.atlassian.net",
+      jiraEmail: "dan@corp.com",
+      jiraConfigured: true,
+      jiraProjectKey: "FIN",
+    });
+    purgeLiveDemoRows();
+    expect(getSettings()).toMatchObject({
+      jiraSiteUrl: "https://corp.atlassian.net",
+      jiraEmail: "dan@corp.com",
+      jiraConfigured: true,
+      jiraProjectKey: "FIN",
+    });
+  });
+
+  it("purges demo favorites/recent and leftover slugs without a live repo", () => {
+    process.env.FLIGHTDECK_DEMO = "1";
+    rememberRepo("acme", "web", "/tmp/flightdeck-demo/acme/web", true);
+    setFavorite("acme", "web", true);
+    touchRecent("acme/web");
+    delete process.env.FLIGHTDECK_DEMO;
+    rememberRepo("dan", "app", "/Users/dan/src/app", false);
+    setFavorite("dan", "app", true);
+    touchRecent("dan/app");
+    getDb().prepare("INSERT INTO repo_favorites (owner, name, demo) VALUES ('acme','api',0)").run();
+    rememberRepo("acme", "api", "/tmp/flightdeck-demo/acme/api", true);
+
+    purgeLiveDemoRows();
+
+    const fav = getDb().prepare("SELECT owner, name FROM repo_favorites ORDER BY name").all();
+    const recent = getDb().prepare("SELECT owner, name FROM repo_recent ORDER BY name").all();
+    expect(fav).toEqual([{ owner: "dan", name: "app" }]);
+    expect(recent).toEqual([{ owner: "dan", name: "app" }]);
+  });
+
+  it("keeps a demo-flagged favorite when a live repo with that slug remains", () => {
+    process.env.FLIGHTDECK_DEMO = "1";
+    setFavorite("acme", "web", true);
+    delete process.env.FLIGHTDECK_DEMO;
+    rememberRepo("acme", "web", "/Users/dan/src/web", false);
+    rememberRepo("acme", "demo", "/tmp/flightdeck-demo/acme/demo", true);
+    purgeLiveDemoRows();
+    const fav = getDb().prepare("SELECT owner, name, demo FROM repo_favorites").all();
+    expect(fav).toEqual([{ owner: "acme", name: "web", demo: 1 }]);
   });
 
   it("does nothing while demo mode is on", () => {

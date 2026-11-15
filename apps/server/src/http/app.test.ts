@@ -8,7 +8,8 @@ import { resetDemoGithubMode } from "../features/github/index.ts";
 import { preflightBuildCount, resetDemoPreflightFixture, resetPreflightStore, runChecks } from "../features/preflight/index.ts";
 import { subscribe } from "../features/events/index.ts";
 import { upsertIssue } from "../features/issues/store.ts";
-import { patchSettings } from "../features/settings/index.ts";
+import { DEMO_JIRA_EMAIL, DEMO_JIRA_SITE } from "../features/demo/seed-jira.ts";
+import { getSettings, patchSettings } from "../features/settings/index.ts";
 import { createApp } from "./app.ts";
 
 describe("http", () => {
@@ -100,6 +101,15 @@ describe("http", () => {
     expect(body.checks.find((c) => c.id === "github")?.status).toBe("fail");
     expect(body.checks.find((c) => c.id === "claude")?.ok).toBe(false);
     expect(body.checks.find((c) => c.id === "jira")?.detail).toMatch(/token is missing/i);
+    const githubOnly = await app.request("http://127.0.0.1/api/demo/preflight", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fixture: "github" }),
+    });
+    const githubBody = (await githubOnly.json()) as { ok: boolean; checks: { id: string; ok: boolean; gates?: string[] }[] };
+    expect(githubBody.ok).toBe(false);
+    expect(githubBody.checks.find((c) => c.id === "github")?.gates).toEqual(["start", "saveGithub"]);
+    expect(githubBody.checks.find((c) => c.id === "claude")?.ok).toBe(true);
     expect((await app.request("http://127.0.0.1/api/status")).status).toBe(404);
   });
 
@@ -226,10 +236,14 @@ describe("http settings save without demo", () => {
     const gh2 = process.env.GH_TOKEN;
     process.env.FLIGHTDECK_DEMO = "1";
     seedDemo();
+    patchSettings({
+      jiraSiteUrl: DEMO_JIRA_SITE,
+      jiraEmail: DEMO_JIRA_EMAIL,
+      jiraConfigured: true,
+    });
     delete process.env.FLIGHTDECK_DEMO;
     delete process.env.GITHUB_TOKEN;
     delete process.env.GH_TOKEN;
-    patchSettings({ jiraConfigured: false, jiraSiteUrl: "", jiraEmail: "" });
     const orig = globalThis.fetch;
     globalThis.fetch = (async () => new Response("stubbed", { status: 401 })) as typeof fetch;
     try {
@@ -240,6 +254,10 @@ describe("http settings save without demo", () => {
       expect((body.issues ?? []).filter((i) => i.demo || i.key === "PROJ-150" || i.id.startsWith("github:acme/"))).toEqual(
         [],
       );
+      expect(getSettings()).toMatchObject({ jiraSiteUrl: "", jiraEmail: "", jiraConfigured: false });
+      const preflight = await app.request("http://127.0.0.1/api/preflight/recheck", { method: "POST" });
+      const report = (await preflight.json()) as { checks: { id: string; detail: string }[] };
+      expect(report.checks.find((c) => c.id === "jira")?.detail).not.toMatch(/configured but the API token is missing/i);
     } finally {
       globalThis.fetch = orig;
       if (gh) process.env.GITHUB_TOKEN = gh;
