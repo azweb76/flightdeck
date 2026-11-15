@@ -53,7 +53,7 @@ function abortControllerFor(signal?: AbortSignal): AbortController {
 
 export function toolsFor(role: AgentRunOpts["role"] = "shape"): readonly string[] {
   if (role === "implement") return IMPLEMENT_TOOLS;
-  if (role === "review") return REVIEW_TOOLS;
+  if (role === "review" || role === "pr-review") return REVIEW_TOOLS;
   return PLAN_TOOLS;
 }
 

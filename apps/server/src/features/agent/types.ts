@@ -6,7 +6,7 @@ export type AgentEvent = {
   costUsd?: number;
 };
 
-export type AgentRole = "shape" | "implement" | "review" | "plan";
+export type AgentRole = "shape" | "implement" | "review" | "plan" | "pr-review";
 
 export type AgentRunOpts = {
   prompt: string;

@@ -26,6 +26,9 @@ export function purgeLiveDemoRows(): void {
     DELETE FROM repo_recent WHERE (owner, name) IN (SELECT owner, name FROM repos WHERE demo = 1)
       AND (owner, name) NOT IN (SELECT owner, name FROM repos WHERE demo = 0);
     DELETE FROM pull_requests WHERE demo = 1;
+    DELETE FROM pr_review_messages WHERE demo = 1 OR review_id IN (SELECT id FROM pr_reviews WHERE demo = 1);
+    DELETE FROM pr_review_comments WHERE demo = 1 OR review_id IN (SELECT id FROM pr_reviews WHERE demo = 1);
+    DELETE FROM pr_reviews WHERE demo = 1;
     DELETE FROM change_events WHERE demo = 1 OR change_id IN (SELECT id FROM changes WHERE demo = 1);
     DELETE FROM changes WHERE demo = 1;
     DELETE FROM shape_sessions WHERE demo = 1;

@@ -11,6 +11,7 @@ import { purgeLiveDemoRows } from "./purge.ts";
 import { seedIssues } from "./seed-issues.ts";
 import { seedDemoRuns } from "./seed-runs.ts";
 import { seedDemoPulls } from "../prs/index.ts";
+import { seedDemoReviews } from "../reviews/index.ts";
 
 export { purgeLiveDemoRows };
 
@@ -29,6 +30,7 @@ export function seedDemo(): void {
   if (count > 0) {
     seedDemoRuns();
     seedDemoPulls();
+    seedDemoReviews();
     return;
   }
   rememberRepo("acme", "web", "/tmp/flightdeck-demo/acme/web", true);
@@ -36,6 +38,7 @@ export function seedDemo(): void {
   for (const issue of seedIssues()) upsertIssue({ ...issue, demo: true });
   seedDemoRuns();
   seedDemoPulls();
+  seedDemoReviews();
   pumpQueue();
 }
 
@@ -46,7 +49,7 @@ export async function resetDemo(opts: { seed: boolean }): Promise<void> {
   resetPreflightStore();
   getCache().invalidate("*");
   getDb().exec(
-    "DELETE FROM issues; DELETE FROM repos; DELETE FROM repo_favorites; DELETE FROM repo_recent; DELETE FROM shape_sessions; DELETE FROM settings; DELETE FROM change_events; DELETE FROM changes; DELETE FROM pull_requests;",
+    "DELETE FROM issues; DELETE FROM repos; DELETE FROM repo_favorites; DELETE FROM repo_recent; DELETE FROM shape_sessions; DELETE FROM settings; DELETE FROM change_events; DELETE FROM changes; DELETE FROM pull_requests; DELETE FROM pr_review_messages; DELETE FROM pr_review_comments; DELETE FROM pr_reviews;",
   );
   if (opts.seed) {
     process.env.FLIGHTDECK_SEED = "1";

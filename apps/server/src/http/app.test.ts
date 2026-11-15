@@ -233,6 +233,14 @@ describe("http", () => {
       globalThis.fetch = orig;
     }
   });
+
+  it("lists seeded review requests", async () => {
+    const app = createApp();
+    const res = await app.request("http://127.0.0.1/api/reviews");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { reviews: { number: number; status: string }[] };
+    expect(body.reviews.map((r) => r.number).sort((a, b) => a - b)).toEqual([90, 91, 92, 93, 94]);
+  });
 });
 
 describe("http settings save without demo", () => {

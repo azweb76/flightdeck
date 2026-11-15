@@ -32,6 +32,20 @@ export async function addWorktree(
   if (r.code !== 0) throw new Error(r.stderr || "git worktree add failed");
 }
 
+/** Detached worktree at a PR head commit in the app-managed clone. */
+export async function addWorktreeAtCommit(
+  repoDir: string,
+  dest: string,
+  commit: string,
+  exec: ExecFn = defaultExec,
+): Promise<void> {
+  if (existsSync(join(dest, ".git")) || existsSync(join(dest, "HEAD"))) return;
+  ignoreFlightdeckDir(repoDir);
+  mkdirSync(join(dest, ".."), { recursive: true });
+  const r = await exec("git", ["worktree", "add", "--detach", dest, commit], { cwd: repoDir, timeoutMs: 60_000 });
+  if (r.code !== 0) throw new Error(r.stderr || "git worktree add at commit failed");
+}
+
 export async function removeWorktree(
   repoDir: string,
   dest: string,

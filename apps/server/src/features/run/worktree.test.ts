@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { defaultExec } from "../exec/index.ts";
-import { addWorktree, nestedWorktree, pruneRepoWorktrees, removeWorktree } from "./worktree.ts";
+import { addWorktree, addWorktreeAtCommit, nestedWorktree, pruneRepoWorktrees, removeWorktree } from "./worktree.ts";
 
 describe("worktrees", () => {
   const prevDemo = process.env.FLIGHTDECK_DEMO;
@@ -44,6 +44,17 @@ describe("worktrees", () => {
     const branches = await defaultExec("git", ["branch"], { cwd: repo });
     expect(branches.stdout).not.toContain(a.branch);
     expect(branches.stdout).not.toContain(b.branch);
+  });
+
+  it("adds a detached worktree at a commit", async () => {
+    delete process.env.FLIGHTDECK_DEMO;
+    const repo = mkdtempSync(join(tmpdir(), "fd-wt-sha-"));
+    await gitInit(repo);
+    const sha = (await defaultExec("git", ["rev-parse", "HEAD"], { cwd: repo })).stdout.trim();
+    const dest = nestedWorktree(repo, "review-pr").path;
+    await addWorktreeAtCommit(repo, dest, sha);
+    const head = await defaultExec("git", ["rev-parse", "HEAD"], { cwd: dest });
+    expect(head.stdout.trim()).toBe(sha);
   });
 
   it("retries worktree remove after prune when the first remove fails", async () => {

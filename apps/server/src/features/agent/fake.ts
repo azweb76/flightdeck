@@ -4,6 +4,15 @@ import type { AgentDriver, AgentEvent } from "./types.ts";
 export function createFakeDriver(): AgentDriver {
   return {
     async *run(opts): AsyncIterable<AgentEvent> {
+      if (opts.role === "pr-review") {
+        yield {
+          kind: "text",
+          title: "assistant",
+          detail: `Looks solid overall.\n\`\`\`json\n[{"path":"src/api.ts","line":18,"body":"Guard this branch when the list is empty."}]\n\`\`\``,
+        };
+        yield { kind: "done", title: "session finished" };
+        return;
+      }
       const idea = extractIdea(opts.prompt);
       if (opts.prompt.toLowerCase().includes("first turn") || !opts.prompt.toLowerCase().includes("answer:")) {
         yield {

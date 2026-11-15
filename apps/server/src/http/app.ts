@@ -10,6 +10,7 @@ import { mountIssues } from "./routes/issues.ts";
 import { mountShape } from "./routes/shape.ts";
 import { mountChanges } from "./routes/changes.ts";
 import { mountPrs } from "./routes/prs.ts";
+import { mountReviews } from "./routes/reviews.ts";
 import { mountSse } from "./sse.ts";
 
 export function createApp(): Hono {
@@ -25,6 +26,7 @@ export function createApp(): Hono {
   mountShape(app);
   mountChanges(app);
   mountPrs(app);
+  mountReviews(app);
   mountSse(app);
   return app;
 }

@@ -128,6 +128,7 @@ export function archiveAllForTests(): void {
     change.worktreePath = "";
     saveChange(change);
   }
+  getDb().prepare("UPDATE pr_reviews SET status = 'archived' WHERE status != 'archived'").run();
 }
 
 export function findActiveForIssue(issueId: string): Change | undefined {
@@ -198,16 +199,32 @@ export function dailySpendUsd(day = localDayKey()): number {
     at: string;
     cost_usd: number;
   }[];
-  return rows.reduce((sum, row) => {
+  const fromEvents = rows.reduce((sum, row) => {
     const at = new Date(row.at);
     if (Number.isNaN(at.getTime()) || localDayKey(at) !== day) return sum;
     return sum + row.cost_usd;
   }, 0);
+  const reviews = getDb().prepare(`SELECT updated_at AS at, cost_usd FROM pr_reviews WHERE cost_usd > 0`).all() as {
+    at: string;
+    cost_usd: number;
+  }[];
+  return (
+    fromEvents +
+    reviews.reduce((sum, row) => {
+      const at = new Date(row.at);
+      if (Number.isNaN(at.getTime()) || localDayKey(at) !== day) return sum;
+      return sum + row.cost_usd;
+    }, 0)
+  );
 }
 
 export function countActive(): number {
   const rows = getDb().prepare("SELECT status FROM changes").all() as { status: ChangeStatus }[];
-  return rows.filter((row) => occupiesSlot(row.status)).length;
+  const changes = rows.filter((row) => occupiesSlot(row.status)).length;
+  const reviews = getDb()
+    .prepare("SELECT status FROM pr_reviews")
+    .all() as { status: string }[];
+  return changes + reviews.filter((row) => row.status === "reviewing").length;
 }
 
 export function nextQueued(): Change | undefined {
