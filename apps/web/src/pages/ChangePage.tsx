@@ -44,7 +44,7 @@ export function ChangePage() {
         </ContrastAlert>
       ) : null}
       {state.change.status === "cap_hit" ? (
-        <ContrastAlert severity="warning" data-testid="cap-hit">
+        <ContrastAlert severity="error" data-testid="cap-hit">
           {[...state.change.events].reverse().find((e) => e.title === "cap")?.detail ??
             "This run hit a dollar cap. Raise the cap in Settings if you want to try again."}
         </ContrastAlert>

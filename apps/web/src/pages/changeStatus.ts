@@ -1,7 +1,8 @@
 import type { ChangeStatus } from "@flightdeck/shared";
 import type { SxProps, Theme } from "@mui/material/styles";
 
-export function chipColor(status: ChangeStatus): "default" | "success" | "warning" | "error" | "info" {
+export function chipColor(status: ChangeStatus, interrupted = false): "default" | "success" | "warning" | "error" | "info" {
+  if (interrupted) return "warning";
   if (status === "done") return "success";
   if (status === "asking" || status === "needs_dan") return "warning";
   if (status === "cap_hit" || status === "error") return "error";
@@ -16,12 +17,33 @@ export const askingChipSx: SxProps<Theme> = {
   fontWeight: 600,
 };
 
+/** Grey default chips fail contrast on white; use a solid fill. */
+export const queuedChipSx: SxProps<Theme> = {
+  bgcolor: "#5c5c5e",
+  color: "#fff",
+  fontWeight: 600,
+};
+
+export const interruptedChipSx: SxProps<Theme> = {
+  bgcolor: "#7a3e00",
+  color: "#fff",
+  fontWeight: 600,
+};
+
+export function chipSx(status: ChangeStatus, interrupted = false): SxProps<Theme> | undefined {
+  if (interrupted) return interruptedChipSx;
+  if (status === "asking" || status === "needs_dan") return askingChipSx;
+  if (status === "queued") return queuedChipSx;
+  return undefined;
+}
+
 export function archiveDisabled(status: ChangeStatus, interrupted = false): boolean {
   if (interrupted || status === "queued") return false;
   return ["planning", "implementing", "reviewing", "opening_pr", "archived"].includes(status);
 }
 
-export function statusChip(status: ChangeStatus): string {
+export function statusChip(status: ChangeStatus, interrupted = false): string {
+  if (interrupted) return "Interrupted";
   if (status === "queued") return "Queued";
   if (status === "planning") return "Plan";
   if (status === "implementing") return "Implement";
@@ -35,7 +57,8 @@ export function statusChip(status: ChangeStatus): string {
   return "Error";
 }
 
-export function stageLabel(status: ChangeStatus): string {
+export function stageLabel(status: ChangeStatus, interrupted = false): string {
+  if (interrupted) return "Interrupted";
   if (status === "queued") return "Queued";
   if (status === "planning") return "Plan";
   if (status === "implementing") return "Implement";

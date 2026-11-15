@@ -1,7 +1,7 @@
 import { Box, Button, Chip, Paper, Stack, Typography } from "@mui/material";
 import type { Change } from "@flightdeck/shared";
 import { useNavigate } from "react-router-dom";
-import { archiveDisabled, askingChipSx, chipColor, formatElapsed, stageLabel, statusChip } from "./changeStatus.ts";
+import { archiveDisabled, chipColor, chipSx, formatElapsed, stageLabel, statusChip } from "./changeStatus.ts";
 
 export function RunRow(props: {
   change: Change;
@@ -22,17 +22,17 @@ export function RunRow(props: {
       <Stack direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ md: "center" }}>
         <Chip
           size="small"
-          color={chipColor(change.status)}
-          label={statusChip(change.status)}
+          color={chipColor(change.status, change.interrupted)}
+          label={statusChip(change.status, change.interrupted)}
           data-testid={`run-status-${change.issueKey}`}
-          sx={needsYou ? askingChipSx : undefined}
+          sx={chipSx(change.status, change.interrupted)}
         />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="subtitle1" noWrap>
             {change.title}
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid={`run-meta-${change.issueKey}`}>
-            {stageLabel(change.status)} · {change.repoSlug} · {change.issueKey} · ${change.costUsd.toFixed(2)} ·{" "}
+            {stageLabel(change.status, change.interrupted)} · {change.repoSlug} · {change.issueKey} · ${change.costUsd.toFixed(2)} ·{" "}
             {formatElapsed(change.createdAt, end)}
           </Typography>
         </Box>
