@@ -202,6 +202,27 @@ describe("run engine (demo)", () => {
     expect(done.events.some((e) => e.title === "ci fix")).toBe(true);
   });
 
+  it("Resume during an in-flight CI fix does not start a new attempt", async () => {
+    const issue = loadIssue("github:acme/web#71");
+    const change = insertChange(issue!, "ci-fix", "", "flightdeck/ci", "fixing_ci");
+    change.stage = "ci";
+    change.ciRound = 1;
+    change.ciPhase = "fixing";
+    change.prNumber = 42;
+    change.prUrl = "https://github.com/acme/web/pull/42";
+    saveChange(change);
+    addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 1 of 3" });
+    dropJobs();
+    await resumeChange(change.id);
+    await waitForChange(change.id);
+    const done = getChange(change.id)!;
+    expect(done.status).toBe("done");
+    expect(done.ciRound).toBe(2);
+    expect(
+      done.events.filter((e) => e.kind === "stage" && /^Attempt /.test(e.detail ?? "")).map((e) => e.detail),
+    ).toEqual(["Attempt 1 of 3", "Attempt 2 of 3"]);
+  });
+
   it("frees the slot when clone or worktree fails after a claim", async () => {
     process.env.FLIGHTDECK_FAIL_WORKTREE = "1";
     const { patchSettings } = await import("../settings/index.ts");

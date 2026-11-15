@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canArchive, canReply, checkCaps, nextAfterReview, occupiesSlot, parseReviewVerdict, reviewLimit } from "./machine.ts";
+import { canArchive, canReply, checkCaps, ciLimit, nextAfterReview, occupiesSlot, parseReviewVerdict, reviewLimit } from "./machine.ts";
 import { demoScenarioFor, reviewFailNotes } from "./script.ts";
 
 describe("run state machine", () => {
@@ -10,6 +10,9 @@ describe("run state machine", () => {
     expect(nextAfterReview(3, false)).toBe("needs_dan");
     expect(reviewLimit(3, true)).toBe(4);
     expect(reviewLimit(1, false)).toBe(3);
+    expect(ciLimit(1, false)).toBe(3);
+    expect(ciLimit(3, false)).toBe(3);
+    expect(ciLimit(3, true)).toBe(4);
   });
 
   it("allows replies only when paused and archive when not mid-agent", () => {
