@@ -91,8 +91,14 @@ export function applyCost(review: PrReview, add: number, ac: AbortController): v
   addReviewCost(review, add);
   if (hit === "ok") return;
   ac.abort();
+  const live = getReview(review.id);
+  const status = live?.status ?? review.status;
+  addMessage(review.id, { role: "assistant", text: capMessage(hit) });
+  if (status === "drafts" || status === "posted") {
+    emitReview(mustReview(review.id));
+    return;
+  }
   review.status = "cap_hit";
   saveReview(review);
-  addMessage(review.id, { role: "assistant", text: capMessage(hit) });
   emitReview(review);
 }

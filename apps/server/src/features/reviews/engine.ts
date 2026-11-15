@@ -105,9 +105,11 @@ export async function chatReview(id: string, text: string): Promise<PrReview> {
   addMessage(id, { role: "user", text });
   const blocked = evaluateSpend(review.costUsd, 0);
   if (blocked !== "ok") {
-    review.status = "cap_hit";
-    saveReview(review);
     addMessage(id, { role: "assistant", text: capMessage(blocked) });
+    if (review.status !== "drafts" && review.status !== "posted") {
+      review.status = "cap_hit";
+      saveReview(review);
+    }
     return emitReview(mustReview(id));
   }
   if (process.env.FLIGHTDECK_DEMO === "1") {
@@ -127,7 +129,7 @@ export async function chatReview(id: string, text: string): Promise<PrReview> {
     role: "pr-review",
   })) {
     if (ev.costUsd) applyCost(review, ev.costUsd, ac);
-    if (review.status === "cap_hit") return emitReview(mustReview(id));
+    if (ac.signal.aborted || review.status === "cap_hit") return emitReview(mustReview(id));
     if (ev.kind === "text" && ev.detail) reply += ev.detail;
   }
   addMessage(id, { role: "assistant", text: reply.trim() || "I read the PR. What else should I look at?" });

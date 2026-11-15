@@ -9,7 +9,7 @@ import { setAgentDriver } from "../agent/index.ts";
 import { dropJobs, getJob } from "../run/jobs.ts";
 import { patchSettings } from "../settings/index.ts";
 import { countActive } from "../run/store.ts";
-import { countReviewing } from "./store.ts";
+import { countReviewing, saveReview } from "./store.ts";
 import { archiveReview, chatReview, getReview, patchComment, postReview, selectReview, startReview } from "./engine.ts";
 import { listReviews } from "./sync.ts";
 
@@ -139,11 +139,29 @@ describe("reviews engine (demo)", () => {
       },
     });
     const next = await chatReview("github:acme/web#92", "Walk the guard");
-    expect(next.status).toBe("cap_hit");
+    expect(next.status).toBe("drafts");
     expect(next.messages.map((m) => m.text).join("\n")).toMatch(/dollar cap/);
     expect(next.messages.some((m) => m.text === "should not land")).toBe(false);
     expect(countActive()).toBe(before);
     expect(countReviewing()).toBe(0);
+    process.env.FLIGHTDECK_DEMO = origDemo;
+  });
+
+  it("sets cap_hit only while the review agent is running", async () => {
+    const origDemo = process.env.FLIGHTDECK_DEMO;
+    delete process.env.FLIGHTDECK_DEMO;
+    const review = getReview("github:acme/web#90")!;
+    review.status = "reviewing";
+    saveReview(review);
+    patchSettings({ dollarCapUsd: 0.05, dailyDollarCapUsd: 10 });
+    setAgentDriver({
+      async *run(opts) {
+        yield { kind: "usage", title: "usage", costUsd: 1 };
+        expect(opts.abort?.aborted).toBe(true);
+      },
+    });
+    const hit = await chatReview(review.id, "cost");
+    expect(hit.status).toBe("cap_hit");
     process.env.FLIGHTDECK_DEMO = origDemo;
   });
 });
