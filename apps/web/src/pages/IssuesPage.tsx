@@ -60,7 +60,7 @@ export function IssuesPage() {
           <Button variant="outlined" onClick={() => void pull("sync")} data-testid="refresh-issues">
             Refresh
           </Button>
-          <GatedButton gate="refine" variant="contained" placement="left" onClick={() => setOpen(true)} testId="new-idea">
+          <GatedButton gate="pickRepo" variant="contained" placement="left" onClick={() => setOpen(true)} testId="new-idea">
             New idea
           </GatedButton>
         </Stack>

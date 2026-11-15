@@ -8,6 +8,18 @@ test("demo home has no preflight banner and Refine stays enabled", async ({ page
   await expect(page.getByTestId("refine-PROJ-150")).toBeEnabled();
 });
 
+test("github-only failure still opens the repo picker empty state", async ({ page }) => {
+  await seedHome(page);
+  await setPreflight(page, "github");
+  await expect(page.getByTestId("preflight-banner")).toBeVisible();
+  await expect(page.getByTestId("new-idea")).toBeEnabled();
+  await expect(page.getByTestId("refine-PROJ-150")).toBeEnabled();
+  await expect(page.getByTestId("start-PROJ-150")).toBeDisabled();
+  await page.getByTestId("new-idea").click();
+  await expect(page.getByTestId("repo-picker-detail")).toContainText("Add a GitHub token in Settings");
+  await expect(page.getByTestId("repo-all")).toHaveCount(0);
+});
+
 test("failing preflight shows the banner, Re-check, and gated Refine", async ({ page }) => {
   await seedHome(page);
   await setPreflight(page, "fail");

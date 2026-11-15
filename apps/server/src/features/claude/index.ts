@@ -114,7 +114,7 @@ function summarize(s: {
   hasKeyEnv: boolean;
   oauth: boolean;
 }): string {
-  if (!s.found) return `No apiKeyHelper or Claude login. ${CLAUDE_LOGIN_HINT}`;
+  if (!s.found) return "No apiKeyHelper or Claude login.";
   const parts = [];
   if (s.helper) parts.push(s.apiKeyHelperOk === false ? "apiKeyHelper failed" : "apiKeyHelper found");
   if (s.hasKeyEnv) parts.push("ANTHROPIC_API_KEY is set");

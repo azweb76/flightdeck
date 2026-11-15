@@ -57,7 +57,7 @@ export const api = {
     }),
   preflight: () => req<PreflightReport>("/api/preflight"),
   recheckPreflight: () => req<PreflightReport>("/api/preflight/recheck", { method: "POST" }),
-  setDemoPreflight: (fixture: "pass" | "fail") =>
+  setDemoPreflight: (fixture: "pass" | "fail" | "github") =>
     req<PreflightReport>("/api/demo/preflight", { method: "POST", body: JSON.stringify({ fixture }) }),
   resetDemo: (seed: boolean) =>
     req<{ ok: boolean }>("/api/demo/reset", { method: "POST", body: JSON.stringify({ seed }) }),

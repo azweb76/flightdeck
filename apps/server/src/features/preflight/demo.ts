@@ -1,5 +1,6 @@
-import { githubEnvFailDetail, type PreflightCheck, type PreflightReport } from "@flightdeck/shared";
-import { demoGithubStatus } from "../github/demo.ts";
+import { CLAUDE_LOGIN_HINT, githubEnvFailDetail, type PreflightCheck, type PreflightReport } from "@flightdeck/shared";
+import { DEMO_JIRA_EMAIL } from "../demo/seed-jira.ts";
+import { demoGithubStatus, setDemoGithubMode } from "../github/demo.ts";
 import { envGithubToken } from "../github/token.ts";
 import { githubCheckFromStatus } from "./check-github.ts";
 import type { DemoPreflightFixture } from "./types.ts";
@@ -9,15 +10,19 @@ let fixture: DemoPreflightFixture | undefined;
 export function demoPreflightFixture(): DemoPreflightFixture | undefined {
   if (process.env.FLIGHTDECK_DEMO !== "1") return undefined;
   if (fixture) return fixture;
-  return process.env.FLIGHTDECK_PREFLIGHT === "fail" ? "fail" : "pass";
+  if (process.env.FLIGHTDECK_PREFLIGHT === "fail") return "fail";
+  if (process.env.FLIGHTDECK_PREFLIGHT === "github") return "github";
+  return "pass";
 }
 
 export function setDemoPreflightFixture(next: DemoPreflightFixture): void {
   fixture = next;
+  setDemoGithubMode(next === "github" ? "empty" : "connected");
 }
 
 export function resetDemoPreflightFixture(): void {
   fixture = undefined;
+  setDemoGithubMode("connected");
 }
 
 export function passingChecks(database: PreflightCheck): PreflightCheck[] {
@@ -37,18 +42,9 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
       version: "2.14.0",
       detail: "git 2.14.0 is too old for worktrees (need >=2.20.0)",
       fix: "brew install git",
-      gates: ["refine", "start"],
+      gates: ["pickRepo", "refine", "start"],
     },
-    {
-      id: "github",
-      label: "GitHub token",
-      severity: "required",
-      ok: false,
-      status: "fail",
-      detail: githubEnvFailDetail(envGithubToken()?.source),
-      fix: "Add a GitHub token in Settings",
-      gates: ["refine", "start", "saveGithub"],
-    },
+    githubFailCheck(),
     {
       id: "claude",
       label: "Claude auth",
@@ -56,7 +52,7 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
       ok: false,
       status: "fail",
       detail: "No apiKeyHelper or Claude login.",
-      fix: "Run claude, then type /login",
+      fix: CLAUDE_LOGIN_HINT,
       gates: ["refine", "start"],
     },
     {
@@ -73,8 +69,24 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
   ];
 }
 
+export function githubOnlyFailChecks(database: PreflightCheck): PreflightCheck[] {
+  return passingChecks(database).map((check) =>
+    check.id === "github"
+      ? {
+          ...check,
+          ok: false,
+          status: "fail" as const,
+          detail: githubEnvFailDetail(envGithubToken()?.source),
+          fix: "Add a GitHub token in Settings",
+          gates: ["start", "saveGithub"],
+        }
+      : check,
+  );
+}
+
 export function demoReport(database: PreflightCheck, mode: DemoPreflightFixture): PreflightReport {
-  const checks = mode === "fail" ? failingChecks(database) : passingChecks(database);
+  const checks =
+    mode === "fail" ? failingChecks(database) : mode === "github" ? githubOnlyFailChecks(database) : passingChecks(database);
   return {
     ok: checks.filter((c) => c.severity === "required").every((c) => c.ok),
     checkedAt: new Date().toISOString(),
@@ -99,6 +111,19 @@ function githubDemoCheck(): PreflightCheck {
   return githubCheckFromStatus(demoGithubStatus());
 }
 
+function githubFailCheck(): PreflightCheck {
+  return {
+    id: "github",
+    label: "GitHub token",
+    severity: "required",
+    ok: false,
+    status: "fail",
+    detail: githubEnvFailDetail(envGithubToken()?.source),
+    fix: "Add a GitHub token in Settings",
+    gates: ["start", "saveGithub"],
+  };
+}
+
 function passClaude(): PreflightCheck {
   return {
     id: "claude",
@@ -118,7 +143,7 @@ function passJira(): PreflightCheck {
     severity: "optional",
     ok: true,
     status: "pass",
-    detail: "Jira connected as dan@example.com (demo)",
+    detail: `Jira connected as ${DEMO_JIRA_EMAIL} (demo)`,
     gates: ["saveJira"],
   };
 }

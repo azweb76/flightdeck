@@ -6,7 +6,7 @@ export type PreflightSeverity = z.infer<typeof PreflightSeveritySchema>;
 export const PreflightStatusSchema = z.enum(["pass", "fail", "warn", "skip"]);
 export type PreflightStatus = z.infer<typeof PreflightStatusSchema>;
 
-export const PreflightGateSchema = z.enum(["refine", "start", "saveGithub", "saveJira"]);
+export const PreflightGateSchema = z.enum(["pickRepo", "refine", "start", "saveGithub", "saveJira"]);
 export type PreflightGate = z.infer<typeof PreflightGateSchema>;
 
 export const PreflightCheckSchema = z.object({

@@ -2,7 +2,7 @@ import { appendGithubSourceLabel, githubEnvFailDetail, type GithubStatus, type P
 import { createGithubClient } from "../github/index.ts";
 
 const FIX = "Add a GitHub token in Settings";
-const GATES = ["refine", "start", "saveGithub"] as const;
+const GATES = ["start", "saveGithub"] as const;
 
 export async function checkGithub(): Promise<PreflightCheck> {
   return githubCheckFromStatus(await createGithubClient().status());

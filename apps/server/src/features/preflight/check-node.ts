@@ -16,7 +16,7 @@ export function checkNode(ctx: PreflightCtx): PreflightCheck {
       ? `Node.js ${version} (need ${ctx.engines.node})`
       : `Node.js ${version} is too old (need ${ctx.engines.node})`,
     fix: ok ? undefined : "brew install node@22",
-    gates: ["refine", "start"],
+    gates: ["pickRepo", "refine", "start"],
   };
 }
 

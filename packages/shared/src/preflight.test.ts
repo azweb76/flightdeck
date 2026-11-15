@@ -14,7 +14,7 @@ const report = (ok: boolean): PreflightReport => ({
       status: ok ? "pass" : "fail",
       detail: "No GitHub token stored",
       fix: "Add a GitHub token in Settings",
-      gates: ["refine", "start", "saveGithub"],
+      gates: ["start", "saveGithub"],
     },
     {
       id: "jira",
@@ -32,7 +32,9 @@ describe("blockedBy", () => {
   it("gates only required failures for the matching action", () => {
     const fail = report(false);
     expect(blockedBy(fail, "saveGithub")?.id).toBe("github");
-    expect(blockedBy(fail, "refine")?.id).toBe("github");
+    expect(blockedBy(fail, "start")?.id).toBe("github");
+    expect(blockedBy(fail, "refine")).toBeUndefined();
+    expect(blockedBy(fail, "pickRepo")).toBeUndefined();
     expect(blockedBy(fail, "saveJira")?.id).toBe("jira");
     expect(blockedBy(report(true), "refine")).toBeUndefined();
     expect(blockedBy(report(true), "saveJira")?.id).toBe("jira");

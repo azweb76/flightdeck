@@ -1,7 +1,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { SettingsSchema } from "@flightdeck/shared";
+import { CLAUDE_LOGIN_HINT, SettingsSchema } from "@flightdeck/shared";
 import { describe, expect, it } from "vitest";
 import type { ExecFn } from "../exec/index.ts";
 import { checkClaude } from "./check-claude.ts";
@@ -130,7 +130,7 @@ describe("preflight checks", () => {
 
   it("reuses Claude detect for missing, failed helper, and OAuth", async () => {
     const none = await checkClaude(ctx(execFor({})));
-    expect(none).toMatchObject({ ok: false, fix: "Run claude, then type /login" });
+    expect(none).toMatchObject({ ok: false, fix: CLAUDE_LOGIN_HINT });
     const home = mkdtempSync(join(tmpdir(), "pf-claude-"));
     mkdirSync(join(home, ".claude"));
     writeFileSync(join(home, ".claude", "settings.json"), JSON.stringify({ apiKeyHelper: "false" }));

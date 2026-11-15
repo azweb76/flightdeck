@@ -15,7 +15,7 @@ export async function checkPnpm(ctx: PreflightCtx): Promise<PreflightCheck> {
       status: "fail",
       detail: "pnpm is not installed",
       fix: "corepack enable",
-      gates: ["refine", "start"],
+      gates: ["pickRepo", "refine", "start"],
     };
   }
   const ok = meetsMin(version, ctx.engines.pnpm);
@@ -28,7 +28,7 @@ export async function checkPnpm(ctx: PreflightCtx): Promise<PreflightCheck> {
     version,
     detail: ok ? `pnpm ${version} (need ${ctx.engines.pnpm})` : `pnpm ${version} is too old (need ${ctx.engines.pnpm})`,
     fix: ok ? undefined : "corepack enable",
-    gates: ["refine", "start"],
+    gates: ["pickRepo", "refine", "start"],
   };
 }
 
@@ -44,7 +44,7 @@ export async function checkGit(ctx: PreflightCtx): Promise<PreflightCheck> {
       status: "fail",
       detail: "git is not installed",
       fix: "brew install git",
-      gates: ["refine", "start"],
+      gates: ["pickRepo", "refine", "start"],
     };
   }
   const help = await ctx.exec("git", ["worktree", "-h"], { timeoutMs: 5_000 });
@@ -60,7 +60,7 @@ export async function checkGit(ctx: PreflightCtx): Promise<PreflightCheck> {
     version,
     detail: gitDetail(version, recent, worktree),
     fix: ok ? undefined : "brew install git",
-    gates: ["refine", "start"],
+    gates: ["pickRepo", "refine", "start"],
   };
 }
 

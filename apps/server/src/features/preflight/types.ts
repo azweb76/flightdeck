@@ -12,4 +12,4 @@ export type PreflightCtx = {
   jiraProbe?: () => Promise<{ ok: boolean; detail: string }>;
 };
 
-export type DemoPreflightFixture = "pass" | "fail";
+export type DemoPreflightFixture = "pass" | "fail" | "github";

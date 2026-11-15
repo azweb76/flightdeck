@@ -67,6 +67,17 @@ describe("preflight report", () => {
     expect(preflightBuildCount()).toBe(2);
   });
 
+  it("github-only fixture leaves pickRepo and refine open", async () => {
+    setDemoPreflightFixture("github");
+    const report = await runChecks();
+    expect(report.ok).toBe(false);
+    const github = report.checks.find((c) => c.id === "github");
+    expect(github?.ok).toBe(false);
+    expect(github?.gates).toEqual(["start", "saveGithub"]);
+    expect(report.checks.find((c) => c.id === "git")?.ok).toBe(true);
+    expect(report.checks.find((c) => c.id === "claude")?.ok).toBe(true);
+  });
+
   it("invalidates GitHub and Claude caches on recheck", async () => {
     const cache = getCache();
     let gh = 0;

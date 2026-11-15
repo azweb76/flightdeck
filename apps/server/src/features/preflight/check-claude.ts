@@ -1,4 +1,4 @@
-import type { PreflightCheck } from "@flightdeck/shared";
+import { CLAUDE_LOGIN_HINT, type PreflightCheck } from "@flightdeck/shared";
 import { detectClaudeConfig } from "../claude/index.ts";
 import type { PreflightCtx } from "./types.ts";
 
@@ -13,7 +13,7 @@ export async function checkClaude(ctx: PreflightCtx): Promise<PreflightCheck> {
     ok,
     status: ok ? "pass" : "fail",
     detail: helperFailed ? "apiKeyHelper failed" : status.detail,
-    fix: ok ? undefined : "Run claude, then type /login",
+    fix: ok ? undefined : CLAUDE_LOGIN_HINT,
     gates: ["refine", "start"],
   };
 }

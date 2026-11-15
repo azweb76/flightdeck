@@ -13,7 +13,7 @@ export function mountPreflight(app: Hono): void {
   app.post("/api/demo/preflight", async (c) => {
     if (process.env.FLIGHTDECK_DEMO !== "1") fail("Demo preflight is only available in demo mode");
     const body = await c.req.json<{ fixture?: string }>().catch(() => ({ fixture: "pass" }));
-    const fixture = body.fixture === "fail" ? "fail" : "pass";
+    const fixture = body.fixture === "fail" ? "fail" : body.fixture === "github" ? "github" : "pass";
     setDemoPreflightFixture(fixture);
     const report = await runChecks();
     publish("preflight.updated", report);
