@@ -41,6 +41,21 @@ test("change timeline shows CI rounds and the give-up ask", async ({ page }) => 
   await expect(page.getByTestId("transcript")).toContainText("Attempt 3 of 3");
 });
 
+test("Leave it chip ends the CI run without another attempt", async ({ page }) => {
+  await seedHome(page);
+  await archiveAllChanges(page);
+  await raiseConcurrent(page, 10);
+  await page.goto("/");
+  await page.getByTestId("start-acme/web#70").click();
+  await expect(page.getByTestId("needs-dan")).toBeVisible({ timeout: 20_000 });
+  await page.getByTestId("run-option-leave").click();
+  await expect(page.getByTestId("change-status")).toHaveText("Done");
+  await expect(page.getByTestId("stage-caption-ci")).not.toContainText("Follow-up");
+  await expect(page.getByTestId("transcript")).toContainText("Left the failing checks for you.");
+  await expect(page.getByTestId("transcript")).toContainText("Attempt 3 of 3");
+  await expect(page.getByTestId("transcript")).not.toContainText("Attempt 4");
+});
+
 test("reviewing seed is Review and queued banner is not error-red", async ({ page }) => {
   await seedHome(page);
   await page.getByRole("tab", { name: "Runs" }).click();

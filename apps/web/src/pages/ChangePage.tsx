@@ -60,7 +60,7 @@ export function ChangePage() {
           reply={state.reply}
           busy={state.busy}
           onReply={state.setReply}
-          onSend={(t) => void state.send(t)}
+          onSend={(t, id) => void state.send(t, id)}
         />
       </Stack>
     </Stack>
