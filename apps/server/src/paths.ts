@@ -21,7 +21,3 @@ export function secretsFile(account: string, dir = dataDir()): string {
 export function reposDir(dir = dataDir()): string {
   return join(dir, "repos");
 }
-
-export function worktreesDir(dir = dataDir()): string {
-  return join(dir, "worktrees");
-}
