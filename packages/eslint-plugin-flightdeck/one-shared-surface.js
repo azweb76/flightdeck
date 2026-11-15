@@ -76,7 +76,7 @@ export const oneSharedSurface = {
       file.endsWith("theme.ts") ||
       file.endsWith("ClaudeForm.tsx") ||
       file.endsWith("CheckRow.tsx");
-    const inUi = /apps\/web\/src\/(pages|features|preflight)\//.test(file);
+    const inUi = /apps\/web\/src\/(pages|features|preflight|layout)\//.test(file);
     return {
       ImportDeclaration(node) {
         const source = node.source.value;

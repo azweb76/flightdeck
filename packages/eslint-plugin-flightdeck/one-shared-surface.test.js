@@ -66,6 +66,7 @@ describe("one-shared-surface", () => {
     const code = `export const F = () => <p sx={{ whiteSpace: "pre-wrap" }}>hi</p>;`;
     assert.equal(hits(code, "apps/web/src/features/chat/Thread.tsx").length, 1);
     assert.equal(hits(code, "apps/web/src/pages/Fork.tsx").length, 1);
+    assert.equal(hits(code, "apps/web/src/layout/AppShell.tsx").length, 1);
   });
 
   it("allows pre-wrap on ClaudeForm and CheckRow", () => {
