@@ -91,18 +91,15 @@ describe("http", () => {
       body: JSON.stringify({ fixture: "fail" }),
     });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; checks: { id: string; status: string }[] };
+    const body = (await res.json()) as {
+      ok: boolean;
+      checks: { id: string; status: string; ok: boolean; detail?: string }[];
+    };
     expect(body.ok).toBe(false);
     expect(body.checks.find((c) => c.id === "github")?.status).toBe("fail");
-    const status = (await (await app.request("http://127.0.0.1/api/status")).json()) as {
-      claude: { found: boolean };
-      github: { loggedIn: boolean };
-      jira: { configured: boolean; detail: string };
-    };
-    expect(status.claude.found).toBe(false);
-    expect(status.github.loggedIn).toBe(false);
-    expect(status.jira.configured).toBe(false);
-    expect(status.jira.detail).toMatch(/token is missing/i);
+    expect(body.checks.find((c) => c.id === "claude")?.ok).toBe(false);
+    expect(body.checks.find((c) => c.id === "jira")?.detail).toMatch(/token is missing/i);
+    expect((await app.request("http://127.0.0.1/api/status")).status).toBe(404);
   });
 
   it("binds health on the API and lists seeded issues", async () => {
@@ -202,6 +199,49 @@ describe("http", () => {
       expect(jira.status).toBe(200);
       expect(preflightBuildCount()).toBe(1);
       expect(urls.filter((u) => /github\.com|atlassian|anthropic/i.test(u))).toEqual([]);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+});
+
+describe("http settings save without demo", () => {
+  beforeEach(() => {
+    const dir = mkdtempSync(join(tmpdir(), "fd-live-"));
+    process.env.FLIGHTDECK_DATA_DIR = dir;
+    delete process.env.FLIGHTDECK_DEMO;
+    delete process.env.FLIGHTDECK_SEED;
+    resetDbForTests(join(dir, "app.sqlite"));
+    resetPreflightStore();
+  });
+  afterEach(() => {
+    closeDb();
+    resetPreflightStore();
+    delete process.env.FLIGHTDECK_DATA_DIR;
+  });
+
+  it("stores GitHub and Jira secrets without calling /user, /myself, or Anthropic", async () => {
+    const app = createApp();
+    const urls: string[] = [];
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      urls.push(String(input));
+      return orig(input, init);
+    }) as typeof fetch;
+    try {
+      const gh = await app.request("http://127.0.0.1/api/github/token", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: "ghp_not_a_real_token" }),
+      });
+      expect(gh.status).toBe(200);
+      const jira = await app.request("http://127.0.0.1/api/jira/save", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ siteUrl: "https://invalid.example", email: "a@b.c", token: "fail" }),
+      });
+      expect(jira.status).toBe(200);
+      expect(urls.filter((u) => /github\.com\/user|\/myself|anthropic/i.test(u))).toEqual([]);
     } finally {
       globalThis.fetch = orig;
     }

@@ -5,7 +5,7 @@ From `docs/DESIGN.md` (Goal shaping). Each line is **Done** with proof (demo vs 
 - [x] **Done** Local web app; Node server bound to 127.0.0.1 — `apps/server/src/index.ts`; e2e health; `issues-light.png`
 - [x] **Done (real adapter, not live-run here)** TypeScript Node backend with the Claude Agent SDK — `apps/server/src/features/agent/sdk.ts`; `sdk.test.ts`. Live SDK turns not run on this machine.
 - [x] **Done** React frontend with MUI — `apps/web`; screenshots
-- [x] **Done (unit)** Claude auth reads `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json` — `claude.test.ts`. Demo Settings card shows a fake ready status (`settings-light.png`).
+- [x] **Done (unit)** Claude auth reads `apiKeyHelper` and `ANTHROPIC_BASE_URL` from `~/.claude/settings.json` — `claude.test.ts`. Settings shows a static `/login` hint (`settings-light.png`).
 - [x] **Done (detect + instructions, not a 5s subprocess)** Claude OAuth: credentials file counts as logged in (`claude.test.ts`); Settings shows the `/login` hint as static text. Demo does not probe Claude from Settings.
 - [x] **Done (real adapter; Settings stores only)** GitHub via Octokit + PAT in Settings — `github.test.ts`. Settings shows `Using GITHUB_TOKEN from environment` as static text when set. Saving a token does not call `GET /user`.
 - [x] **Done (real adapter; Settings stores only)** Jira Cloud email + token — `jira.test.ts`; form + Atlassian link. Settings Save does not call Jira `myself`.

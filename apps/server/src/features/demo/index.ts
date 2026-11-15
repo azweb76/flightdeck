@@ -6,7 +6,6 @@ import { getDb } from "../db/index.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { patchSettings } from "../settings/index.ts";
 import { resetDemoGithubMode } from "../github/index.ts";
-import { setJiraLastError } from "../status/index.ts";
 import { seedIssues } from "./seed-issues.ts";
 
 export function shouldSeed(): boolean {
@@ -29,7 +28,6 @@ export function seedDemo(): void {
 }
 
 export async function resetDemo(opts: { seed: boolean }): Promise<void> {
-  setJiraLastError(undefined);
   resetDemoGithubMode();
   resetDemoPreflightFixture();
   resetPreflightStore();
