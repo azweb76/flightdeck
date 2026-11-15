@@ -2,7 +2,7 @@ import { Box, Button, Chip, Link, Stack, Typography } from "@mui/material";
 import type { Change } from "@flightdeck/shared";
 import { archiveDisabled, askingChipSx, chipColor, statusChip } from "./changeStatus.ts";
 
-export function ChangeHeader(props: { change: Change; onRuns: () => void; onArchive: () => void }) {
+export function ChangeHeader(props: { change: Change; onRuns: () => void; onArchive: () => void; onResume: () => void }) {
   const { change } = props;
   return (
     <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2}>
@@ -14,7 +14,7 @@ export function ChangeHeader(props: { change: Change; onRuns: () => void; onArch
             color={chipColor(change.status)}
             label={statusChip(change.status)}
             data-testid="change-status"
-            sx={change.status === "asking" ? askingChipSx : undefined}
+            sx={change.status === "asking" || change.status === "needs_dan" ? askingChipSx : undefined}
           />
         </Stack>
         <Typography color="text.secondary" sx={{ mt: 0.5 }} data-testid="change-cost">
@@ -30,9 +30,14 @@ export function ChangeHeader(props: { change: Change; onRuns: () => void; onArch
         <Button variant="outlined" onClick={props.onRuns}>
           All runs
         </Button>
+        {change.interrupted ? (
+          <Button variant="contained" onClick={props.onResume} data-testid="resume-change">
+            Resume
+          </Button>
+        ) : null}
         <Button
           variant="outlined"
-          disabled={archiveDisabled(change.status)}
+          disabled={archiveDisabled(change.status, change.interrupted)}
           onClick={props.onArchive}
           data-testid="archive-change"
         >

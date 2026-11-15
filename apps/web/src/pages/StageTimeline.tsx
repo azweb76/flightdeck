@@ -70,6 +70,7 @@ function caption(change: Change, stage: ChangeStage): string {
 }
 
 function statusWord(status: Change["status"]): string {
+  if (status === "queued") return "Waiting for a free slot";
   if (status === "asking") return "Paused for your answer";
   if (status === "cap_hit") return "Stopped on the dollar cap";
   if (status === "needs_dan") return "Stopped after 3 review rounds";

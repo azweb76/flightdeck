@@ -1,38 +1,50 @@
 import { Box, Button, Chip, Paper, Stack, Typography } from "@mui/material";
 import type { Change } from "@flightdeck/shared";
-import { Link as RouterLink } from "react-router-dom";
-import { archiveDisabled, askingChipSx, chipColor, statusChip } from "./changeStatus.ts";
+import { useNavigate } from "react-router-dom";
+import { archiveDisabled, askingChipSx, chipColor, formatElapsed, stageLabel, statusChip } from "./changeStatus.ts";
 
-export function RunRow(props: { change: Change; onArchive: (id: string) => void }) {
+export function RunRow(props: {
+  change: Change;
+  now: number;
+  onArchive: (id: string) => void;
+  onResume: (id: string) => void;
+}) {
   const { change } = props;
+  const nav = useNavigate();
+  const needsYou = change.status === "asking" || change.status === "needs_dan";
+  const end = change.status === "done" || change.status === "archived" || change.status === "cap_hit" ? Date.parse(change.updatedAt) : props.now;
   return (
-    <Paper sx={{ p: 3, border: 1, borderColor: "divider" }} data-testid="run-row">
-      <Stack direction={{ xs: "column", md: "row" }} gap={2} alignItems={{ md: "center" }}>
+    <Paper
+      sx={{ px: 2, py: 1.5, border: 1, borderColor: needsYou ? "warning.light" : "divider", cursor: "pointer" }}
+      data-testid="run-row"
+      onClick={() => nav(`/runs/${change.id}`)}
+    >
+      <Stack direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ md: "center" }}>
+        <Chip
+          size="small"
+          color={chipColor(change.status)}
+          label={statusChip(change.status)}
+          data-testid={`run-status-${change.issueKey}`}
+          sx={needsYou ? askingChipSx : undefined}
+        />
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap" sx={{ mb: 0.75 }}>
-            <Chip
-              size="small"
-              color={chipColor(change.status)}
-              label={statusChip(change.status)}
-              data-testid={`run-status-${change.issueKey}`}
-              sx={change.status === "asking" ? askingChipSx : undefined}
-            />
-            <Typography variant="caption" color="text.secondary">
-              {change.issueKey}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              ${change.costUsd.toFixed(2)}
-            </Typography>
-          </Stack>
-          <Typography variant="h6">{change.title}</Typography>
+          <Typography variant="subtitle1" noWrap>
+            {change.title}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" data-testid={`run-meta-${change.issueKey}`}>
+            {stageLabel(change.status)} · {change.repoSlug} · {change.issueKey} · ${change.costUsd.toFixed(2)} ·{" "}
+            {formatElapsed(change.createdAt, end)}
+          </Typography>
         </Box>
-        <Stack direction="row" gap={1}>
-          <Button component={RouterLink} to={`/runs/${change.id}`} variant="contained" data-testid={`open-run-${change.issueKey}`}>
-            Open
-          </Button>
+        <Stack direction="row" gap={1} onClick={(e) => e.stopPropagation()}>
+          {change.interrupted ? (
+            <Button variant="contained" onClick={() => props.onResume(change.id)} data-testid={`resume-${change.issueKey}`}>
+              Resume
+            </Button>
+          ) : null}
           <Button
             variant="outlined"
-            disabled={archiveDisabled(change.status)}
+            disabled={archiveDisabled(change.status, change.interrupted)}
             onClick={() => props.onArchive(change.id)}
             data-testid={`archive-${change.issueKey}`}
           >

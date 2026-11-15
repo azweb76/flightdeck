@@ -17,15 +17,9 @@ export function Thread(props: {
   const stick = useRef(true);
   const last = props.entries.at(-1);
   const mine = last?.type === "bubble" && last.mine;
-  useEffect(() => {
-    const box = scroller.current;
-    if (!box) return;
-    const onScroll = () => {
-      stick.current = box.scrollHeight - box.scrollTop - box.clientHeight <= NEAR_BOTTOM;
-    };
-    box.addEventListener("scroll", onScroll, { passive: true });
-    return () => box.removeEventListener("scroll", onScroll);
-  }, []);
+  function noteScroll(box: HTMLDivElement): void {
+    stick.current = box.scrollHeight - box.scrollTop - box.clientHeight <= NEAR_BOTTOM;
+  }
   useEffect(() => {
     const box = scroller.current;
     if (!props.autoScroll || !box) return;
@@ -38,6 +32,7 @@ export function Thread(props: {
       ref={scroller}
       data-testid="chat-scroller"
       spacing={props.spacing}
+      onScroll={(e) => noteScroll(e.currentTarget)}
       sx={{ flex: 1, minHeight: 0, overflow: "auto", pr: 1, pb: 3 }}
     >
       {props.entries.map((entry) => (

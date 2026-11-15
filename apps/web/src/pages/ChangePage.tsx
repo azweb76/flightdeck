@@ -21,8 +21,23 @@ export function ChangePage() {
   return (
     <Container maxWidth="lg" sx={{ py: 5, px: { xs: 3, md: 4 }, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }} data-testid="change-page">
     <Stack spacing={4} sx={{ flex: 1, minHeight: 0 }}>
-      <ChangeHeader change={state.change} onRuns={() => nav("/runs")} onArchive={() => void state.archive()} />
+      <ChangeHeader
+        change={state.change}
+        onRuns={() => nav("/runs")}
+        onArchive={() => void state.archive()}
+        onResume={() => void state.resume()}
+      />
       {state.error ? <Alert severity="error">{state.error}</Alert> : null}
+      {state.change.status === "queued" ? (
+        <ContrastAlert severity="info" data-testid="run-queued">
+          Waiting for a free agent slot. This starts automatically when another run finishes or is archived.
+        </ContrastAlert>
+      ) : null}
+      {state.change.interrupted ? (
+        <ContrastAlert severity="warning" data-testid="run-interrupted">
+          This run stopped when the app restarted. Resume continues from the current stage.
+        </ContrastAlert>
+      ) : null}
       {state.change.status === "needs_dan" ? (
         <ContrastAlert severity="warning" data-testid="needs-dan">
           Review failed 3 times. Tell me how to proceed, or archive this run.
@@ -30,7 +45,8 @@ export function ChangePage() {
       ) : null}
       {state.change.status === "cap_hit" ? (
         <ContrastAlert severity="warning" data-testid="cap-hit">
-          This run hit a dollar cap. Raise the cap in Settings if you want to try again.
+          {[...state.change.events].reverse().find((e) => e.title === "cap")?.detail ??
+            "This run hit a dollar cap. Raise the cap in Settings if you want to try again."}
         </ContrastAlert>
       ) : null}
       <Stack direction={{ xs: "column", lg: "row" }} spacing={2} alignItems="stretch" sx={{ flex: { lg: 1 }, minHeight: { lg: 0 } }}>
@@ -100,6 +116,14 @@ function useChange(id: string | undefined) {
         setChange(await api.archiveChange(id));
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not archive");
+      }
+    },
+    resume: async () => {
+      if (!id) return;
+      try {
+        setChange(await api.resumeChange(id));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not resume");
       }
     },
   };

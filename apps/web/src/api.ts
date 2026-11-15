@@ -68,4 +68,5 @@ export const api = {
   replyChange: (id: string, text: string) =>
     req<Change>(`/api/changes/${id}/reply`, { method: "POST", body: JSON.stringify({ text }) }),
   archiveChange: (id: string) => req<Change>(`/api/changes/${id}/archive`, { method: "POST" }),
+  resumeChange: (id: string) => req<Change>(`/api/changes/${id}/resume`, { method: "POST" }),
 };
