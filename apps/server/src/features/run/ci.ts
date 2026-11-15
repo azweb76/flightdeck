@@ -98,6 +98,20 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
         emitChange(change);
         return;
       }
+      if (result.state === "action_required") {
+        change.ciPhase = "";
+        change.status = "needs_dan";
+        change.ask = {
+          prompt: "CI is waiting for a GitHub action. How should I proceed?",
+          options: [
+            { id: "retry", label: "Try one more fix" },
+            { id: "leave", label: "Leave it for me" },
+          ],
+        };
+        log(change, { kind: "ask", title: "Need a decision", detail: change.ask.prompt, ask: change.ask });
+        emitChange(change);
+        return;
+      }
       if (change.ciRound >= limit) {
         askCi(change);
         return;

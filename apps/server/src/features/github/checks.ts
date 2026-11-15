@@ -57,7 +57,10 @@ export function summarize(sha: string, combined: string, runs: CheckRun[], statu
   if (hasRuns && runs.some((r) => r.status && r.status !== "completed")) {
     return { state: "pending", sha, summary: "Checks are still running." };
   }
-  const failedRuns = runs.filter((r) => r.conclusion === "failure" || r.conclusion === "timed_out" || r.conclusion === "cancelled");
+  if (runs.some((r) => r.conclusion === "action_required")) {
+    return { state: "action_required", sha, summary: "A check needs a GitHub action." };
+  }
+  const failedRuns = runs.filter((r) => r.conclusion === "failure" || r.conclusion === "timed_out");
   if (failedRuns.length) {
     return { state: "failing", sha, summary: `${failedRuns.length} check(s) failed.` };
   }

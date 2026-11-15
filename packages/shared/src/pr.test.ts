@@ -34,5 +34,6 @@ describe("My PRs filters", () => {
     expect(prNeedsYou({ review: "none", ci: "failing", ciRound: 3 }, "needs_dan")).toBe(true);
     expect(prNeedsYou({ review: "none", ci: "failing", ciRound: 2 }, "fixing_ci")).toBe(false);
     expect(prNeedsYou({ review: "none", ci: "failing", ciRound: 0 })).toBe(true);
+    expect(prNeedsYou({ review: "none", ci: "action_required", ciRound: 0 })).toBe(true);
   });
 });

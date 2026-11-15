@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { MAX_CI_ROUNDS } from "./change.ts";
 
-export const PrCiStateSchema = z.enum(["pending", "passing", "failing", "unknown"]);
+export const PrCiStateSchema = z.enum(["pending", "passing", "failing", "unknown", "action_required"]);
 export type PrCiState = z.infer<typeof PrCiStateSchema>;
 
 export const PrReviewStateSchema = z.enum(["none", "approved", "changes_requested", "commented"]);
@@ -37,6 +37,7 @@ export function filterOwnPrs(prs: OwnPr[], filter: PrFilter): OwnPr[] {
 
 export function prNeedsYou(pr: Pick<OwnPr, "review" | "ci" | "ciRound">, changeStatus?: string): boolean {
   if (pr.review === "changes_requested") return true;
+  if (pr.ci === "action_required") return true;
   if (changeStatus === "asking" || changeStatus === "needs_dan") return true;
   if (pr.ci !== "failing") return false;
   if (changeStatus === "watching_ci" || changeStatus === "fixing_ci") return pr.ciRound >= MAX_CI_ROUNDS;

@@ -32,6 +32,21 @@ describe("commit checks", () => {
     expect(summarize("abc", "success", [], [{ state: "success" }]).state).toBe("passing");
   });
 
+  it("ignores cancelled runs and surfaces action_required", () => {
+    expect(summarize("abc", "success", [{ status: "completed", conclusion: "cancelled" }]).state).toBe("passing");
+    expect(summarize("abc", "success", [{ status: "completed", conclusion: "skipped" }]).state).toBe("passing");
+    expect(summarize("abc", "success", [{ status: "completed", conclusion: "neutral" }]).state).toBe("passing");
+    expect(summarize("abc", "success", [{ status: "completed", conclusion: "action_required" }]).state).toBe(
+      "action_required",
+    );
+    expect(
+      summarize("abc", "success", [
+        { status: "completed", conclusion: "cancelled" },
+        { status: "completed", conclusion: "failure" },
+      ]).state,
+    ).toBe("failing");
+  });
+
   it("combines Actions runs with real commit statuses", () => {
     expect(
       summarize("abc", "pending", [{ status: "completed", conclusion: "success" }], [{ state: "pending" }]).state,
