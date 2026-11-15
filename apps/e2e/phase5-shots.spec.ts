@@ -39,6 +39,8 @@ test("phase 5 screenshots", async ({ page }) => {
   await expect(page.getByTestId("draft-approve-24")).toBeVisible();
   await pair(page, "review-drafts");
 
+  await page.getByTestId("draft-approve-24").click();
+  await expect(page.getByTestId("draft-src/checkout.ts-24")).toContainText("approved");
   await page.getByTestId("open-post-review").click();
   await expect(page.getByTestId("post-review-dialog")).toBeVisible();
   await pair(page, "review-post-dialog");
