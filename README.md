@@ -15,7 +15,7 @@ pnpm preflight
 
 `pnpm preflight` checks Node, pnpm, git (worktrees), GitHub token, Claude auth, SQLite schema, and Jira (optional). Required failures exit non-zero with a one-line fix. The same checks run when the server starts; missing tools are shown in the UI instead of crashing, unless Node is too old.
 
-`pnpm install` also installs Playwright Chromium (needed for `pnpm check`). If browsers are missing later: `pnpm --filter @flightdeck/e2e exec playwright install chromium`.
+`pnpm install` does not download browsers. `pnpm check` installs Playwright Chromium itself; to run e2e on its own, run `pnpm e2e:install` first. Screenshot specs (`*-shots`) write to `apps/e2e/.shots` (override with `FLIGHTDECK_SHOTS_DIR`).
 
 ```bash
 pnpm dev
