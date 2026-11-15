@@ -18,21 +18,26 @@ import { emitReview, mustReview } from "./emit.ts";
 import { splitSlug } from "./slug.ts";
 
 export async function runLiveReview(review: PrReview): Promise<void> {
+  const ac = attachAbort(review.id);
+  if (reviewStopped(review.id, ac)) return;
   const [owner, name] = splitSlug(review.repoSlug);
   if (!review.headSha.trim() || review.headSha === "HEAD") {
     throw new Error("This pull request has no head commit to check out.");
   }
   const clone = await ensureClone(owner, name);
+  if (reviewStopped(review.id, ac)) return;
   await gitFetchPullHead(defaultExec, clone.localPath, review.number, review.headSha);
+  if (reviewStopped(review.id, ac)) return;
   const wt = nestedWorktree(clone.localPath, `review-${review.id}`);
   await addWorktreeAtCommit(clone.localPath, wt.path, review.headSha);
+  if (reviewStopped(review.id, ac)) return;
   review.worktreePath = wt.path;
   const skill = detectReviewSkill(wt.path);
   review.skillPath = skill?.path ?? "";
   saveReview(review);
   const settings = getSettings();
   const env = claudeSdkEnv(await detectClaudeConfig());
-  const ac = attachAbort(review.id);
+  if (reviewStopped(review.id, ac)) return;
   let text = "";
   for await (const ev of getAgentDriver().run({
     prompt: `${skill?.text ?? DEFAULT_REVIEW_PROMPT}\n\nPR ${review.repoSlug}#${review.number}: ${review.title}\nHead: ${review.headSha}`,
@@ -43,7 +48,7 @@ export async function runLiveReview(review: PrReview): Promise<void> {
     role: "pr-review",
   })) {
     if (ev.costUsd) applyCost(review, ev.costUsd, ac);
-    if (review.status === "cap_hit") return;
+    if (reviewStopped(review.id, ac) || review.status === "cap_hit") return;
     if (ev.kind === "text" && ev.detail) text += `${ev.detail}\n`;
   }
   await applyDraft(review, text);
@@ -85,6 +90,10 @@ export async function applyDraft(review: PrReview, text: string): Promise<void> 
   emitReview(mustReview(review.id));
 }
 
+function reviewStopped(id: string, ac: AbortController): boolean {
+  return ac.signal.aborted || getReview(id)?.status === "archived";
+}
+
 export function applyCost(review: PrReview, add: number, ac: AbortController): void {
   const hit = evaluateSpend(review.costUsd, add);
   addReviewCost(review, add);
@@ -92,7 +101,7 @@ export function applyCost(review: PrReview, add: number, ac: AbortController): v
   ac.abort();
   const live = getReview(review.id);
   const status = live?.status ?? review.status;
-  addMessage(review.id, { role: "assistant", text: capMessage(hit) });
+  addMessage(review.id, { role: "assistant", text: capMessage(hit, "review") });
   if (status === "drafts" || status === "posted") {
     emitReview(mustReview(review.id));
     return;
