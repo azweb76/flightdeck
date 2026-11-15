@@ -35,7 +35,9 @@ for (const p of workspacePkgs) {
   if (!existsSync(resolve(p.dir, "package.json"))) continue;
   const scripts = JSON.parse(readFileSync(resolve(p.dir, "package.json"), "utf8")).scripts ?? {};
   if (scripts.typecheck) ok = run(`${p.name} typecheck`, ["pnpm", "run", "typecheck"], p.dir) && ok;
+  if (p.name === "@flightdeck/e2e") continue;
   if (scripts.test) ok = run(`${p.name} test`, ["pnpm", "run", "test"], p.dir) && ok;
   if (scripts.build) ok = run(`${p.name} build`, ["pnpm", "run", "build"], p.dir) && ok;
 }
+ok = run("e2e", ["pnpm", "run", "test"], resolve("apps/e2e")) && ok;
 if (!ok) process.exit(1);
