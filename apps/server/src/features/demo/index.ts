@@ -8,6 +8,7 @@ import { upsertIssue } from "../issues/store.ts";
 import { resetDemoGithubMode } from "../github/index.ts";
 import { purgeLiveDemoRows } from "./purge.ts";
 import { seedIssues } from "./seed-issues.ts";
+import { seedDemoRuns } from "./seed-runs.ts";
 
 export { purgeLiveDemoRows };
 
@@ -27,6 +28,7 @@ export function seedDemo(): void {
   rememberRepo("acme", "web", "/tmp/flightdeck-demo/acme/web", true);
   rememberRepo("acme", "api", "/tmp/flightdeck-demo/acme/api", true);
   for (const issue of seedIssues()) upsertIssue({ ...issue, demo: true });
+  seedDemoRuns();
 }
 
 export async function resetDemo(opts: { seed: boolean }): Promise<void> {

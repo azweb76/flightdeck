@@ -13,7 +13,19 @@ function issue(
 }
 
 export function seedIssues(): Issue[] {
-  return [csvExport(), jiraCsv(), csvRefunds(), webhookRetry(), spendCap()];
+  return [
+    csvExport(),
+    jiraCsv(),
+    csvRefunds(),
+    webhookRetry(),
+    spendCap(),
+    queueWeb(),
+    parallelWeb(),
+    waitingWeb(),
+    capApi(),
+    doneWeb(),
+    sortCsv(),
+  ];
 }
 
 function csvExport(): Issue {
@@ -107,5 +119,119 @@ function spendCap(): Issue {
     }),
     url: "https://github.com/acme/api/issues/8",
     repoSlug: "acme/api",
+  });
+}
+
+function queueWeb(): Issue {
+  return issue({
+    id: "github:acme/web#40",
+    source: "github",
+    key: "acme/web#40",
+    title: "Queue a second web change",
+    body: shaped("Queue a second web change", {
+      goal: "Start this while other agents are busy so it waits in the queue.",
+      acceptance: "- Status is queued until a slot frees.",
+      files: "apps/server/src/features/run",
+      approach: "Same repo, own worktree.",
+      outOfScope: "Skipping the queue.",
+      testPlan: "Open Runs and see Queued.",
+    }),
+    url: "https://github.com/acme/web/issues/40",
+    repoSlug: "acme/web",
+  });
+}
+
+function parallelWeb(): Issue {
+  return issue({
+    id: "github:acme/web#41",
+    source: "github",
+    key: "acme/web#41",
+    title: "Parallel checkout on the same repo",
+    body: shaped("Parallel checkout on the same repo", {
+      goal: "A second worktree on acme/web that can resume after restart.",
+      acceptance: "- Own worktree under the app clone folder.\n- Resume continues the run.",
+      files: "apps/server/src/features/run/worktree.ts",
+      approach: "git worktree add a unique branch.",
+      outOfScope: "Sharing one worktree.",
+      testPlan: "Click Resume on Runs.",
+    }),
+    url: "https://github.com/acme/web/issues/41",
+    repoSlug: "acme/web",
+  });
+}
+
+function waitingWeb(): Issue {
+  return issue({
+    id: "github:acme/web#42",
+    source: "github",
+    key: "acme/web#42",
+    title: "Waiting on an export choice",
+    body: shaped("Waiting on an export choice", {
+      goal: "Paused for Dan, still holding a concurrent slot.",
+      acceptance: "- Needs you is visible on Runs.",
+      files: "src/invoices/export.ts",
+      approach: "Ask, then continue.",
+      outOfScope: "Guessing the answer.",
+      testPlan: "Reply from change detail.",
+    }),
+    url: "https://github.com/acme/web/issues/42",
+    repoSlug: "acme/web",
+  });
+}
+
+function capApi(): Issue {
+  return issue({
+    id: "github:acme/api#43",
+    source: "github",
+    key: "acme/api#43",
+    title: "Already hit the spend cap",
+    body: shaped("Already hit the spend cap", {
+      goal: "Show a clean cap-hit on the Runs list.",
+      acceptance: "- Cap hit is visible with a non-zero cost.",
+      files: "apps/server/src/features/run/caps.ts",
+      approach: "Stop when the cap is crossed.",
+      outOfScope: "Auto-raising caps.",
+      testPlan: "Open the cap-hit run.",
+    }),
+    url: "https://github.com/acme/api/issues/43",
+    repoSlug: "acme/api",
+  });
+}
+
+function doneWeb(): Issue {
+  return issue({
+    id: "github:acme/web#44",
+    source: "github",
+    key: "acme/web#44",
+    title: "Shipped the first CSV",
+    body: shaped("Shipped the first CSV", {
+      goal: "A finished run on the same repo as the queued one.",
+      acceptance: "- Status is Done with a draft PR link.",
+      files: "src/invoices/export.ts",
+      approach: "Plan, implement, review, PR.",
+      outOfScope: "CI watch.",
+      testPlan: "Archive removes the worktree.",
+    }),
+    url: "https://github.com/acme/web/issues/44",
+    repoSlug: "acme/web",
+  });
+}
+
+function sortCsv(): Issue {
+  return issue({
+    id: "github:acme/web#50",
+    source: "github",
+    key: "acme/web#50",
+    title: "Sort CSV columns",
+    body: shaped("Sort CSV columns", {
+      goal: "A second success path on acme/web for queue tests.",
+      acceptance: "- Columns are sorted stably.",
+      files: "src/invoices/export.ts",
+      approach: "Sort headers then rows.",
+      outOfScope: "Custom column order UI.",
+      testPlan: "Start after another agent is busy.",
+    }),
+    url: "https://github.com/acme/web/issues/50",
+    repoSlug: "acme/web",
   });
 }
