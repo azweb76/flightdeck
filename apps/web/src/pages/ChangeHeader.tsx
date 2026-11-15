@@ -11,10 +11,10 @@ export function ChangeHeader(props: { change: Change; onRuns: () => void; onArch
           <Typography variant="h4">{change.title}</Typography>
           <Chip
             size="small"
-            color={chipColor(change.status, change.interrupted)}
-            label={statusChip(change.status, change.interrupted, change.ask?.reason)}
+            color={chipColor(change.status, change.interrupted, change.ciPhase)}
+            label={statusChip(change.status, change.interrupted, change.ask?.reason, change.ciPhase)}
             data-testid="change-status"
-            sx={chipSx(change.status, change.interrupted)}
+            sx={chipSx(change.status, change.interrupted, change.ciPhase)}
           />
         </Stack>
         <Typography color="text.secondary" sx={{ mt: 0.5 }} data-testid="change-cost">

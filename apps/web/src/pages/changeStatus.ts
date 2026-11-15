@@ -1,12 +1,12 @@
 import type { ChangeStatus } from "@flightdeck/shared";
 import type { SxProps, Theme } from "@mui/material/styles";
 
-export function chipColor(status: ChangeStatus, interrupted = false): "default" | "success" | "warning" | "error" | "info" {
+export function chipColor(status: ChangeStatus, interrupted = false, ciPhase?: string): "default" | "success" | "warning" | "error" | "info" {
   if (interrupted) return "warning";
   if (status === "done") return "success";
   if (status === "asking" || status === "needs_dan") return "warning";
   if (status === "cap_hit" || status === "error") return "error";
-  if (status === "queued" || status === "archived") return "default";
+  if (status === "queued" || status === "archived" || ciPhase === "queued") return "default";
   return "info";
 }
 
@@ -36,10 +36,10 @@ export const archivedChipSx: SxProps<Theme> = {
   fontWeight: 600,
 };
 
-export function chipSx(status: ChangeStatus, interrupted = false): SxProps<Theme> | undefined {
+export function chipSx(status: ChangeStatus, interrupted = false, ciPhase?: string): SxProps<Theme> | undefined {
   if (interrupted) return interruptedChipSx;
   if (status === "asking" || status === "needs_dan") return askingChipSx;
-  if (status === "queued") return queuedChipSx;
+  if (status === "queued" || ciPhase === "queued") return queuedChipSx;
   if (status === "archived") return archivedChipSx;
   return undefined;
 }
@@ -49,8 +49,9 @@ export function archiveDisabled(status: ChangeStatus, interrupted = false): bool
   return ["planning", "implementing", "reviewing", "opening_pr", "fixing_ci", "archived"].includes(status);
 }
 
-export function statusChip(status: ChangeStatus, interrupted = false, askReason?: string): string {
+export function statusChip(status: ChangeStatus, interrupted = false, askReason?: string, ciPhase?: string): string {
   if (interrupted) return "Interrupted";
+  if (ciPhase === "queued") return "Waiting for slot";
   if (status === "queued") return "Queued";
   if (status === "planning") return "Plan";
   if (status === "implementing") return "Implement";
@@ -66,8 +67,9 @@ export function statusChip(status: ChangeStatus, interrupted = false, askReason?
   return "Error";
 }
 
-export function stageLabel(status: ChangeStatus, interrupted = false): string {
+export function stageLabel(status: ChangeStatus, interrupted = false, ciPhase?: string): string {
   if (interrupted) return "Interrupted";
+  if (ciPhase === "queued") return "Waiting for slot";
   if (status === "queued") return "Queued";
   if (status === "planning") return "Plan";
   if (status === "implementing") return "Implement";

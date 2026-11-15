@@ -22,17 +22,17 @@ export function RunRow(props: {
       <Stack direction={{ xs: "column", md: "row" }} gap={1.5} alignItems={{ md: "center" }}>
         <Chip
           size="small"
-          color={chipColor(change.status, change.interrupted)}
-          label={statusChip(change.status, change.interrupted, change.ask?.reason)}
+          color={chipColor(change.status, change.interrupted, change.ciPhase)}
+          label={statusChip(change.status, change.interrupted, change.ask?.reason, change.ciPhase)}
           data-testid={`run-status-${change.issueKey}`}
-          sx={chipSx(change.status, change.interrupted)}
+          sx={chipSx(change.status, change.interrupted, change.ciPhase)}
         />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="subtitle1" noWrap>
             {change.title}
           </Typography>
           <Typography variant="caption" color="text.secondary" data-testid={`run-meta-${change.issueKey}`}>
-            {stageLabel(change.status, change.interrupted)} · {change.repoSlug} · {change.issueKey} · ${change.costUsd.toFixed(2)} ·{" "}
+            {stageLabel(change.status, change.interrupted, change.ciPhase)} · {change.repoSlug} · {change.issueKey} · ${change.costUsd.toFixed(2)} ·{" "}
             {formatElapsed(change.createdAt, end)}
           </Typography>
         </Box>

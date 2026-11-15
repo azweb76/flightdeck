@@ -28,6 +28,17 @@ describe("demo run seeds", () => {
     expect(presentChange(interrupted!).interrupted).toBe(true);
   });
 
+  it("seeds the waiting CI run with plan, review, and draft PR done", () => {
+    const waiting = listChanges().find((c) => c.issueKey === "acme/web#73");
+    expect(waiting?.planText.length).toBeGreaterThan(10);
+    expect(waiting?.reviewRound).toBe(1);
+    expect(waiting?.prUrl).toMatch(/\/pull\/73$/);
+    expect(waiting?.ciPhase).toBe("queued");
+    expect(waiting?.events.some((e) => e.title === "Plan")).toBe(true);
+    expect(waiting?.events.some((e) => e.title === "Review")).toBe(true);
+    expect(waiting?.events.some((e) => e.title === "draft pr")).toBe(true);
+  });
+
   it("seeds demo PRs when issues already exist", () => {
     getDb().exec("DELETE FROM pull_requests");
     expect(listStoredPulls()).toHaveLength(0);

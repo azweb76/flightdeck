@@ -40,7 +40,11 @@ test("phase 4 screenshots at 1280", async ({ page }) => {
   await pair(page, "ci-timeline");
 
   await page.getByRole("tab", { name: "Runs" }).click();
+  await expect(page.getByTestId("run-status-acme/web#73")).toHaveText("Waiting for slot");
   await page.getByTestId("run-status-acme/web#73").click();
+  await expect(page.getByTestId("stage-caption-plan")).toContainText("Kept in the app only");
+  await expect(page.getByTestId("stage-caption-review")).toContainText("Round 1 of 3");
+  await expect(page.getByTestId("stage-caption-pr")).toContainText("Draft PR opened");
   await expect(page.getByTestId("stage-caption-ci")).toHaveText("Waiting for a free slot");
   await expect(page.getByTestId("run-queued")).toBeVisible();
   await pair(page, "ci-waiting-slot");

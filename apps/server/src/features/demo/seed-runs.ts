@@ -27,11 +27,16 @@ function seedWaitingCi(issue: Issue | undefined): void {
   const change = base(issue, "ci-fix", "watching_ci");
   if (!change) return;
   change.stage = "ci";
+  change.reviewRound = 1;
   change.ciRound = 1;
   change.ciPhase = "queued";
+  change.planText = "Keep the plan in Flightdeck. Patch lint, then wait for a slot.";
   change.prUrl = "https://github.com/acme/web/pull/73";
   change.prNumber = 73;
   saveChange(change);
+  addEvent(change, { kind: "stage", title: "Plan", detail: "Kept in the app only" });
+  addEvent(change, { kind: "stage", title: "Review", detail: "Round 1 of 3" });
+  addEvent(change, { kind: "system", title: "draft pr", detail: "Opened draft PR https://github.com/acme/web/pull/73" });
   addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 1 of 3" });
   addEvent(change, { kind: "system", title: "queued", detail: "Waiting for a free slot" });
 }
