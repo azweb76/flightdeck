@@ -71,6 +71,18 @@ describe("commit checks", () => {
     expect(summarize("abc", "success", [], [{ state: "success" }]).state).toBe("passing");
   });
 
+  it("keeps cancelled-or-skipped-only checks pending through the grace period", () => {
+    const opened = 1_000_000;
+    const inert = [
+      { status: "completed", conclusion: "cancelled" },
+      { status: "completed", conclusion: "skipped" },
+    ];
+    expect(summarize("abc", "success", inert, [], { sinceMs: opened, now: opened + 1_000 }).state).toBe("pending");
+    expect(summarize("abc", "success", inert, [], { sinceMs: opened, now: opened + CHECKS_GRACE_MS }).state).toBe(
+      "passing",
+    );
+  });
+
   it("ignores cancelled runs and surfaces action_required", () => {
     expect(summarize("abc", "success", [{ status: "completed", conclusion: "cancelled" }]).state).toBe("passing");
     expect(summarize("abc", "success", [{ status: "completed", conclusion: "skipped" }]).state).toBe("passing");

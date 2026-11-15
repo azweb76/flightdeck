@@ -101,6 +101,9 @@ export function summarize(
   } else if (!hasRuns) {
     return emptyChecks(sha, combined, opts);
   }
+  if (!hasStatuses && runs.every((r) => r.conclusion === "cancelled" || r.conclusion === "skipped")) {
+    return emptyChecks(sha, combined, opts);
+  }
   return { state: "passing", sha, summary: "All checks passed." };
 }
 
