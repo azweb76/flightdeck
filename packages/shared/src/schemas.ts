@@ -49,6 +49,7 @@ export const IssueSchema = z.object({
   repoSlug: z.string().optional(),
   updatedAt: z.string(),
   saved: z.boolean().default(false),
+  demo: z.boolean().optional(),
 });
 export type Issue = z.infer<typeof IssueSchema>;
 
@@ -83,6 +84,15 @@ export const CatalogRepoSchema = z.object({
   localPath: z.string().default(""),
 });
 export type CatalogRepo = z.infer<typeof CatalogRepoSchema>;
+
+export const CatalogViewSchema = z.object({
+  repos: z.array(CatalogRepoSchema),
+  favorites: z.array(z.string()),
+  recent: z.array(z.string()),
+  fetchedAt: z.string().optional(),
+  detail: z.string().optional(),
+});
+export type CatalogView = z.infer<typeof CatalogViewSchema>;
 
 export const ChatMessageSchema = z.object({
   id: z.string(),

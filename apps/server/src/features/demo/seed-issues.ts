@@ -6,8 +6,10 @@ function shaped(title: string, sections: Omit<IssueDraft, "title">): string {
   return draftToMarkdown({ ...emptyDraft(), title, ...sections });
 }
 
-function issue(partial: Omit<Issue, "updatedAt" | "saved" | "url"> & { url: string; repoSlug?: string }): Issue {
-  return { ...partial, updatedAt: NOW, saved: true };
+function issue(
+  partial: Omit<Issue, "updatedAt" | "saved" | "url" | "demo"> & { url: string; repoSlug?: string },
+): Issue {
+  return { ...partial, updatedAt: NOW, saved: true, demo: true };
 }
 
 export function seedIssues(): Issue[] {

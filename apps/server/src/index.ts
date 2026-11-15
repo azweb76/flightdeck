@@ -1,11 +1,12 @@
 import { serve } from "@hono/node-server";
 import { DEFAULT_HOST, DEFAULT_PORT } from "@flightdeck/shared";
-import { seedDemo, shouldSeed } from "./features/demo/index.ts";
+import { purgeLiveDemoRows, seedDemo, shouldSeed } from "./features/demo/index.ts";
 import { runStartupPreflight } from "./features/preflight/index.ts";
 import { createApp } from "./http/app.ts";
 
 await runStartupPreflight();
 if (shouldSeed()) seedDemo();
+else purgeLiveDemoRows();
 
 const port = Number(process.env.FLIGHTDECK_PORT ?? DEFAULT_PORT);
 const hostname = process.env.FLIGHTDECK_HOST ?? DEFAULT_HOST;

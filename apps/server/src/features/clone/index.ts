@@ -18,13 +18,13 @@ export function repoPath(owner: string, name: string): string {
   return join(cloneRoot(), owner, name);
 }
 
-export function rememberRepo(owner: string, name: string, localPath: string): void {
+export function rememberRepo(owner: string, name: string, localPath: string, demo = false): void {
   getDb()
     .prepare(
-      `INSERT INTO repos (owner, name, local_path) VALUES (?,?,?)
-       ON CONFLICT(owner, name) DO UPDATE SET local_path = excluded.local_path`,
+      `INSERT INTO repos (owner, name, local_path, demo) VALUES (?,?,?,?)
+       ON CONFLICT(owner, name) DO UPDATE SET local_path = excluded.local_path, demo = excluded.demo`,
     )
-    .run(owner, name, localPath);
+    .run(owner, name, localPath, demo ? 1 : 0);
 }
 
 export function listRememberedRepos(): { owner: string; name: string; localPath: string }[] {

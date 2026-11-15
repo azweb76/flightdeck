@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { purgeLiveDemoRows } from "../features/demo/index.ts";
 import { onError } from "./errors.ts";
 import { mountMeta } from "./routes/meta.ts";
 import { mountPreflight } from "./routes/preflight.ts";
@@ -11,6 +12,7 @@ import { mountChanges } from "./routes/changes.ts";
 import { mountSse } from "./sse.ts";
 
 export function createApp(): Hono {
+  purgeLiveDemoRows();
   const app = new Hono();
   app.use("*", cors({ origin: ["http://127.0.0.1:47322", "http://localhost:47322"], credentials: true }));
   app.onError(onError);

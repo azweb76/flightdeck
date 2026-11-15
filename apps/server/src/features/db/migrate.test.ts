@@ -62,6 +62,7 @@ describe("sqlite migrations", () => {
     writeRaw(path, EARLY_V2_ISSUES);
     const db = resetDbForTests(path);
     expect(tableColumns(db, "issues").map((c) => c.name)).toContain("repo_slug");
+    expect(tableColumns(db, "issues").map((c) => c.name)).toContain("demo");
     expect(userVersion(db)).toBe(SCHEMA_VERSION);
     expect(missingColumns(db)).toEqual([]);
     upsertIssue({

@@ -1,15 +1,16 @@
 import type { Issue } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
 
-export function upsertIssue(issue: Issue): void {
+export function upsertIssue(issue: Omit<Issue, "demo"> & { demo?: boolean }): void {
   getDb()
     .prepare(
-      `INSERT INTO issues (id, source, key, title, body, url, repo_slug, updated_at, saved)
-       VALUES (?,?,?,?,?,?,?,?,?)
+      `INSERT INTO issues (id, source, key, title, body, url, repo_slug, updated_at, saved, demo)
+       VALUES (?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET
          title=excluded.title, body=excluded.body, url=excluded.url,
          repo_slug=COALESCE(excluded.repo_slug, issues.repo_slug),
-         updated_at=excluded.updated_at, saved=excluded.saved`,
+         updated_at=excluded.updated_at, saved=excluded.saved,
+         demo=excluded.demo`,
     )
     .run(
       issue.id,
@@ -21,6 +22,7 @@ export function upsertIssue(issue: Issue): void {
       issue.repoSlug ?? null,
       issue.updatedAt,
       issue.saved ? 1 : 0,
+      issue.demo ? 1 : 0,
     );
 }
 
@@ -52,6 +54,7 @@ type Row = {
   repo_slug: string | null;
   updated_at: string;
   saved: number;
+  demo?: number;
 };
 
 function fromRow(row: Row): Issue {
@@ -65,5 +68,6 @@ function fromRow(row: Row): Issue {
     repoSlug: row.repo_slug ?? undefined,
     updatedAt: row.updated_at,
     saved: row.saved === 1,
+    demo: row.demo === 1,
   };
 }

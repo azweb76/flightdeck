@@ -8,6 +8,8 @@ import { patchSettings } from "../settings/index.ts";
 import { resetDemoGithubMode } from "../github/index.ts";
 import { seedIssues } from "./seed-issues.ts";
 
+export { purgeLiveDemoRows } from "./purge.ts";
+
 export function shouldSeed(): boolean {
   return process.env.FLIGHTDECK_DEMO === "1" && process.env.FLIGHTDECK_SEED !== "0";
 }
@@ -22,9 +24,9 @@ export function seedDemo(): void {
     jiraProjectKey: "PROJ",
     theme: "system",
   });
-  rememberRepo("acme", "web", "/tmp/flightdeck-demo/acme/web");
-  rememberRepo("acme", "api", "/tmp/flightdeck-demo/acme/api");
-  for (const issue of seedIssues()) upsertIssue(issue);
+  rememberRepo("acme", "web", "/tmp/flightdeck-demo/acme/web", true);
+  rememberRepo("acme", "api", "/tmp/flightdeck-demo/acme/api", true);
+  for (const issue of seedIssues()) upsertIssue({ ...issue, demo: true });
 }
 
 export async function resetDemo(opts: { seed: boolean }): Promise<void> {
@@ -33,7 +35,7 @@ export async function resetDemo(opts: { seed: boolean }): Promise<void> {
   resetPreflightStore();
   getCache().invalidate("*");
   getDb().exec(
-    "DELETE FROM issues; DELETE FROM repos; DELETE FROM shape_sessions; DELETE FROM settings; DELETE FROM change_events; DELETE FROM changes;",
+    "DELETE FROM issues; DELETE FROM repos; DELETE FROM repo_favorites; DELETE FROM repo_recent; DELETE FROM shape_sessions; DELETE FROM settings; DELETE FROM change_events; DELETE FROM changes;",
   );
   if (opts.seed) {
     process.env.FLIGHTDECK_SEED = "1";

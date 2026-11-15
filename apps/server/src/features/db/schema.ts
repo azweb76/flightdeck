@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -11,12 +11,25 @@ export const CREATE_SQL = `
     url TEXT NOT NULL DEFAULT '',
     repo_slug TEXT,
     updated_at TEXT NOT NULL,
-    saved INTEGER NOT NULL DEFAULT 0
+    saved INTEGER NOT NULL DEFAULT 0,
+    demo INTEGER NOT NULL DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS repos (
     owner TEXT NOT NULL,
     name TEXT NOT NULL,
     local_path TEXT NOT NULL DEFAULT '',
+    demo INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (owner, name)
+  );
+  CREATE TABLE IF NOT EXISTS repo_favorites (
+    owner TEXT NOT NULL,
+    name TEXT NOT NULL,
+    PRIMARY KEY (owner, name)
+  );
+  CREATE TABLE IF NOT EXISTS repo_recent (
+    owner TEXT NOT NULL,
+    name TEXT NOT NULL,
+    used_at TEXT NOT NULL,
     PRIMARY KEY (owner, name)
   );
   CREATE TABLE IF NOT EXISTS shape_sessions (
@@ -80,11 +93,22 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "repo_slug", addSql: "repo_slug TEXT" },
     { name: "updated_at", addSql: "updated_at TEXT NOT NULL DEFAULT ''" },
     { name: "saved", addSql: "saved INTEGER NOT NULL DEFAULT 0" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],
   repos: [
     { name: "owner", addSql: "owner TEXT NOT NULL DEFAULT ''" },
     { name: "name", addSql: "name TEXT NOT NULL DEFAULT ''" },
     { name: "local_path", addSql: "local_path TEXT NOT NULL DEFAULT ''" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
+  ],
+  repo_favorites: [
+    { name: "owner", addSql: "owner TEXT NOT NULL DEFAULT ''" },
+    { name: "name", addSql: "name TEXT NOT NULL DEFAULT ''" },
+  ],
+  repo_recent: [
+    { name: "owner", addSql: "owner TEXT NOT NULL DEFAULT ''" },
+    { name: "name", addSql: "name TEXT NOT NULL DEFAULT ''" },
+    { name: "used_at", addSql: "used_at TEXT NOT NULL DEFAULT ''" },
   ],
   shape_sessions: [
     { name: "id", addSql: "id TEXT" },
