@@ -1,6 +1,7 @@
 import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import type { OwnPr } from "@flightdeck/shared";
 import { useNavigate } from "react-router-dom";
+import { ciColor, ciLabel, reviewLabel } from "./prChips.ts";
 
 export function PrRow(props: { pr: OwnPr }) {
   const { pr } = props;
@@ -33,25 +34,4 @@ export function PrRow(props: { pr: OwnPr }) {
       </Stack>
     </Paper>
   );
-}
-
-function ciLabel(ci: OwnPr["ci"]): string {
-  if (ci === "passing") return "CI passing";
-  if (ci === "failing") return "CI failing";
-  if (ci === "pending") return "CI pending";
-  return "CI unknown";
-}
-
-function ciColor(ci: OwnPr["ci"]): "success" | "error" | "warning" | "default" {
-  if (ci === "passing") return "success";
-  if (ci === "failing") return "error";
-  if (ci === "pending") return "warning";
-  return "default";
-}
-
-function reviewLabel(review: OwnPr["review"]): string {
-  if (review === "approved") return "Approved";
-  if (review === "changes_requested") return "Changes requested";
-  if (review === "commented") return "Commented";
-  return "No review";
 }

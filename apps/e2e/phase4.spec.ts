@@ -18,6 +18,8 @@ test("My PRs lists mixed states, filters, and opens GitHub detail", async ({ pag
   await expect(page.getByTestId("pr-draft-82")).toHaveText("Draft");
   await page.getByTestId("pr-row").click();
   await expect(page.getByTestId("pr-detail")).toBeVisible();
+  await expect(page.getByTestId("pr-detail-ci")).toHaveText("CI failing");
+  await expect(page.getByTestId("pr-detail-draft")).toHaveText("Draft");
   await expect(page.getByTestId("pr-github-link")).toHaveAttribute("href", /github\.com/);
 });
 

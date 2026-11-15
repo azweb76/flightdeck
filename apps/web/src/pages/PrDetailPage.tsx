@@ -3,6 +3,7 @@ import type { OwnPr } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.ts";
+import { ciColor, ciLabel, reviewLabel } from "./prChips.ts";
 
 export function PrDetailPage() {
   const { owner, name, number } = useParams();
@@ -31,8 +32,8 @@ export function PrDetailPage() {
             {pr.repoSlug}#{pr.number}
           </Typography>
           <Stack direction="row" gap={0.75} flexWrap="wrap">
-            <Chip size="small" label={pr.ci} data-testid="pr-detail-ci" />
-            <Chip size="small" label={pr.review.replace("_", " ")} data-testid="pr-detail-review" />
+            <Chip size="small" label={ciLabel(pr.ci)} color={ciColor(pr.ci)} data-testid="pr-detail-ci" />
+            <Chip size="small" label={reviewLabel(pr.review)} variant="outlined" data-testid="pr-detail-review" />
             <Chip size="small" label={pr.draft ? "Draft" : "Ready"} data-testid="pr-detail-draft" />
             {pr.needsYou ? <Chip size="small" color="warning" label="Needs you" /> : null}
           </Stack>

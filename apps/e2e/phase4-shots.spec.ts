@@ -28,6 +28,11 @@ test("phase 4 screenshots at 1280", async ({ page }) => {
   await expect(page.getByTestId("pr-list")).toBeVisible();
   await pair(page, "my-prs-mixed");
 
+  await page.getByTestId("pr-row").first().click();
+  await expect(page.getByTestId("pr-detail")).toBeVisible();
+  await pair(page, "pr-detail");
+  await page.getByRole("button", { name: "All my PRs" }).click();
+
   await page.getByRole("tab", { name: "Runs" }).click();
   await expect(page.getByTestId("run-status-acme/web#45")).toHaveText("Review");
   await page.getByTestId("run-status-acme/web#44").click();
