@@ -1,7 +1,6 @@
 import Refresh from "@mui/icons-material/Refresh";
 import { IconButton, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import { useMemo, useState, type KeyboardEvent } from "react";
-import { FormField } from "../../ui/FormField.tsx";
 import { filterCatalog, nextActive } from "./filter.ts";
 import { RepoList } from "./RepoList.tsx";
 import { useRepoCatalog } from "./useRepoCatalog.ts";
@@ -65,15 +64,18 @@ function SearchBar(props: {
   onRefresh: () => void;
 }) {
   return (
-    <Stack direction="row" gap={1} alignItems="flex-end">
-      <FormField label="Search repositories">
-        <TextField
-          value={props.query}
-          onChange={(e) => props.onQuery(e.target.value)}
-          placeholder="Find a repository"
-          inputProps={{ "data-testid": "repo-search", role: "combobox", "aria-expanded": true }}
-        />
-      </FormField>
+    <Stack direction="row" gap={1} alignItems="center">
+      <TextField
+        value={props.query}
+        onChange={(e) => props.onQuery(e.target.value)}
+        placeholder="Find a repository"
+        inputProps={{
+          "data-testid": "repo-search",
+          role: "combobox",
+          "aria-expanded": true,
+          "aria-label": "Find a repository",
+        }}
+      />
       <Tooltip title="Refresh repositories">
         <span>
           <IconButton
@@ -81,7 +83,6 @@ function SearchBar(props: {
             disabled={props.refreshing}
             aria-label="Refresh repositories"
             data-testid="repo-refresh"
-            sx={{ mb: 2.5 }}
           >
             <Refresh />
           </IconButton>
