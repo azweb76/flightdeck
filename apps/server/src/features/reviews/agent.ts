@@ -12,7 +12,7 @@ import { resolveGithubToken } from "../github/token.ts";
 import { parseReviewDraft } from "./parse.ts";
 import { placeComments, summaryNotes } from "./diff.ts";
 import { DEFAULT_REVIEW_PROMPT, detectReviewSkill } from "./skill.ts";
-import { addMessage, replaceComments, saveReview } from "./store.ts";
+import { addMessage, addReviewCost, replaceComments, saveReview } from "./store.ts";
 import { emitReview, mustReview } from "./emit.ts";
 import { splitSlug } from "./slug.ts";
 
@@ -50,7 +50,7 @@ export async function runLiveReview(review: PrReview): Promise<void> {
 
 export function fillDemoDraft(review: PrReview): void {
   if (review.number === 91) review.skillPath = ".cursor/skills/review/SKILL.md";
-  review.costUsd += 0.4;
+  addReviewCost(review, 0.4);
   void applyDraft(
     review,
     `Looks solid overall on ${review.repoSlug}#${review.number}. One inline note.\n\`\`\`json\n[{"path":"src/api.ts","line":18,"body":"Guard this branch when the list is empty."}]\n\`\`\``,
@@ -83,8 +83,7 @@ async function applyDraft(review: PrReview, text: string): Promise<void> {
 
 function applyCost(review: PrReview, add: number, ac: AbortController): void {
   const hit = evaluateSpend(review.costUsd, add);
-  review.costUsd += add;
-  saveReview(review);
+  addReviewCost(review, add);
   if (hit === "ok") return;
   ac.abort();
   review.status = "cap_hit";

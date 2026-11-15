@@ -195,27 +195,18 @@ export function addEvent(change: Change, ev: Omit<ChangeEvent, "id" | "at"> & { 
 }
 
 export function dailySpendUsd(day = localDayKey()): number {
-  const rows = getDb().prepare(`SELECT at, cost_usd FROM change_events WHERE cost_usd IS NOT NULL`).all() as {
-    at: string;
-    cost_usd: number;
-  }[];
-  const fromEvents = rows.reduce((sum, row) => {
+  const rows = getDb()
+    .prepare(
+      `SELECT at, cost_usd FROM change_events WHERE cost_usd IS NOT NULL
+       UNION ALL
+       SELECT at, cost_usd FROM pr_review_events WHERE cost_usd IS NOT NULL`,
+    )
+    .all() as { at: string; cost_usd: number }[];
+  return rows.reduce((sum, row) => {
     const at = new Date(row.at);
     if (Number.isNaN(at.getTime()) || localDayKey(at) !== day) return sum;
     return sum + row.cost_usd;
   }, 0);
-  const reviews = getDb().prepare(`SELECT updated_at AS at, cost_usd FROM pr_reviews WHERE cost_usd > 0`).all() as {
-    at: string;
-    cost_usd: number;
-  }[];
-  return (
-    fromEvents +
-    reviews.reduce((sum, row) => {
-      const at = new Date(row.at);
-      if (Number.isNaN(at.getTime()) || localDayKey(at) !== day) return sum;
-      return sum + row.cost_usd;
-    }, 0)
-  );
 }
 
 export function countActive(): number {

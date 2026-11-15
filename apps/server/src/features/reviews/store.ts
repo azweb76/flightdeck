@@ -169,6 +169,16 @@ export function saveComment(reviewId: string, comment: ReviewComment): void {
     .run(comment.body, comment.state, comment.placement ?? "inline", comment.id, reviewId);
 }
 
+export function addReviewCost(review: PrReview, add: number, at = new Date().toISOString()): void {
+  if (add <= 0) return;
+  review.costUsd += add;
+  saveReview(review);
+  const demo = (getDb().prepare("SELECT demo FROM pr_reviews WHERE id = ?").get(review.id) as { demo: number } | undefined)?.demo ?? 0;
+  getDb()
+    .prepare(`INSERT INTO pr_review_events (id, review_id, at, kind, title, detail, cost_usd, demo) VALUES (?,?,?,?,?,?,?,?)`)
+    .run(randomUUID(), review.id, at, "usage", "usage", null, add, demo || review.demo ? 1 : 0);
+}
+
 export function addMessage(reviewId: string, msg: Omit<ChatMessage, "id">): ChatMessage {
   const demo = (getDb().prepare("SELECT demo FROM pr_reviews WHERE id = ?").get(reviewId) as { demo: number } | undefined)?.demo ?? 0;
   const full: ChatMessage = { ...msg, id: randomUUID() };
