@@ -1,4 +1,4 @@
-import { Alert, Box, Container, Link, Stack, Typography } from "@mui/material";
+import { Alert, Box, Link, Stack, Typography } from "@mui/material";
 import type { AppEvent, PrReview, ReviewVerdict } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -24,7 +24,7 @@ export function ReviewPage() {
   const review = state.review;
   const approved = review.comments.filter((c) => c.state === "approved").length;
   return (
-    <Container maxWidth="lg" sx={{ py: 5, px: { xs: 3, md: 4 } }} data-testid="review-page">
+    <Box data-testid="review-page">
       <Stack spacing={3}>
         <ReviewHeader
           review={review}
@@ -88,7 +88,7 @@ export function ReviewPage() {
         onClose={() => state.setPostOpen(false)}
         onPost={() => void state.post()}
       />
-    </Container>
+    </Box>
   );
 }
 
