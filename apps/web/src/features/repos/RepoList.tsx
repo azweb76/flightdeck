@@ -60,7 +60,7 @@ function AllRepos(props: {
       <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
         All
       </Typography>
-      <Stack spacing={0.5} sx={{ maxHeight: 240, overflow: "auto" }} data-testid="repo-all">
+      <Stack spacing={0.5} data-testid="repo-all">
         {props.repos.map((repo) => {
           const slug = `${repo.owner}/${repo.name}`;
           return (

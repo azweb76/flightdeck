@@ -8,22 +8,6 @@ const inputFocus = {
   "&:has(.MuiInputBase-input:focus-visible)": { outline: "3px solid #2997ff", outlineOffset: 2 },
 };
 
-const containedOff = {
-  "--variant-containedBg": "#d2d2d7",
-  "--variant-containedColor": "#6e6e73",
-  background: "#d2d2d7",
-  backgroundColor: "#d2d2d7",
-  color: "#6e6e73",
-  boxShadow: "none",
-};
-const containedOffDark = {
-  "--variant-containedBg": "#3a3a3c",
-  "--variant-containedColor": "#a1a1a6",
-  background: "#3a3a3c",
-  backgroundColor: "#3a3a3c",
-  color: "#a1a1a6",
-  boxShadow: "none",
-};
 const outlinedOff = {
   border: "1px solid rgba(29,29,31,0.5)",
   color: "rgba(29,29,31,0.78)",
@@ -86,11 +70,6 @@ export const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: { minHeight: "100vh" },
-        ".MuiButton-contained.Mui-disabled": containedOff,
-        ".MuiButton-root.MuiButton-contained.Mui-disabled": containedOff,
-        ".MuiDialog-root .MuiButton-contained.Mui-disabled": containedOff,
-        ".dark .MuiButton-contained.Mui-disabled": containedOffDark,
-        ".dark .MuiDialog-root .MuiButton-contained.Mui-disabled": containedOffDark,
       },
     },
     MuiPaper: { styleOverrides: { root: { backgroundImage: "none" } } },
@@ -105,14 +84,25 @@ export const theme = createTheme({
           padding: 8,
           minWidth: 380,
           maxHeight: "calc(100% - 64px)",
+          display: "flex",
+          flexDirection: "column",
           overflow: "hidden",
         },
       },
     },
     MuiDialogTitle: { styleOverrides: { root: { paddingBottom: 12, flexShrink: 0 } } },
-    MuiDialogContent: { styleOverrides: { root: { paddingTop: "16px !important", overflowY: "auto" } } },
+    MuiDialogContent: {
+      styleOverrides: { root: { paddingTop: "16px !important", flex: 1, minHeight: 0, overflowY: "auto" } },
+    },
     MuiDialogActions: {
-      styleOverrides: { root: { flexShrink: 0, position: "relative", zIndex: 1, bgcolor: "background.paper" } },
+      styleOverrides: {
+        root: {
+          flexShrink: 0,
+          position: "relative",
+          zIndex: 1,
+          backgroundColor: "var(--mui-palette-background-paper)",
+        },
+      },
     },
     MuiAppBar: { defaultProps: { position: "static" } },
     MuiButton: {
@@ -126,8 +116,20 @@ export const theme = createTheme({
           "&.Mui-disabled": { opacity: 1 },
         },
         contained: ({ theme: t }) => ({
-          "&.Mui-disabled": containedOff,
-          ...t.applyStyles("dark", { "&.Mui-disabled": containedOffDark }),
+          "&.Mui-disabled": {
+            transition: "none",
+            "--variant-containedBg": t.vars.palette.action.disabledBackground,
+            "--variant-containedColor": t.vars.palette.action.disabled,
+            backgroundColor: t.vars.palette.action.disabledBackground,
+            color: t.vars.palette.action.disabled,
+            boxShadow: "none",
+            ...t.applyStyles("dark", {
+              "--variant-containedBg": t.vars.palette.action.disabledBackground,
+              "--variant-containedColor": t.vars.palette.action.disabled,
+              backgroundColor: t.vars.palette.action.disabledBackground,
+              color: t.vars.palette.action.disabled,
+            }),
+          },
         }),
         outlined: {
           "&.Mui-disabled": outlinedOff,

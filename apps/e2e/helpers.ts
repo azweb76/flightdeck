@@ -25,15 +25,6 @@ export async function scheme(page: Page, mode: "light" | "dark"): Promise<void> 
     root.style.colorScheme = next;
   }, mode);
   await expect(page.locator("html.dark")).toHaveCount(mode === "dark" ? 1 : 0);
-  const loc = page.locator("button.MuiButton-contained.Mui-disabled");
-  const n = await loc.count();
-  if (n === 0) return;
-  const expected = mode === "dark" ? "rgb(58, 58, 60)" : "rgb(210, 210, 215)";
-  for (let i = 0; i < n; i += 1) {
-    await expect
-      .poll(async () => loc.nth(i).evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: 5_000 })
-      .toBe(expected);
-  }
 }
 
 export async function seedHome(page: Page): Promise<void> {
@@ -78,6 +69,39 @@ export async function expectAllDisabledContainedGrey(page: Page): Promise<void> 
     const bg = await loc.nth(i).evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(bg).toBe(expected);
   }
+}
+
+export async function mockRepoCatalog(page: Page, count: number): Promise<void> {
+  const repos = Array.from({ length: count }, (_, i) => ({
+    owner: "acme",
+    name: `repo-${String(i + 1).padStart(2, "0")}`,
+    localPath: "",
+  }));
+  await page.route(/\/api\/repos(\?|$)/, async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ repos, favorites: [], recent: [] }),
+    });
+  });
+}
+
+export async function expectDialogListAboveActions(page: Page): Promise<void> {
+  const cancel = page.getByRole("button", { name: "Cancel" });
+  const save = page.getByTestId("confirm-save");
+  await expect(cancel).toBeInViewport();
+  await expect(save).toBeInViewport();
+  const ok = await page.evaluate(() => {
+    const content = document.querySelector(".MuiDialogContent-root");
+    const actions = document.querySelector(".MuiDialogActions-root");
+    if (!content || !actions) return false;
+    return content.getBoundingClientRect().bottom <= actions.getBoundingClientRect().top + 1;
+  });
+  expect(ok).toBeTruthy();
 }
 
 export function watchRepoCatalogGets(page: Page): { count: () => number } {

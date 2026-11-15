@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 import {
   expectAllDisabledContainedGrey,
+  expectDialogListAboveActions,
   expectDisabledNotPrimary,
+  mockRepoCatalog,
+  pickRepo,
   scheme,
   seedHome,
   setPreflight,
@@ -139,4 +142,20 @@ test("token save invalidates the repo catalog for the next open", async ({ page 
   await expect(page.getByTestId("repo-picker")).toBeVisible();
   await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
   expect(gets.count()).toBeGreaterThan(before);
+});
+
+test("save dialog with 40 repos keeps actions below the list", async ({ page }) => {
+  await mockRepoCatalog(page, 40);
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await pickRepo(page, "acme/repo-01");
+  await page.getByTestId("idea-input").fill("Export invoices as CSV");
+  await page.getByTestId("start-idea").click();
+  await expect(page.getByTestId("chat-pane")).toBeVisible();
+  await page.getByTestId("save-issue").click();
+  await page.getByTestId("tracker-jira").click();
+  await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
+  await expect(page.getByTestId("repo-all")).toBeVisible();
+  await page.setViewportSize({ width: 1024, height: 720 });
+  await expectDialogListAboveActions(page);
 });
