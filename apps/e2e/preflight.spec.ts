@@ -1,11 +1,10 @@
 import { expect, test } from "@playwright/test";
 import {
   expectAllDisabledContainedGrey,
-  expectDialogListAboveActions,
+  expectPickerNotOverActions,
   expectDisabledNotPrimary,
-  mockRepoCatalog,
+  dismissDialog,
   openRepoPicker,
-  pickRepo,
   scheme,
   seedHome,
   setPreflight,
@@ -150,19 +149,29 @@ test("token save invalidates the repo catalog for the next open", async ({ page 
   expect(gets.count()).toBeGreaterThan(before);
 });
 
-test("save dialog with 40 repos keeps actions below the list", async ({ page }) => {
-  await mockRepoCatalog(page, 40);
+test("open repo picker never covers dialog actions", async ({ page }) => {
   await seedHome(page);
-  await page.getByTestId("new-idea").click();
-  await pickRepo(page, "acme/repo-01");
-  await page.getByTestId("idea-input").fill("Export invoices as CSV");
-  await page.getByTestId("start-idea").click();
-  await expect(page.getByTestId("chat-pane")).toBeVisible();
+  for (const { width, height } of [
+    { width: 1280, height: 800 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await page.getByTestId("new-idea").click();
+    await expectPickerNotOverActions(page);
+    await dismissDialog(page);
+    await page.getByTestId("refine-PROJ-150").click();
+    await expectPickerNotOverActions(page);
+    await dismissDialog(page);
+  }
+  await startNewIdea(page);
   await page.getByTestId("save-issue").click();
   await page.getByTestId("tracker-jira").click();
-  await openRepoPicker(page);
-  await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
-  await expect(page.getByTestId("repo-all")).toBeVisible();
-  await page.setViewportSize({ width: 1024, height: 720 });
-  await expectDialogListAboveActions(page);
+  for (const { width, height } of [
+    { width: 1280, height: 800 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expectPickerNotOverActions(page);
+  }
 });

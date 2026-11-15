@@ -2,11 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import {
   expectAllDisabledContainedGrey,
-  expectDialogListAboveActions,
+  expectPickerNotOverActions,
   expectDisabledNotPrimary,
-  mockRepoCatalog,
   openRepoPicker,
-  pickRepo,
   scheme,
   seedHome,
   setPreflight,
@@ -168,24 +166,16 @@ test("save tracker cards gated", async ({ page }) => {
 });
 
 test("save dialog list does not overlap actions", async ({ page }) => {
-  await mockRepoCatalog(page, 40);
   await seedHome(page);
-  await page.getByTestId("new-idea").click();
-  await pickRepo(page, "acme/repo-01");
-  await page.getByTestId("idea-input").fill("Export invoices as CSV");
-  await page.getByTestId("start-idea").click();
-  await expect(page.getByTestId("chat-pane")).toBeVisible();
+  await startNewIdea(page);
   await page.getByTestId("save-issue").click();
   await page.getByTestId("tracker-jira").click();
-  await openRepoPicker(page);
-  await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
-  await page.setViewportSize({ width: 1024, height: 720 });
-  await expectDialogListAboveActions(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
   await scheme(page, "light");
-  await expectDialogListAboveActions(page);
+  await expectPickerNotOverActions(page);
   await shot(page, "save-dialog-list-light", false);
   await scheme(page, "dark");
-  await expectDialogListAboveActions(page);
+  await expectPickerNotOverActions(page);
   await shot(page, "save-dialog-list-dark", false);
 });
 

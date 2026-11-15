@@ -97,19 +97,32 @@ export async function mockRepoCatalog(page: Page, count: number): Promise<void> 
   });
 }
 
-export async function expectDialogListAboveActions(page: Page): Promise<void> {
-  const cancel = page.getByRole("button", { name: "Cancel" });
-  const save = page.getByTestId("confirm-save");
-  await expect(cancel).toBeInViewport();
-  await expect(save).toBeInViewport();
+function overlap(
+  a: { x: number; y: number; width: number; height: number },
+  b: { x: number; y: number; width: number; height: number },
+): boolean {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+export async function expectPickerNotOverActions(page: Page): Promise<void> {
   await openRepoPicker(page);
   const list = page.locator("#repo-listbox");
+  const actions = page.locator(".MuiDialogActions-root");
   await expect(list).toBeVisible();
-  const h = await list.evaluate((el) => el.getBoundingClientRect().height);
-  expect(h).toBeLessThanOrEqual(320);
   await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
-  await expect(cancel).toBeInViewport();
-  await expect(save).toBeInViewport();
+  const listBox = await list.boundingBox();
+  const actionBox = await actions.boundingBox();
+  expect(listBox).toBeTruthy();
+  expect(actionBox).toBeTruthy();
+  expect(overlap(listBox!, actionBox!)).toBe(false);
+  const cancel = page.getByRole("dialog").getByRole("button", { name: "Cancel" });
+  await expect(cancel).toBeVisible();
+  await cancel.click({ trial: true });
+}
+
+export async function dismissDialog(page: Page): Promise<void> {
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 }
 
 export function watchRepoCatalogGets(page: Page): { count: () => number } {

@@ -1,6 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { answerFirstQuestion, openRepoPicker, pickRepo, scheme, seedHome, startNewIdea } from "./helpers.ts";
+import {
+  answerFirstQuestion,
+  dismissDialog,
+  expectPickerNotOverActions,
+  openRepoPicker,
+  pickRepo,
+  scheme,
+  seedHome,
+  startNewIdea,
+} from "./helpers.ts";
 
 const DIR = "/opt/cursor/artifacts/fields";
 
@@ -53,6 +62,43 @@ test("repo picker open with groups", async ({ page }) => {
   await scheme(page, "dark");
   await openRepoPicker(page);
   await pair(page, "picker-open-dark");
+});
+
+async function shot1280(page: Page, prefix: string): Promise<void> {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await shot(page, `${prefix}-1280`);
+}
+
+test("three dialogs keep a 40-repo menu inside content at 1280", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await expectPickerNotOverActions(page);
+  await scheme(page, "light");
+  await shot1280(page, "picker-new-idea-open-light");
+  await scheme(page, "dark");
+  await openRepoPicker(page);
+  await shot1280(page, "picker-new-idea-open-dark");
+  await dismissDialog(page);
+
+  await page.getByTestId("refine-PROJ-150").click();
+  await expectPickerNotOverActions(page);
+  await scheme(page, "light");
+  await shot1280(page, "picker-link-open-light");
+  await scheme(page, "dark");
+  await openRepoPicker(page);
+  await shot1280(page, "picker-link-open-dark");
+  await dismissDialog(page);
+
+  await startNewIdea(page);
+  await page.getByTestId("save-issue").click();
+  await page.getByTestId("tracker-jira").click();
+  await expectPickerNotOverActions(page);
+  await scheme(page, "light");
+  await shot1280(page, "picker-save-open-light");
+  await scheme(page, "dark");
+  await openRepoPicker(page);
+  await shot1280(page, "picker-save-open-dark");
 });
 
 test("chat and markdown draft look unchanged", async ({ page }) => {

@@ -92,6 +92,17 @@ test("save to Jira", async ({ page }) => {
   await expect(page.getByTestId("saved-banner")).toContainText(/PROJ-200/);
 });
 
+test("repo picker clear empties the value and gates Refine", async ({ page }) => {
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await pickRepo(page);
+  await expect(page.getByTestId("repo-search")).toHaveValue("acme/web");
+  await page.getByRole("button", { name: "Clear" }).click();
+  await expect(page.getByTestId("repo-search")).toHaveValue("");
+  await page.getByTestId("idea-input").fill("Export invoices as CSV");
+  await expect(page.getByTestId("start-idea")).toBeDisabled();
+});
+
 test("repo picker combobox shows the selected slug when closed", async ({ page }) => {
   await seedHome(page);
   await page.getByTestId("new-idea").click();
@@ -106,7 +117,7 @@ test("repo picker keyboard selects a repo from New idea", async ({ page }) => {
   await page.getByTestId("new-idea").click();
   await expect(page.getByTestId("repo-picker")).toBeVisible();
   await page.getByTestId("repo-search").click();
-  await page.keyboard.press("ArrowDown");
+  await expect(page.getByTestId("repo-dropdown")).toBeVisible();
   await page.keyboard.press("Enter");
   await page.getByTestId("idea-input").fill("Export invoices as CSV");
   await page.getByTestId("start-idea").click();
