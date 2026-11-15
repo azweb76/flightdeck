@@ -6,7 +6,7 @@ import { closeDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "../demo/index.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { loadIssue } from "../issues/index.ts";
-import { archiveChange, getChange, resumeChange, startChange, waitForChange, replyChange } from "./index.ts";
+import { archiveChange, getChange, resumeChange, startChange, startRunQueue, waitForChange, replyChange } from "./index.ts";
 import { dropJobs } from "./jobs.ts";
 import { presentChange } from "./view.ts";
 import { addEvent, archiveAllForTests, insertChange, saveChange } from "./store.ts";
@@ -115,6 +115,27 @@ describe("run engine CI (demo)", () => {
     expect(presentChange(waiting).interrupted).toBe(false);
     await archiveChange(blocker.id);
     await pending;
+    const done = getChange(change.id)!;
+    expect(done.status).toBe("done");
+    expect(done.ciRound).toBe(2);
+    expect(
+      done.events.filter((e) => e.kind === "stage" && /^Attempt /.test(e.detail ?? "")).map((e) => e.detail),
+    ).toEqual(["Attempt 1 of 3", "Attempt 2 of 3"]);
+  });
+
+  it("startRunQueue claims a parked CI fix after restart", async () => {
+    const issue = loadIssue("github:acme/web#71");
+    const change = insertChange(issue!, "ci-fix", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.ciRound = 1;
+    change.ciPhase = "queued";
+    change.prNumber = 42;
+    saveChange(change);
+    addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 1 of 3" });
+    dropJobs();
+    expect(presentChange(getChange(change.id)!).interrupted).toBe(false);
+    await startRunQueue();
+    await waitForChange(change.id);
     const done = getChange(change.id)!;
     expect(done.status).toBe("done");
     expect(done.ciRound).toBe(2);
