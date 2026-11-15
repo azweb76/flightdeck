@@ -1,5 +1,6 @@
 import { Box, Paper, Typography } from "@mui/material";
 import { DRAFT_SECTION_LABELS, DRAFT_SECTIONS, type ShapeSession } from "@flightdeck/shared";
+import { Markdown } from "../features/markdown/index.ts";
 
 export function DraftPane(props: { session: ShapeSession }) {
   const draft = props.session.draft;
@@ -31,13 +32,7 @@ export function DraftPane(props: { session: ShapeSession }) {
           <Typography variant="subtitle1" sx={{ fontWeight: 650, mb: 0.75 }}>
             {DRAFT_SECTION_LABELS[key]}
           </Typography>
-          {draft[key] ? (
-            <Typography sx={{ whiteSpace: "pre-wrap", color: "text.primary" }}>{draft[key]}</Typography>
-          ) : (
-            <Typography color="text.secondary" fontStyle="italic">
-              Claude will fill this in as you chat.
-            </Typography>
-          )}
+          <Markdown text={draft[key]} empty="Claude will fill this in as you chat." />
         </Box>
       ))}
     </Paper>
