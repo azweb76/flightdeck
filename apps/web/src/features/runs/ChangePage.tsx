@@ -1,13 +1,13 @@
 import { Alert, Box, Container, Link, Stack, Typography } from "@mui/material";
-import { ContrastAlert } from "../ui/ContrastAlert.tsx";
+import { ContrastAlert } from "../../ui/ContrastAlert.tsx";
 import type { AppEvent, Change } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../api.ts";
-import { useAppEvents } from "../useAppEvents.ts";
+import { api } from "../../api.ts";
+import { useAppEvents } from "../../useAppEvents.ts";
 import { ChangeHeader } from "./ChangeHeader.tsx";
 import { StageTimeline } from "./StageTimeline.tsx";
-import { Chat, fromEvents } from "../features/chat/index.ts";
+import { Chat, fromEvents } from "../chat/index.ts";
 
 export function ChangePage() {
   const { id } = useParams();

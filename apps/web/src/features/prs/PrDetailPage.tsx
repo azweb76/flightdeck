@@ -2,7 +2,7 @@ import { Alert, Button, Chip, Link, Stack, Typography } from "@mui/material";
 import type { OwnPr } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../api.ts";
+import { api } from "../../api.ts";
 import { ciColor, ciLabel, reviewLabel } from "./prChips.ts";
 
 export function PrDetailPage() {

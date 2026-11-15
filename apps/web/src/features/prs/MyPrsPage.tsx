@@ -1,7 +1,7 @@
 import { Alert, Box, Paper, Stack, Tab, Tabs, Typography } from "@mui/material";
 import type { OwnPr, PrFilter } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "../api.ts";
+import { api } from "../../api.ts";
 import { PrRow } from "./PrRow.tsx";
 
 const FILTERS: { id: PrFilter; label: string }[] = [

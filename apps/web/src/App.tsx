@@ -1,14 +1,11 @@
 import { Route, Routes } from "react-router-dom";
 import { AppShell } from "./layout/AppShell.tsx";
-import { ChangePage } from "./pages/ChangePage.tsx";
-import { IssuesPage } from "./pages/IssuesPage.tsx";
-import { MyPrsPage } from "./pages/MyPrsPage.tsx";
-import { ReviewsPage } from "./pages/ReviewsPage.tsx";
-import { ReviewPage } from "./pages/ReviewPage.tsx";
-import { PrDetailPage } from "./pages/PrDetailPage.tsx";
-import { RunsPage } from "./pages/RunsPage.tsx";
-import { SettingsPage } from "./pages/SettingsPage.tsx";
-import { ShapePage } from "./pages/ShapePage.tsx";
+import { IssuesPage } from "./features/issues/index.ts";
+import { MyPrsPage, PrDetailPage } from "./features/prs/index.ts";
+import { ShapePage } from "./features/refine/index.ts";
+import { ReviewPage, ReviewsPage } from "./features/reviews/index.ts";
+import { ChangePage, RunsPage } from "./features/runs/index.ts";
+import { SettingsPage } from "./features/settings/index.ts";
 import { PreflightProvider } from "./preflight/index.ts";
 
 export function App() {

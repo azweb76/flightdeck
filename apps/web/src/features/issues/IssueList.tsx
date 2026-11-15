@@ -1,6 +1,6 @@
 import { Box, Chip, Link, Paper, Stack, Typography } from "@mui/material";
 import type { Issue } from "@flightdeck/shared";
-import { GatedButton } from "../preflight/index.ts";
+import { GatedButton } from "../../preflight/index.ts";
 
 export function IssueList(props: {
   issues: Issue[];

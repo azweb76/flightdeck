@@ -1,7 +1,7 @@
 import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import type { PrReview, ReviewComment } from "@flightdeck/shared";
 import { useState } from "react";
-import { Markdown } from "../features/markdown/index.ts";
+import { Markdown } from "../markdown/index.ts";
 
 export function DraftComments(props: {
   review: PrReview;

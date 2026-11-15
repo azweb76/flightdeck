@@ -1,10 +1,10 @@
 import { Alert, Box, Button, Link, Paper, Stack, TextField, Typography } from "@mui/material";
 import { GITHUB_PAT_URL, githubTokenSourceLabel, type GithubTokenSource } from "@flightdeck/shared";
 import { useState } from "react";
-import { api } from "../api.ts";
-import { resetRepoCatalogCache } from "../features/repos/index.ts";
-import { ContainedButton } from "../ui/ContainedButton.tsx";
-import { FormField } from "../ui/FormField.tsx";
+import { api } from "../../api.ts";
+import { resetRepoCatalogCache } from "../repos/index.ts";
+import { ContainedButton } from "../../ui/ContainedButton.tsx";
+import { FormField } from "../../ui/FormField.tsx";
 
 export function GithubForm(props: {
   tokenSource?: GithubTokenSource;

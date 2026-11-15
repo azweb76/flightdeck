@@ -1,8 +1,8 @@
 import { Alert, Box, Button, Link, Paper, TextField, Typography } from "@mui/material";
 import { JIRA_API_TOKEN_URL, type SettingsView } from "@flightdeck/shared";
 import { useState } from "react";
-import { api } from "../api.ts";
-import { FormField } from "../ui/FormField.tsx";
+import { api } from "../../api.ts";
+import { FormField } from "../../ui/FormField.tsx";
 
 export function JiraForm(props: { settings: SettingsView; onDone: (next: SettingsView) => void }) {
   const [siteUrl, setSiteUrl] = useState(props.settings.jiraSiteUrl);

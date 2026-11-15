@@ -1,6 +1,6 @@
 import { Box, Paper, Typography } from "@mui/material";
 import { DRAFT_SECTION_LABELS, DRAFT_SECTIONS, type ShapeSession } from "@flightdeck/shared";
-import { Markdown } from "../features/markdown/index.ts";
+import { Markdown } from "../markdown/index.ts";
 
 export function DraftPane(props: { session: ShapeSession }) {
   const draft = props.session.draft;

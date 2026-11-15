@@ -2,7 +2,7 @@ import { Alert, Stack, Typography } from "@mui/material";
 import type { SettingsView } from "@flightdeck/shared";
 import { useColorScheme } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "../api.ts";
+import { api } from "../../api.ts";
 import { CapsForm } from "./CapsForm.tsx";
 import { ClaudeForm } from "./ClaudeForm.tsx";
 import { GithubForm } from "./GithubForm.tsx";

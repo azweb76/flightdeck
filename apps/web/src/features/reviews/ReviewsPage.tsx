@@ -1,7 +1,7 @@
 import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
 import type { PrReview } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "../api.ts";
+import { api } from "../../api.ts";
 import { ReviewRow } from "./ReviewRow.tsx";
 
 export function ReviewsPage() {

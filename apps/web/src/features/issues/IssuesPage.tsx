@@ -2,11 +2,11 @@ import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
 import type { Issue } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, type NavigateFunction } from "react-router-dom";
-import { api } from "../api.ts";
-import { GatedButton, PreflightBanner } from "../preflight/index.ts";
-import { useAppEvents } from "../useAppEvents.ts";
+import { api } from "../../api.ts";
+import { GatedButton, PreflightBanner } from "../../preflight/index.ts";
+import { useAppEvents } from "../../useAppEvents.ts";
 import { IssueList } from "./IssueList.tsx";
-import { RepoPickDialog } from "../features/repos/index.ts";
+import { RepoPickDialog } from "../repos/index.ts";
 import { StartIdeaDialog } from "./StartIdeaDialog.tsx";
 
 export function IssuesPage() {

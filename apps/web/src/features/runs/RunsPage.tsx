@@ -1,8 +1,8 @@
 import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
 import type { Change } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
-import { api } from "../api.ts";
-import { useAppEvents } from "../useAppEvents.ts";
+import { api } from "../../api.ts";
+import { useAppEvents } from "../../useAppEvents.ts";
 import { RunRow } from "./RunRow.tsx";
 
 export function RunsPage() {

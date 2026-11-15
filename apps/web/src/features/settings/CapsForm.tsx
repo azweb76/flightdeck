@@ -1,7 +1,7 @@
 import { Alert, Box, MenuItem, Paper, Select, Stack, TextField, Typography } from "@mui/material";
 import type { Settings } from "@flightdeck/shared";
 import { useState } from "react";
-import { FormField } from "../ui/FormField.tsx";
+import { FormField } from "../../ui/FormField.tsx";
 
 export function CapsForm(props: { settings: Settings; onSaved: (p: Partial<Settings>) => Promise<void> }) {
   const [run, setRun] = useState(String(props.settings.dollarCapUsd));

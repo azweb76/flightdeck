@@ -1,6 +1,6 @@
 import type { PrReviewStatus } from "@flightdeck/shared";
 import type { SxProps, Theme } from "@mui/material/styles";
-import { archivedChipSx, interruptedChipSx, queuedChipSx } from "./changeStatus.ts";
+import { archivedChipSx, interruptedChipSx, queuedChipSx } from "../runs/index.ts";
 
 export function reviewStatusLabel(status: PrReviewStatus, interrupted = false): string {
   if (interrupted) return "Interrupted";

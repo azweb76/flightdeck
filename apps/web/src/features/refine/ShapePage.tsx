@@ -2,10 +2,10 @@ import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import type { AppEvent, ShapeSession } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../api.ts";
-import { GatedButton } from "../preflight/index.ts";
-import { sessionFromEvent, useAppEvents } from "../useAppEvents.ts";
-import { Chat, fromMessages } from "../features/chat/index.ts";
+import { api } from "../../api.ts";
+import { GatedButton } from "../../preflight/index.ts";
+import { sessionFromEvent, useAppEvents } from "../../useAppEvents.ts";
+import { Chat, fromMessages } from "../chat/index.ts";
 import { DraftPane } from "./DraftPane.tsx";
 import { SaveIssueDialog } from "./SaveIssueDialog.tsx";
 

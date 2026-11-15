@@ -1,6 +1,6 @@
 import { Box, MenuItem, Paper, Select, Typography } from "@mui/material";
 import { CLAUDE_LOGIN_HINT, DEFAULT_MODEL, type Settings } from "@flightdeck/shared";
-import { FormField } from "../ui/FormField.tsx";
+import { FormField } from "../../ui/FormField.tsx";
 
 export function ClaudeForm(props: { settings: Settings; onSaved: (p: Partial<Settings>) => Promise<void> }) {
   return (

@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { ReviewVerdict } from "@flightdeck/shared";
-import { ContainedButton } from "../ui/ContainedButton.tsx";
+import { ContainedButton } from "../../ui/ContainedButton.tsx";
 
 export function PostReviewDialog(props: {
   open: boolean;
