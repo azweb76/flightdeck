@@ -24,6 +24,7 @@ export async function scheme(page: Page, mode: "light" | "dark"): Promise<void> 
     root.classList.toggle("light", next === "light");
     root.style.colorScheme = next;
   }, mode);
+  await expect(page.locator("html.dark")).toHaveCount(mode === "dark" ? 1 : 0);
 }
 
 export async function seedHome(page: Page): Promise<void> {
@@ -48,10 +49,7 @@ export async function startNewIdea(page: Page, idea = "Export invoices as CSV"):
 }
 
 export async function disabledContainedGrey(page: Page): Promise<string> {
-  const dark = await page.evaluate(() => {
-    const root = document.documentElement;
-    return root.classList.contains("dark") || root.style.colorScheme === "dark";
-  });
+  const dark = await page.evaluate(() => document.documentElement.classList.contains("dark"));
   return dark ? "rgb(58, 58, 60)" : "rgb(210, 210, 215)";
 }
 

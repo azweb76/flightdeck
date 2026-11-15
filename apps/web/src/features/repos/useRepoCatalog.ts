@@ -15,10 +15,11 @@ export function useRepoCatalog() {
     void ensureRepoCatalog().catch(() => undefined);
   }, []);
   const snap = repoCatalogSnapshot();
+  const needsLoad = shouldAutoLoadCatalog(snap);
   useEffect(() => {
-    if (!shouldAutoLoadCatalog(snap)) return;
+    if (!needsLoad) return;
     void ensureRepoCatalog().catch(() => undefined);
-  }, [snap.data, snap.loading, snap.inflight, snap.error]);
+  }, [needsLoad]);
   return {
     catalog: snap.data,
     loading: snap.loading && !snap.data,

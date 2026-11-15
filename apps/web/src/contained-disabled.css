@@ -1,6 +1,5 @@
-/* Unlayered so MUI 7 variant CSS variables do not keep primary fill. */
-.MuiButton-contained.Mui-disabled,
-.MuiDialog-root .MuiButton-contained.Mui-disabled {
+html:not(.dark) .MuiButton-contained.Mui-disabled,
+html:not(.dark) .MuiDialog-root .MuiButton-contained.Mui-disabled {
   --variant-containedBg: #d2d2d7 !important;
   --variant-containedColor: #6e6e73 !important;
   background: #d2d2d7 !important;
@@ -9,16 +8,17 @@
   box-shadow: none !important;
 }
 
-.dark .MuiButton-contained.Mui-disabled,
-.dark .MuiDialog-root .MuiButton-contained.Mui-disabled {
+html.dark .MuiButton-contained.Mui-disabled,
+html.dark .MuiDialog-root .MuiButton-contained.Mui-disabled {
   --variant-containedBg: #3a3a3c !important;
   --variant-containedColor: #a1a1a6 !important;
   background: #3a3a3c !important;
   background-color: #3a3a3c !important;
   color: #a1a1a6 !important;
+  box-shadow: none !important;
 }
 
-.dark .MuiButton-outlined.Mui-disabled {
+html.dark .MuiButton-outlined.Mui-disabled {
   --variant-outlinedColor: #f5f5f7 !important;
   --variant-outlinedBorder: #d2d2d7 !important;
   color: #f5f5f7 !important;
