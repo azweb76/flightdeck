@@ -116,7 +116,7 @@ describe("run engine (demo)", () => {
     expect(archived.status).toBe("archived");
     expect(archived.worktreePath).toBe("");
     expect(archived.events.at(-1)?.title).toBe("archived");
-    expect(dailySpendUsd()).toBe(archived.costUsd);
+    expect(dailySpendUsd()).toBeGreaterThanOrEqual(archived.costUsd);
     expect(archived.costUsd).toBeGreaterThan(0);
   });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canArchive, canReply, checkCaps, nextAfterReview, parseReviewVerdict, reviewLimit } from "./machine.ts";
+import { canArchive, canReply, checkCaps, nextAfterReview, occupiesSlot, parseReviewVerdict, reviewLimit } from "./machine.ts";
 import { demoScenarioFor, reviewFailNotes } from "./script.ts";
 
 describe("run state machine", () => {
@@ -18,8 +18,13 @@ describe("run state machine", () => {
     expect(canReply("implementing")).toBe(false);
     expect(canArchive("done")).toBe(true);
     expect(canArchive("cap_hit")).toBe(true);
+    expect(canArchive("queued")).toBe(true);
     expect(canArchive("archived")).toBe(false);
     expect(canArchive("implementing")).toBe(false);
+    expect(canArchive("implementing", true)).toBe(true);
+    expect(occupiesSlot("asking")).toBe(true);
+    expect(occupiesSlot("needs_dan")).toBe(true);
+    expect(occupiesSlot("queued")).toBe(false);
   });
 
   it("enforces per-run and daily caps", () => {
