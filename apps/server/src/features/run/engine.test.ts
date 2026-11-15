@@ -150,6 +150,25 @@ describe("run engine (demo)", () => {
     expect(done.events.some((e) => e.title === "ci fix")).toBe(true);
   });
 
+  it("stops a CI fix when the dollar cap is hit", async () => {
+    const { patchSettings } = await import("../settings/index.ts");
+    patchSettings({ dollarCapUsd: 0.2 });
+    const issue = loadIssue("github:acme/web#71");
+    const change = insertChange(issue!, "ci-fix", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.ciRound = 1;
+    change.ciPhase = "watching";
+    change.prNumber = 42;
+    saveChange(change);
+    addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 1 of 3" });
+    await resumeChange(change.id);
+    await waitForChange(change.id);
+    const hit = getChange(change.id)!;
+    expect(hit.status).toBe("cap_hit");
+    expect(hit.ciRound).toBe(1);
+    expect(hit.events.some((e) => e.title === "cap")).toBe(true);
+  });
+
   it("stops after 3 CI fixes and asks Dan, then one extra attempt", async () => {
     const started = await startChange("github:acme/web#70");
     await waitForChange(started.id);

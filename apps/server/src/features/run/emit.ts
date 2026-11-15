@@ -59,11 +59,13 @@ export function setStage(change: Change, status: ChangeStatus, stage: Change["st
   log(change, { kind: "stage", title, detail });
 }
 
+const TERMINAL: ChangeStatus[] = ["archived", "queued", "cap_hit", "error", "done"];
+
 function frozen(change: Change): boolean {
-  if (change.status === "archived" || change.status === "queued") return true;
+  if (TERMINAL.includes(change.status)) return true;
   const stored = getChange(change.id);
-  if (stored?.status === "archived") {
-    change.status = "archived";
+  if (stored && TERMINAL.includes(stored.status)) {
+    change.status = stored.status;
     return true;
   }
   return false;

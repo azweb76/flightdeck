@@ -24,6 +24,7 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
     if (change.ciPhase === "fixing") {
       if (!(await waitForFixSlot(change))) return;
       await fixDemoCi(change, epoch, answer);
+      if (ciHalted(change)) return;
       change.ciPhase = "";
       emitChange(change);
       answer = undefined;
@@ -50,6 +51,7 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
     emitChange(change);
     if (!(await waitForFixSlot(change))) return;
     await fixDemoCi(change, epoch, answer);
+    if (ciHalted(change)) return;
     change.ciPhase = "";
     emitChange(change);
     answer = undefined;
@@ -79,6 +81,7 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
       if (change.ciPhase === "fixing") {
         if (!(await waitForFixSlot(change))) return;
         await fixLiveCi(change, "Resuming the in-flight CI fix.", answer);
+        if (ciHalted(change)) return;
         change.ciPhase = "";
         emitChange(change);
         answer = undefined;
@@ -124,6 +127,7 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
       emitChange(change);
       if (!(await waitForFixSlot(change))) return;
       await fixLiveCi(change, result.summary, answer);
+      if (ciHalted(change)) return;
       change.ciPhase = "";
       emitChange(change);
       answer = undefined;
@@ -178,6 +182,10 @@ function askCi(change: Change): void {
   emitChange(change);
 }
 
+function ciHalted(change: Change): boolean {
+  return change.status === "cap_hit" || change.status === "asking" || change.status === "error" || change.status === "archived" || change.status === "done";
+}
+
 async function fixDemoCi(change: Change, epoch: number, answer?: string): Promise<void> {
   if (!isRunCurrent(epoch)) return;
   setStage(change, "fixing_ci", "ci", "CI", extraRoundLabel(change.ciRound));
@@ -186,6 +194,7 @@ async function fixDemoCi(change: Change, epoch: number, answer?: string): Promis
     title: "ci fix",
     detail: answer ? `Fixing CI using: ${answer}` : "Patching the failing check in this worktree.",
   });
+  applyAgentEvent(change, { kind: "usage", title: "usage", costUsd: 0.35 });
 }
 
 async function fixLiveCi(change: Change, summary: string, answer?: string): Promise<void> {
@@ -195,6 +204,7 @@ async function fixLiveCi(change: Change, summary: string, answer?: string): Prom
   const env = claudeSdkEnv(claude);
   const cwd = change.worktreePath;
   await collectFix(change, ciFixPrompt(change, summary, answer), cwd, settings.model, env);
+  if (ciHalted(change)) return;
   const gates = await runGates(cwd);
   log(change, { kind: "system", title: "gates", detail: gates.detail });
   if (!gates.ok) return;
