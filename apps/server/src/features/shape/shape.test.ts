@@ -4,17 +4,21 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import { upsertIssue } from "../issues/store.ts";
+import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { replyShape, saveShapedIssue, startShape } from "./index.ts";
 
 describe("shaping", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     const dir = mkdtempSync(join(tmpdir(), "fd-"));
     process.env.FLIGHTDECK_DATA_DIR = dir;
     process.env.FLIGHTDECK_DEMO = "1";
     resetDbForTests(join(dir, "app.sqlite"));
+    resetPreflightStore();
+    await runChecks();
   });
   afterEach(() => {
     closeDb();
+    resetPreflightStore();
     delete process.env.FLIGHTDECK_DATA_DIR;
     delete process.env.FLIGHTDECK_DEMO;
   });
@@ -62,5 +66,6 @@ describe("shaping", () => {
     expect(gh.saved).toBe(true);
     const jira = await saveShapedIssue(session.id, "jira", { projectKey: "PROJ" });
     expect(jira.source).toBe("jira");
+    expect(jira.repoSlug).toBe("acme/web");
   });
 });

@@ -39,9 +39,9 @@ const tooltipSlots: TooltipProps["slotProps"] = {
   popper: {
     sx: { zIndex: 1600 },
     modifiers: [
-      { name: "offset", options: { offset: [0, 8] } },
-      { name: "flip", options: { fallbackPlacements: ["top", "bottom", "right"] } },
-      { name: "preventOverflow", options: { padding: 12, altAxis: true } },
+      { name: "offset", options: { offset: [0, 12] } },
+      { name: "flip", options: { fallbackPlacements: ["bottom", "top", "right"] } },
+      { name: "preventOverflow", options: { padding: 16, altAxis: true, tether: false } },
     ],
   },
   transition: { timeout: 0 },

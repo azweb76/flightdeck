@@ -8,8 +8,20 @@ const inputFocus = {
   "&:has(.MuiInputBase-input:focus-visible)": { outline: "3px solid #2997ff", outlineOffset: 2 },
 };
 
-const containedOff = { backgroundColor: "#d2d2d7", color: "#6e6e73" };
-const containedOffDark = { backgroundColor: "#3a3a3c", color: "#a1a1a6" };
+const containedOff = {
+  backgroundColor: "var(--mui-palette-action-disabledBackground) !important",
+  color: "var(--mui-palette-action-disabled) !important",
+  boxShadow: "none",
+  "--variant-containedBg": "var(--mui-palette-action-disabledBackground)",
+  "--variant-containedColor": "var(--mui-palette-action-disabled)",
+};
+const containedOffDark = {
+  backgroundColor: "#3a3a3c !important",
+  color: "#a1a1a6 !important",
+  boxShadow: "none",
+  "--variant-containedBg": "#3a3a3c",
+  "--variant-containedColor": "#a1a1a6",
+};
 const outlinedOff = {
   border: "1px solid rgba(29,29,31,0.5)",
   color: "rgba(29,29,31,0.78)",
@@ -19,6 +31,17 @@ const outlinedOffDark = {
   border: "1px solid #8e8e93",
   color: "#f5f5f7",
   backgroundColor: "transparent",
+};
+
+const tooltipLight = {
+  backgroundColor: "#f5f5f7",
+  color: "#1d1d1f",
+  border: "1px solid rgba(0,0,0,0.2)",
+};
+const tooltipDark = {
+  backgroundColor: "#2c2c2e",
+  color: "#f5f5f7",
+  border: "1px solid rgba(255,255,255,0.24)",
 };
 
 export const theme = createTheme({
@@ -60,6 +83,9 @@ export const theme = createTheme({
   components: {
     MuiCssBaseline: { styleOverrides: { body: { minHeight: "100vh" } } },
     MuiPaper: { styleOverrides: { root: { backgroundImage: "none" } } },
+    MuiBackdrop: {
+      styleOverrides: { root: { backgroundColor: "rgba(0,0,0,0.5)" } },
+    },
     MuiDialog: {
       defaultProps: { transitionDuration: 0 },
       styleOverrides: {
@@ -78,18 +104,14 @@ export const theme = createTheme({
           paddingBlock: 8,
           ...focus,
           "&.Mui-disabled": { opacity: 1 },
-        },
-        contained: {
-          "&.Mui-disabled": containedOff,
-          "@media (prefers-color-scheme: dark)": { "&.Mui-disabled": containedOffDark },
-          ".dark &.Mui-disabled": containedOffDark,
-          '[data-mui-color-scheme="dark"] &.Mui-disabled': containedOffDark,
+          "&.MuiButton-contained.Mui-disabled": containedOff,
+          "@media (prefers-color-scheme: dark)": { "&.MuiButton-contained.Mui-disabled": containedOffDark },
+          ".dark &.MuiButton-contained.Mui-disabled": containedOffDark,
         },
         outlined: {
           "&.Mui-disabled": outlinedOff,
           "@media (prefers-color-scheme: dark)": { "&.Mui-disabled": outlinedOffDark },
           ".dark &.Mui-disabled": outlinedOffDark,
-          '[data-mui-color-scheme="dark"] &.Mui-disabled': outlinedOffDark,
         },
         text: {
           "&.Mui-disabled": { color: "rgba(29,29,31,0.62)" },
@@ -100,32 +122,24 @@ export const theme = createTheme({
     },
     MuiTooltip: {
       styleOverrides: {
-        tooltip: {
+        tooltip: ({ theme: t }) => ({
           padding: "12px 16px",
           maxWidth: 420,
           fontSize: "0.8rem",
           lineHeight: 1.45,
           whiteSpace: "pre-wrap",
-          bgcolor: "#f5f5f7",
-          color: "#1d1d1f",
-          border: "1px solid rgba(0,0,0,0.2)",
           boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
-          "@media (prefers-color-scheme: dark)": {
-            bgcolor: "#2c2c2e",
-            color: "#f5f5f7",
-            border: "1px solid rgba(255,255,255,0.24)",
-          },
-          "html.dark &": {
-            bgcolor: "#2c2c2e",
-            color: "#f5f5f7",
-            border: "1px solid rgba(255,255,255,0.24)",
-          },
-        },
-        arrow: {
-          color: "#f5f5f7",
-          "@media (prefers-color-scheme: dark)": { color: "#2c2c2e" },
-          "html.dark &": { color: "#2c2c2e" },
-        },
+          ...tooltipLight,
+          ...t.applyStyles("dark", tooltipDark),
+        }),
+        arrow: ({ theme: t }) => ({
+          color: tooltipLight.backgroundColor,
+          "&::before": { backgroundColor: tooltipLight.backgroundColor, border: tooltipLight.border },
+          ...t.applyStyles("dark", {
+            color: tooltipDark.backgroundColor,
+            "&::before": { backgroundColor: tooltipDark.backgroundColor, border: tooltipDark.border },
+          }),
+        }),
       },
     },
     MuiTab: { styleOverrides: { root: { ...focus } } },

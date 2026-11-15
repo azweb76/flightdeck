@@ -50,6 +50,17 @@ test("no-token picker empty state", async ({ page }) => {
   await shot(page, "picker-no-token-dark");
 });
 
+test("banner with only GitHub failing", async ({ page }) => {
+  await seedHome(page);
+  await setPreflight(page, "github");
+  await expect(page.getByTestId("preflight-stay-off")).toContainText("Start and GitHub save stay off");
+  await expect(page.getByTestId("preflight-stay-off")).not.toContainText("Refine");
+  await scheme(page, "light");
+  await shot(page, "banner-github-only-light");
+  await scheme(page, "dark");
+  await shot(page, "banner-github-only-dark");
+});
+
 test("banner failing", async ({ page }) => {
   await seedHome(page);
   await setPreflight(page, "fail");
@@ -62,6 +73,14 @@ test("banner failing", async ({ page }) => {
   await page.getByTestId("preflight-claude").scrollIntoViewIfNeeded();
   await expect(page.getByTestId("preflight-fix-claude")).toContainText("Then type /login");
   await shot(page, "claude-banner-light");
+});
+
+test("dark Refine page disabled Start", async ({ page }) => {
+  await seedHome(page);
+  await startNewIdea(page);
+  await scheme(page, "dark");
+  await expect(page.getByTestId("start-run")).toBeDisabled();
+  await shot(page, "refine-dark-start-disabled");
 });
 
 test("tooltips on New idea, Refine, and Start", async ({ page }) => {
@@ -104,6 +123,18 @@ test("settings pass and fail", async ({ page }) => {
   await pair(page, "settings-pass-light");
   await scheme(page, "dark");
   await pair(page, "settings-pass-dark");
+});
+
+test("refine Jira save shows the repo picker", async ({ page }) => {
+  await seedHome(page);
+  await startNewIdea(page);
+  await page.getByTestId("save-issue").click();
+  await page.getByTestId("tracker-jira").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await scheme(page, "light");
+  await shot(page, "save-jira-repo-picker-light");
+  await scheme(page, "dark");
+  await shot(page, "save-jira-repo-picker-dark");
 });
 
 test("save tracker cards gated", async ({ page }) => {

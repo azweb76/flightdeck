@@ -21,7 +21,7 @@ export async function saveShapedIssue(
     process.env.FLIGHTDECK_DEMO === "1"
       ? demoSave(session, tracker, body, opts)
       : tracker === "jira"
-        ? await saveJira(session, body, opts.projectKey)
+        ? await saveJira(session, body, opts)
         : await saveGithub(session, body, opts.repoSlug ?? session.repoSlug);
   upsertIssue(issue);
   session.issueId = issue.id;
@@ -40,6 +40,7 @@ function demoSave(
 ): Issue {
   const now = new Date().toISOString();
   if (tracker === "jira") {
+    const slug = jiraRepoSlug(session, opts.repoSlug);
     const key = session.issueId?.startsWith("jira:")
       ? session.issueId.slice(5)
       : `${opts.projectKey || "PROJ"}-200`;
@@ -50,6 +51,7 @@ function demoSave(
       title: session.draft.title,
       body,
       url: `${DEMO_JIRA_SITE}/browse/${key}`,
+      repoSlug: slug,
       updatedAt: now,
       saved: true,
       demo: true,
@@ -71,21 +73,21 @@ function demoSave(
   };
 }
 
-async function saveJira(session: ShapeSession, body: string, projectKey?: string): Promise<Issue> {
+async function saveJira(
+  session: ShapeSession,
+  body: string,
+  opts: { projectKey?: string; repoSlug?: string },
+): Promise<Issue> {
   const settings = getSettings();
   const token = await createSecretStore().get();
   if (!settings.jiraSiteUrl || !settings.jiraEmail || !token) throw new Error("Connect Jira in Settings first");
+  const slug = jiraRepoSlug(session, opts.repoSlug);
   const client = createJiraClient();
+  const creds = { siteUrl: settings.jiraSiteUrl, email: settings.jiraEmail, token };
   if (session.issueId?.startsWith("jira:")) {
     const key = session.issueId.slice(5);
-    await client.updateIssue({
-      siteUrl: settings.jiraSiteUrl,
-      email: settings.jiraEmail,
-      token,
-      key,
-      title: session.draft.title,
-      body,
-    });
+    await client.updateIssue({ ...creds, key, title: session.draft.title, body });
+    await client.setRepoLabel({ ...creds, key, repoSlug: slug });
     return {
       id: session.issueId,
       source: "jira",
@@ -93,20 +95,20 @@ async function saveJira(session: ShapeSession, body: string, projectKey?: string
       title: session.draft.title,
       body,
       url: `${settings.jiraSiteUrl.replace(/\/$/, "")}/browse/${key}`,
+      repoSlug: slug,
       updatedAt: new Date().toISOString(),
       saved: true,
     };
   }
-  const project = projectKey || settings.jiraProjectKey;
+  const project = opts.projectKey || settings.jiraProjectKey;
   if (!project) throw new Error("Pick a Jira project key");
   const created = await client.createIssue({
-    siteUrl: settings.jiraSiteUrl,
-    email: settings.jiraEmail,
-    token,
+    ...creds,
     projectKey: project,
     title: session.draft.title,
     body,
   });
+  await client.setRepoLabel({ ...creds, key: created.key, repoSlug: slug });
   return {
     id: `jira:${created.key}`,
     source: "jira",
@@ -114,9 +116,16 @@ async function saveJira(session: ShapeSession, body: string, projectKey?: string
     title: session.draft.title,
     body,
     url: created.url,
+    repoSlug: slug,
     updatedAt: new Date().toISOString(),
     saved: true,
   };
+}
+
+function jiraRepoSlug(session: ShapeSession, repoSlug?: string): string {
+  const slug = repoSlug?.trim() || session.repoSlug;
+  if (!slug.includes("/")) throw new Error("Pick a repo for this Jira issue");
+  return slug;
 }
 
 async function saveGithub(session: ShapeSession, body: string, repoSlug: string): Promise<Issue> {

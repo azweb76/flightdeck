@@ -101,6 +101,9 @@ test("idea, draft, save, and settings screenshots", async ({ page }) => {
   await expect(page.getByTestId("tracker-github")).toBeVisible();
   await expect(page.getByTestId("tracker-jira")).toBeVisible();
   await shot(page, "save-dialog-light");
+  await page.getByTestId("tracker-jira").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await shot(page, "save-jira-picker-light");
   await page.getByTestId("tracker-github").click();
   await shot(page, "save-github-light");
   await page.getByTestId("confirm-save").click();

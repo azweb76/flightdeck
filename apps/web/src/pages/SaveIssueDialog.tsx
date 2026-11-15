@@ -1,9 +1,10 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from "@mui/material";
-import type { Issue, PreflightCheck, ShapeSession } from "@flightdeck/shared";
+import type { CatalogView, Issue, PreflightCheck, ShapeSession } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
 import { TrackerChoice, usePreflight } from "../preflight/index.ts";
 import { FormField } from "../ui/FormField.tsx";
+import { RepoPicker } from "./RepoPicker.tsx";
 
 export function SaveIssueDialog(props: {
   open: boolean;
@@ -14,6 +15,7 @@ export function SaveIssueDialog(props: {
   const [tracker, setTracker] = useState<"jira" | "github" | "">("");
   const [projectKey, setProjectKey] = useState("PROJ");
   const [repoSlug, setRepoSlug] = useState(props.session.repoSlug);
+  const [catalog, setCatalog] = useState<CatalogView>();
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState("");
   const preflight = usePreflight();
@@ -25,12 +27,18 @@ export function SaveIssueDialog(props: {
     if (props.open) {
       setLocalError("");
       setTracker("");
+      setRepoSlug(props.session.repoSlug);
+      void api.repos().then(setCatalog);
     }
-  }, [props.open]);
+  }, [props.open, props.session.repoSlug]);
 
   async function save() {
     if (tracker !== "jira" && tracker !== "github") {
       setLocalError("Choose Jira or GitHub");
+      return;
+    }
+    if (tracker === "jira" && !repoSlug.includes("/")) {
+      setLocalError("Pick a repo for this Jira issue");
       return;
     }
     if (blocked) {
@@ -62,11 +70,13 @@ export function SaveIssueDialog(props: {
           tracker={tracker}
           projectKey={projectKey}
           repoSlug={repoSlug}
+          catalog={catalog}
           ghBlock={ghBlock}
           jiraBlock={jiraBlock}
           onTracker={setTracker}
           onProjectKey={setProjectKey}
           onRepoSlug={setRepoSlug}
+          onCatalog={setCatalog}
         />
         <TrackerGateHint blocked={blocked} />
       </DialogContent>
@@ -124,11 +134,13 @@ function TrackerFields(props: {
   tracker: "jira" | "github" | "";
   projectKey: string;
   repoSlug: string;
+  catalog?: CatalogView;
   ghBlock?: PreflightCheck;
   jiraBlock?: PreflightCheck;
   onTracker: (v: "jira" | "github") => void;
   onProjectKey: (v: string) => void;
   onRepoSlug: (v: string) => void;
+  onCatalog: (next: CatalogView) => void;
 }) {
   return (
     <>
@@ -151,9 +163,14 @@ function TrackerFields(props: {
         </Stack>
       </FormField>
       {props.tracker === "jira" && !props.jiraBlock ? (
-        <FormField label="Jira project key">
-          <TextField value={props.projectKey} onChange={(e) => props.onProjectKey(e.target.value)} inputProps={{ "data-testid": "jira-project" }} />
-        </FormField>
+        <>
+          <FormField label="Jira project key">
+            <TextField value={props.projectKey} onChange={(e) => props.onProjectKey(e.target.value)} inputProps={{ "data-testid": "jira-project" }} />
+          </FormField>
+          <FormField label="Repository" hint="Written as a repo:org/repo Jira label so Start can find the code.">
+            <RepoPicker catalog={props.catalog} value={props.repoSlug} onChange={props.onRepoSlug} onCatalog={props.onCatalog} />
+          </FormField>
+        </>
       ) : null}
       {props.tracker === "github" && !props.ghBlock ? (
         <FormField label="GitHub repo">
