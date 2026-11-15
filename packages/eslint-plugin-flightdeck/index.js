@@ -1,4 +1,5 @@
 import { noFloatingInputLabel } from "./no-floating-input-label.js";
+import { oneSharedSurface } from "./one-shared-surface.js";
 
 const APPS = ["server", "web"];
 
@@ -55,5 +56,6 @@ export default {
   rules: {
     "no-cross-package-imports": noCrossPackageImports,
     "no-floating-input-label": noFloatingInputLabel,
+    "one-shared-surface": oneSharedSurface,
   },
 };

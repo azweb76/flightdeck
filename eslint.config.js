@@ -22,6 +22,7 @@ export default tseslint.config(
     rules: {
       "flightdeck/no-cross-package-imports": "error",
       "flightdeck/no-floating-input-label": "error",
+      "flightdeck/one-shared-surface": "error",
       "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }],
       "max-lines-per-function": [
         "error",

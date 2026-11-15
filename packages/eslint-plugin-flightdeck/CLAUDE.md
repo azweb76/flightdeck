@@ -2,4 +2,5 @@
 
 - `flightdeck/no-cross-package-imports`: only `@flightdeck/shared` may be imported across packages.
 - `flightdeck/no-floating-input-label`: do not pass `label=` to MUI TextField/Select/Autocomplete; use FormField.
+- `flightdeck/one-shared-surface`: repo picker, chat, and markdown testids stay in their feature folders.
 - File/function size limits live in root `eslint.config.js` (300 / 80).

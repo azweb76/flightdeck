@@ -12,6 +12,7 @@ const octokitShots = process.env.OCTOKIT_SHOTS === "1";
 const octokitFixes = process.env.OCTOKIT_FIXES === "1";
 const phase2Shots = process.env.PHASE2_SHOTS === "1";
 const reviewShots = process.env.REVIEW_SHOTS === "1";
+const fieldsShots = process.env.FIELDS_SHOTS === "1";
 process.env.FLIGHTDECK_DATA_DIR = dataDir;
 process.env.FLIGHTDECK_DEMO = "1";
 process.env.FLIGHTDECK_PORT = apiPort;
@@ -41,7 +42,9 @@ export default defineConfig({
             ? ["phase2-shots.spec.ts"]
             : reviewShots
               ? ["review-shots.spec.ts"]
-              : ["phase1.spec.ts", "preflight.spec.ts", "phase2.spec.ts"],
+              : fieldsShots
+                ? ["fields-shots.spec.ts"]
+                : ["phase1.spec.ts", "preflight.spec.ts", "phase2.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,
