@@ -11,7 +11,7 @@ import { abortJob, attachAbort, currentRunEpoch, getJob, isRunCurrent, setJob } 
 import { pumpQueue, setReviewPump } from "../run/queue.ts";
 import { countActive } from "../run/store.ts";
 import { getSettings } from "../settings/index.ts";
-import { removeWorktree } from "../run/worktree.ts";
+import { nestedWorktree, removeWorktree } from "../run/worktree.ts";
 import { applyCost, fillDemoDraft, runLiveReview } from "./agent.ts";
 import { capMessage, evaluateSpend } from "../run/caps.ts";
 import { splitSlug } from "./slug.ts";
@@ -118,9 +118,10 @@ export async function chatReview(id: string, text: string): Promise<PrReview> {
     addMessage(id, { role: "assistant", text: `On ${review.repoSlug}#${review.number}: ${text.slice(0, 120)}` });
     return emitReview(mustReview(id));
   }
+  const ac = attachAbort(id);
   const settings = getSettings();
   const env = claudeSdkEnv(await detectClaudeConfig());
-  const ac = attachAbort(id);
+  if (ac.signal.aborted || getReview(id)?.status === "archived") return emitReview(mustReview(id));
   let reply = "";
   for await (const ev of getAgentDriver().run({
     prompt: `PR ${review.repoSlug}#${review.number}\n${review.summary}\n\nDan: ${text}`,
@@ -148,7 +149,7 @@ export async function archiveReview(id: string): Promise<PrReview> {
   abortJob(id);
   const [owner, name] = splitSlug(review.repoSlug);
   const root = process.env.FLIGHTDECK_DEMO === "1" ? demoRepoPath(owner, name) : repoPath(owner, name);
-  await removeWorktree(root, review.worktreePath);
+  await removeWorktree(root, review.worktreePath || nestedWorktree(root, `review-${id}`).path);
   review.worktreePath = "";
   saveReview(review);
   pumpQueue();
