@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { expectDisabledNotPrimary, seedHome, setPreflight, startNewIdea } from "./helpers.ts";
+import { expectAllDisabledContainedGrey, expectDisabledNotPrimary, scheme, seedHome, setPreflight, startNewIdea } from "./helpers.ts";
 
 const DIR = "/opt/cursor/artifacts/preflight-fixes";
 
@@ -10,16 +10,6 @@ test.beforeAll(() => {
 
 async function shot(page: Page, name: string, fullPage = true): Promise<void> {
   await page.screenshot({ path: `${DIR}/${name}.png`, fullPage });
-}
-
-async function scheme(page: Page, mode: "light" | "dark"): Promise<void> {
-  await page.emulateMedia({ colorScheme: mode });
-  await page.evaluate((next) => {
-    const root = document.documentElement;
-    root.classList.toggle("dark", next === "dark");
-    root.classList.toggle("light", next === "light");
-    root.style.colorScheme = next;
-  }, mode);
 }
 
 async function openTip(page: Page, testId: string, text: string): Promise<void> {
@@ -151,14 +141,48 @@ test("save tracker cards gated", async ({ page }) => {
   await expect(page.getByTestId("confirm-save")).toBeDisabled();
   await scheme(page, "light");
   await expectDisabledNotPrimary(page, "confirm-save");
+  await expectAllDisabledContainedGrey(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await shot(page, "save-gated-light-1440", false);
   await page.setViewportSize({ width: 1024, height: 900 });
   await shot(page, "save-gated-light-1024", false);
   await scheme(page, "dark");
   await expectDisabledNotPrimary(page, "confirm-save");
+  await expectAllDisabledContainedGrey(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await shot(page, "save-gated-dark-1440", false);
   await page.setViewportSize({ width: 1024, height: 900 });
   await shot(page, "save-gated-dark-1024", false);
+});
+
+test("save dialog list does not overlap actions", async ({ page }) => {
+  await seedHome(page);
+  await startNewIdea(page);
+  await page.getByTestId("save-issue").click();
+  await page.getByTestId("tracker-jira").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await expect(page.getByTestId("repo-all")).toBeVisible();
+  const list = page.getByTestId("repo-all");
+  const cancel = page.getByRole("button", { name: "Cancel" });
+  const save = page.getByTestId("confirm-save");
+  await expect(cancel).toBeVisible();
+  await expect(save).toBeVisible();
+  const listBox = await list.boundingBox();
+  const cancelBox = await cancel.boundingBox();
+  expect(listBox && cancelBox && listBox.y + listBox.height <= cancelBox.y + 1).toBeTruthy();
+  await scheme(page, "light");
+  await page.setViewportSize({ width: 1024, height: 720 });
+  await shot(page, "save-dialog-list-light", false);
+  await scheme(page, "dark");
+  await shot(page, "save-dialog-list-dark", false);
+});
+
+test("issue row disabled Refine contrast", async ({ page }) => {
+  await seedHome(page);
+  await setPreflight(page, "fail");
+  await expect(page.getByTestId("refine-PROJ-150")).toBeDisabled();
+  await scheme(page, "light");
+  await shot(page, "issue-row-refine-disabled-light", false);
+  await scheme(page, "dark");
+  await shot(page, "issue-row-refine-disabled-dark", false);
 });

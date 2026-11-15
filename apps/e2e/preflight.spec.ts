@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { expectDisabledNotPrimary, seedHome, setPreflight, startNewIdea, watchRepoCatalogGets } from "./helpers.ts";
+import {
+  expectAllDisabledContainedGrey,
+  expectDisabledNotPrimary,
+  scheme,
+  seedHome,
+  setPreflight,
+  startNewIdea,
+  watchRepoCatalogGets,
+} from "./helpers.ts";
 
 test("demo home has no preflight banner and Refine stays enabled", async ({ page }) => {
   await seedHome(page);
@@ -33,6 +41,10 @@ test("failing preflight shows the banner, Re-check, and gated Refine", async ({ 
   await expect(page.getByTestId("preflight-fix-github")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("new-idea")).toBeDisabled();
   await expect(page.getByTestId("refine-PROJ-150")).toBeDisabled();
+  await expectAllDisabledContainedGrey(page);
+  await scheme(page, "dark");
+  await expectAllDisabledContainedGrey(page);
+  await scheme(page, "light");
   await page.getByTestId("new-idea-gate").hover();
   await expect(page.getByRole("tooltip").filter({ hasText: "brew install git" })).toHaveCount(1);
   await page.getByRole("heading", { name: "My issues" }).hover();
@@ -76,13 +88,25 @@ test("Save tracker cards explain gated GitHub and Jira", async ({ page }) => {
   await expect(page.getByTestId("tracker-gate-hint")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("confirm-save")).toBeDisabled();
   await expectDisabledNotPrimary(page, "confirm-save");
-  await page.emulateMedia({ colorScheme: "dark" });
-  await page.evaluate(() => {
-    document.documentElement.classList.add("dark");
-    document.documentElement.classList.remove("light");
-    document.documentElement.style.colorScheme = "dark";
-  });
+  await expectAllDisabledContainedGrey(page);
+  await scheme(page, "dark");
   await expectDisabledNotPrimary(page, "confirm-save");
+  await expectAllDisabledContainedGrey(page);
+});
+
+test("disabled contained buttons match disabledBackground on pages", async ({ page }) => {
+  await seedHome(page);
+  await startNewIdea(page);
+  await expect(page.getByTestId("start-run")).toBeDisabled();
+  await expectAllDisabledContainedGrey(page);
+  await scheme(page, "dark");
+  await expectAllDisabledContainedGrey(page);
+  await scheme(page, "light");
+  await page.goto("/settings");
+  await expect(page.getByTestId("github-save")).toBeDisabled();
+  await expectAllDisabledContainedGrey(page);
+  await scheme(page, "dark");
+  await expectAllDisabledContainedGrey(page);
 });
 
 test("picker refetches after github fixture without reload", async ({ page }) => {
