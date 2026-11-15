@@ -6,7 +6,9 @@ import { closeDb, getDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "../demo/index.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
+import { resetDemo } from "../demo/index.ts";
 import { archiveChange, dailySpendUsd, getChange, startChange, waitForChange, replyChange } from "./index.ts";
+import { bumpRunEpoch, currentRunEpoch, isRunCurrent } from "./jobs.ts";
 
 describe("run engine (demo)", () => {
   beforeEach(async () => {
@@ -116,5 +118,27 @@ describe("run engine (demo)", () => {
     expect(archived.events.at(-1)?.title).toBe("archived");
     expect(dailySpendUsd()).toBe(archived.costUsd);
     expect(archived.costUsd).toBeGreaterThan(0);
+  });
+
+  it("isRunCurrent is false after bumpRunEpoch", () => {
+    const started = currentRunEpoch();
+    expect(isRunCurrent(started)).toBe(true);
+    bumpRunEpoch();
+    expect(isRunCurrent(started)).toBe(false);
+    expect(isRunCurrent(currentRunEpoch())).toBe(true);
+  });
+
+  it("resetDemo stops leftover demo writes for the old change id", async () => {
+    process.env.FLIGHTDECK_RUN_FAST = "0";
+    const started = await startChange("github:acme/web#12");
+    const oldId = started.id;
+    await resetDemo({ seed: true });
+    await new Promise((r) => setTimeout(r, 400));
+    const changes = getDb().prepare("SELECT COUNT(*) AS n FROM changes WHERE id = ?").get(oldId) as { n: number };
+    const events = getDb().prepare("SELECT COUNT(*) AS n FROM change_events WHERE change_id = ?").get(oldId) as {
+      n: number;
+    };
+    expect(changes.n).toBe(0);
+    expect(events.n).toBe(0);
   });
 });

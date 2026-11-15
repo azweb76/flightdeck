@@ -5,6 +5,8 @@ import { MAX_REVIEW_ROUNDS, nextAfterReview, reviewLimit } from "./machine.ts";
 import { commentPrLink, openDraftPr } from "./pr.ts";
 import { askEvents, capEvents, implementEvents, planEvents, reviewEvents } from "./script.ts";
 
+type PlayHalt = "ask" | "cap" | "ok" | "aborted";
+
 function delay(): Promise<void> {
   if (process.env.FLIGHTDECK_RUN_FAST === "1") return Promise.resolve();
   return new Promise((r) => setTimeout(r, 40));
@@ -14,11 +16,11 @@ async function play(
   change: Change,
   events: Iterable<{ kind: string } & Record<string, unknown>>,
   epoch: number,
-): Promise<"ask" | "cap" | "ok"> {
+): Promise<PlayHalt> {
   for (const ev of events) {
-    if (!isRunCurrent(epoch)) return "ok";
+    if (!isRunCurrent(epoch)) return "aborted";
     if (ev.kind !== "usage") await delay();
-    if (!isRunCurrent(epoch)) return "ok";
+    if (!isRunCurrent(epoch)) return "aborted";
     const result = applyAgentEvent(change, ev as never);
     if (result !== "ok") return result;
   }
@@ -26,9 +28,11 @@ async function play(
 }
 
 export async function runDemo(change: Change, answer?: string, epoch = currentRunEpoch()): Promise<void> {
+  if (!isRunCurrent(epoch)) return;
   if (change.scenario === "cap") {
     setStage(change, "planning", "plan", "Plan");
-    await play(change, capEvents(), epoch);
+    const halt = await play(change, capEvents(), epoch);
+    if (halt === "aborted") return;
     if (change.status !== "cap_hit") {
       change.status = "cap_hit";
       log(change, { kind: "system", title: "cap", detail: "This change hit the per-run dollar cap." });
@@ -75,10 +79,11 @@ async function implementAndReview(change: Change, answer?: string, epoch = curre
 
     const next = nextAfterReview(change.reviewRound, pass);
     if (next === "opening_pr") {
-      await finishPr(change);
+      await finishPr(change, epoch);
       return;
     }
     if (next === "needs_dan") {
+      if (!isRunCurrent(epoch)) return;
       change.status = "needs_dan";
       change.stage = "review";
       log(change, {
@@ -92,12 +97,15 @@ async function implementAndReview(change: Change, answer?: string, epoch = curre
   }
 }
 
-async function finishPr(change: Change): Promise<void> {
+async function finishPr(change: Change, epoch: number): Promise<void> {
+  if (!isRunCurrent(epoch)) return;
   setStage(change, "opening_pr", "pr", "Draft PR");
   const pr = await openDraftPr(change);
+  if (!isRunCurrent(epoch)) return;
   change.prUrl = pr.url;
   change.prNumber = pr.number;
   await commentPrLink(change, pr.url);
+  if (!isRunCurrent(epoch)) return;
   log(change, { kind: "system", title: "draft pr", detail: `Opened draft PR ${pr.url}` });
   log(change, {
     kind: "system",
