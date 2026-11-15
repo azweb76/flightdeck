@@ -11,11 +11,11 @@ export async function commitChecks(
   owner: string,
   name: string,
   ref: string,
-  opts?: { fresh?: boolean },
+  opts?: { fresh?: boolean; sinceMs?: number },
 ): Promise<CommitChecks> {
   const key = CACHE_KEYS.githubChecks(owner, name, ref);
   if (opts?.fresh) getCache().invalidate(key);
-  return getCache().get(key, () => loadChecks(token, fetchFn, owner, name, ref, key), TTL.githubChecks);
+  return getCache().get(key, () => loadChecks(token, fetchFn, owner, name, ref, key, opts?.sinceMs), TTL.githubChecks);
 }
 
 async function loadChecks(
@@ -25,6 +25,7 @@ async function loadChecks(
   name: string,
   ref: string,
   key: string,
+  sinceMs?: number,
 ): Promise<CommitChecks> {
   const octokit = createOctokit(token, fetchFn);
   const headers = etagHeaders(key);
@@ -37,7 +38,7 @@ async function loadChecks(
     );
     const etag = String(status.headers.etag ?? runs.headers.etag ?? "");
     const statuses = (status.data.statuses ?? []) as { state?: string }[];
-    const data = summarize(ref, String(status.data.state ?? ""), runs.data.check_runs ?? [], statuses);
+    const data = summarize(ref, String(status.data.state ?? ""), runs.data.check_runs ?? [], statuses, { sinceMs });
     return rememberEtag(key, etag, data);
   } catch (err) {
     if (isNotModified(err)) {
@@ -50,8 +51,18 @@ async function loadChecks(
 
 export type CheckRun = { status?: string; conclusion?: string | null };
 export type CommitStatus = { state?: string };
+export type SummarizeOpts = { sinceMs?: number; now?: number };
 
-export function summarize(sha: string, combined: string, runs: CheckRun[], statuses: CommitStatus[] = []): CommitChecks {
+/** Wait this long after a PR open or push before treating empty checks as "no CI". */
+export const CHECKS_GRACE_MS = 45_000;
+
+export function summarize(
+  sha: string,
+  combined: string,
+  runs: CheckRun[],
+  statuses: CommitStatus[] = [],
+  opts: SummarizeOpts = {},
+): CommitChecks {
   const hasRuns = runs.length > 0;
   const hasStatuses = statuses.length > 0;
   if (hasRuns && runs.some((r) => r.status && r.status !== "completed")) {
@@ -72,9 +83,26 @@ export function summarize(sha: string, combined: string, runs: CheckRun[], statu
       return { state: "failing", sha, summary: "CI failed." };
     }
   } else if (!hasRuns) {
-    return { state: "passing", sha, summary: "No required checks." };
+    return emptyChecks(sha, combined, opts);
   }
   return { state: "passing", sha, summary: "All checks passed." };
+}
+
+function emptyChecks(sha: string, combined: string, opts: SummarizeOpts): CommitChecks {
+  if (combined === "pending" || combined === "") {
+    return { state: "pending", sha, summary: "Checks have not started yet." };
+  }
+  if (combined === "failure" || combined === "error") {
+    return { state: "failing", sha, summary: "CI failed." };
+  }
+  const now = opts.now ?? Date.now();
+  if (opts.sinceMs != null && now - opts.sinceMs < CHECKS_GRACE_MS) {
+    return { state: "pending", sha, summary: "Waiting for GitHub checks to register." };
+  }
+  if (combined === "success" || combined === "neutral") {
+    return { state: "passing", sha, summary: "No required checks." };
+  }
+  return { state: "pending", sha, summary: "Checks have not started yet." };
 }
 
 function etagHeaders(key: string): Record<string, string> {

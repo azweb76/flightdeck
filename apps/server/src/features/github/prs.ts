@@ -28,10 +28,15 @@ export async function getPullState(
   owner: string,
   name: string,
   number: number,
-): Promise<{ state: string; merged: boolean }> {
+): Promise<{ state: string; merged: boolean; createdAt?: string; updatedAt?: string }> {
   const octokit = createOctokit(token, fetchFn);
   const res = await githubCall(() => octokit.rest.pulls.get({ owner, repo: name, pull_number: number }));
-  return { state: String(res.data.state ?? "open"), merged: Boolean(res.data.merged) };
+  return {
+    state: String(res.data.state ?? "open"),
+    merged: Boolean(res.data.merged),
+    createdAt: res.data.created_at,
+    updatedAt: res.data.updated_at,
+  };
 }
 
 export async function commentIssue(

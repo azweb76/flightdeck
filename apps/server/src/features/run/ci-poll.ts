@@ -49,12 +49,17 @@ export async function waitForChecks(
     if (!fresh || fresh.status === "archived") {
       return { state: "stopped", sha: ref, summary: "Run archived." };
     }
+    let pr: { state: string; merged: boolean; createdAt?: string; updatedAt?: string } | undefined;
     if (change.prNumber) {
-      const pr = await pullState(token, fetchFn, owner, name, change.prNumber);
+      pr = await pullState(token, fetchFn, owner, name, change.prNumber);
       if (pr.merged) return { state: "stopped", sha: ref, summary: "Pull request merged." };
       if (pr.state === "closed") return { state: "stopped", sha: ref, summary: "Pull request closed." };
     }
-    const result = await checks(token, fetchFn, owner, name, ref, { fresh: true });
+    const sinceMs = Date.parse(pr?.createdAt ?? pr?.updatedAt ?? change.updatedAt);
+    const result = await checks(token, fetchFn, owner, name, ref, {
+      fresh: true,
+      sinceMs: Number.isNaN(sinceMs) ? undefined : sinceMs,
+    });
     if (result.state !== "pending") return result;
     if (process.env.FLIGHTDECK_RUN_FAST === "1" && deps.pollMs == null) return result;
     await new Promise((r) => setTimeout(r, process.env.FLIGHTDECK_RUN_FAST === "1" ? 0 : pollMs));

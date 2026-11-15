@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetCacheForTests } from "../cache/store.ts";
-import { commitChecks, summarize } from "./checks.ts";
+import { CHECKS_GRACE_MS, commitChecks, summarize } from "./checks.ts";
 
 describe("commit checks", () => {
   beforeEach(() => resetCacheForTests());
@@ -23,7 +23,20 @@ describe("commit checks", () => {
       [],
     );
     expect(passing.state).toBe("passing");
-    expect(summarize("abc", "pending", [], []).state).toBe("passing");
+    expect(summarize("abc", "pending", [], []).state).toBe("pending");
+  });
+
+  it("keeps empty checks pending until combined success after the grace period", () => {
+    const opened = 1_000_000;
+    expect(summarize("abc", "pending", [], [], { sinceMs: opened, now: opened + 1_000 }).state).toBe("pending");
+    expect(
+      summarize("abc", "success", [], [], { sinceMs: opened, now: opened + CHECKS_GRACE_MS - 1 }).state,
+    ).toBe("pending");
+    expect(
+      summarize("abc", "success", [], [], { sinceMs: opened, now: opened + CHECKS_GRACE_MS }).state,
+    ).toBe("passing");
+    expect(summarize("abc", "neutral", [], []).state).toBe("passing");
+    expect(summarize("abc", "failure", [], []).state).toBe("failing");
   });
 
   it("uses commit statuses when no check-runs exist", () => {
