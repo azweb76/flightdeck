@@ -2,10 +2,11 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { closeDb, resetDbForTests } from "../db/index.ts";
+import { closeDb, getDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "./index.ts";
 import { presentChange } from "../run/view.ts";
 import { listChanges } from "../run/store.ts";
+import { listStoredPulls } from "../prs/store.ts";
 
 describe("demo run seeds", () => {
   beforeEach(() => {
@@ -25,5 +26,12 @@ describe("demo run seeds", () => {
     expect(presentChange(reviewing!).interrupted).toBe(false);
     const interrupted = listChanges().find((c) => c.issueKey === "acme/web#41");
     expect(presentChange(interrupted!).interrupted).toBe(true);
+  });
+
+  it("seeds demo PRs when issues already exist", () => {
+    getDb().exec("DELETE FROM pull_requests");
+    expect(listStoredPulls()).toHaveLength(0);
+    seedDemo();
+    expect(listStoredPulls().length).toBeGreaterThan(0);
   });
 });

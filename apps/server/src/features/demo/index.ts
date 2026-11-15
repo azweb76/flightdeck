@@ -28,6 +28,7 @@ export function seedDemo(): void {
   const count = (getDb().prepare("SELECT COUNT(*) AS n FROM issues").get() as { n: number }).n;
   if (count > 0) {
     seedDemoRuns();
+    seedDemoPulls();
     return;
   }
   rememberRepo("acme", "web", "/tmp/flightdeck-demo/acme/web", true);
