@@ -61,33 +61,43 @@ export function ReviewsPage() {
           <Typography color="text.secondary">When someone asks you to review a PR, it will show up here.</Typography>
         </Paper>
       ) : (
-        <Stack spacing={1} data-testid="review-list">
-          {reviews.map((review) => (
-            <ReviewRow
-              key={review.id}
-              review={review}
-              onSelect={(id) => {
-                void api
-                  .selectReview(id)
-                  .then((next) => setReviews((cur) => cur.map((r) => (r.id === next.id ? next : r))))
-                  .catch((e: Error) => setError(e.message));
-              }}
-              onResume={(id) => {
-                void api
-                  .startReview(id)
-                  .then((next) => setReviews((cur) => cur.map((r) => (r.id === next.id ? next : r))))
-                  .catch((e: Error) => setError(e.message));
-              }}
-              onArchive={(id) => {
-                void api
-                  .archiveReview(id)
-                  .then((next) => setReviews((cur) => cur.filter((r) => r.id !== next.id)))
-                  .catch((e: Error) => setError(e.message));
-              }}
-            />
-          ))}
-        </Stack>
+        <ReviewList reviews={reviews} setReviews={setReviews} setError={setError} />
       )}
+    </Stack>
+  );
+}
+
+function ReviewList(props: {
+  reviews: PrReview[];
+  setReviews: (fn: (cur: PrReview[]) => PrReview[]) => void;
+  setError: (msg: string) => void;
+}) {
+  return (
+    <Stack spacing={1} data-testid="review-list">
+      {props.reviews.map((review) => (
+        <ReviewRow
+          key={review.id}
+          review={review}
+          onSelect={(id) => {
+            void api
+              .selectReview(id)
+              .then((next) => props.setReviews((cur) => cur.map((r) => (r.id === next.id ? next : r))))
+              .catch((e: Error) => props.setError(e.message));
+          }}
+          onResume={(id) => {
+            void api
+              .startReview(id)
+              .then((next) => props.setReviews((cur) => cur.map((r) => (r.id === next.id ? next : r))))
+              .catch((e: Error) => props.setError(e.message));
+          }}
+          onArchive={(id) => {
+            void api
+              .archiveReview(id)
+              .then((next) => props.setReviews((cur) => cur.filter((r) => r.id !== next.id)))
+              .catch((e: Error) => props.setError(e.message));
+          }}
+        />
+      ))}
     </Stack>
   );
 }
