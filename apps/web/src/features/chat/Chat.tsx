@@ -8,6 +8,8 @@ import { Thread } from "./Thread.tsx";
 const paneSx = {
   p: 3,
   minWidth: 0,
+  minHeight: 0,
+  overflow: "hidden",
   border: 1,
   borderColor: "divider",
   display: "flex",
