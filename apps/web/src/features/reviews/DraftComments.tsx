@@ -1,7 +1,12 @@
 import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import type { PrReview, ReviewComment } from "@flightdeck/shared";
 import { useState } from "react";
+<<<<<<< HEAD:apps/web/src/features/reviews/DraftComments.tsx
 import { Markdown } from "../markdown/index.ts";
+=======
+import { Markdown } from "../markdown/index.ts";
+import { FormField } from "../../ui/FormField.tsx";
+>>>>>>> bb0b938 (fix(reviews): use FormField and keep unsaved text on Approve):apps/web/src/pages/DraftComments.tsx
 
 export function DraftComments(props: {
   review: PrReview;
@@ -40,15 +45,16 @@ function DraftCard(props: {
         </Typography>
       ) : null}
       {editing ? (
-        <TextField
-          multiline
-          fullWidth
-          minRows={3}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          sx={{ mt: 1 }}
-          inputProps={{ "data-testid": `draft-edit-${comment.line}` }}
-        />
+        <FormField label="Comment">
+          <TextField
+            multiline
+            fullWidth
+            minRows={3}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            inputProps={{ "data-testid": `draft-edit-${comment.line}` }}
+          />
+        </FormField>
       ) : (
         <Box sx={{ mt: 1 }}>
           <Markdown text={comment.body} />
@@ -76,7 +82,10 @@ function DraftCard(props: {
             <Button
               variant="contained"
               data-testid={`draft-approve-${comment.line}`}
-              onClick={() => props.onPatch(comment.id, { state: "approved" })}
+              onClick={() => {
+                props.onPatch(comment.id, editing ? { body, state: "approved" } : { state: "approved" });
+                setEditing(false);
+              }}
             >
               Approve
             </Button>
