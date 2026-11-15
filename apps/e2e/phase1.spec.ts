@@ -83,6 +83,10 @@ test("Settings shows editable fields and no connectivity cards", async ({ page }
   await expect(page.getByTestId("github-form")).toBeVisible();
   await expect(page.getByTestId("github-token-source")).toContainText("Using GITHUB_TOKEN from environment");
   await expect(page.getByTestId("github-pat-link")).toBeVisible();
+  await page.getByTestId("github-token").fill("ghp_test");
+  await page.getByTestId("github-save").click();
+  await expect(page.getByTestId("github-form-success")).toContainText("GitHub token saved");
+  await expect(page.getByTestId("github-status")).toHaveCount(0);
   await expect(page.getByTestId("claude-form")).toBeVisible();
   await expect(page.getByTestId("claude-login-hint")).toContainText("/login");
   await expect(page.getByTestId("jira-form")).toBeVisible();
