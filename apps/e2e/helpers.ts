@@ -1,4 +1,10 @@
 import { expect, type Page } from "@playwright/test";
+import { join } from "node:path";
+
+/** Screenshot output folder. Override the root with FLIGHTDECK_SHOTS_DIR; default is gitignored `apps/e2e/.shots`. */
+export function shotDir(name: string): string {
+  return join(process.env.FLIGHTDECK_SHOTS_DIR ?? join(import.meta.dirname, ".shots"), name);
+}
 
 export async function setPreflight(page: Page, fixture: "pass" | "fail" | "github"): Promise<void> {
   const apiPort = process.env.FLIGHTDECK_PORT ?? "47421";

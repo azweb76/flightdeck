@@ -10,9 +10,10 @@ import {
   scrollPickerToEnd,
   seedHome,
   startNewIdea,
+  shotDir,
 } from "./helpers.ts";
 
-const DIR = "/opt/cursor/artifacts/fields";
+const DIR = shotDir("fields");
 
 test.beforeAll(() => {
   mkdirSync(DIR, { recursive: true });

@@ -9,9 +9,10 @@ import {
   seedHome,
   setPreflight,
   startNewIdea,
+  shotDir,
 } from "./helpers.ts";
 
-const DIR = "/opt/cursor/artifacts/preflight-fixes";
+const DIR = shotDir("preflight-fixes");
 
 test.beforeAll(() => {
   mkdirSync(DIR, { recursive: true });
