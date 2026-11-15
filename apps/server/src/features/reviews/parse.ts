@@ -20,7 +20,7 @@ function commentsFrom(raw: string): DraftComment[] {
         const body = String(row.body ?? "").trim();
         const side = row.side === "LEFT" || row.side === "RIGHT" ? row.side : undefined;
         if (!path || !body || !Number.isInteger(line) || line < 1) return undefined;
-        return { path, line, body, side };
+        return side ? { path, line, body, side } : { path, line, body };
       })
       .filter((c): c is DraftComment => Boolean(c));
   } catch {

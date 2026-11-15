@@ -32,19 +32,7 @@ function DraftCard(props: {
   const locked = comment.state === "posted" || comment.state === "discarded";
   return (
     <Paper sx={{ p: 2, border: 1, borderColor: "divider" }} data-testid={`draft-${comment.path}-${comment.line}`}>
-      <Typography variant="caption" color="text.secondary" display="block">
-        {comment.path}:{comment.line} · {comment.state}
-      </Typography>
-      {comment.placement === "summary" ? (
-        <Chip
-          size="small"
-          color="warning"
-          variant="outlined"
-          label="Will post as a summary note (not on the diff)."
-          data-testid={`draft-summary-note-${comment.line}`}
-          sx={{ mt: 0.75, height: "auto", "& .MuiChip-label": { whiteSpace: "normal", py: 0.5 } }}
-        />
-      ) : null}
+      <DraftCaption comment={comment} />
       {editing ? (
         <FormField label="Comment">
           <TextField
@@ -102,5 +90,26 @@ function DraftCard(props: {
         </Stack>
       )}
     </Paper>
+  );
+}
+
+function DraftCaption(props: { comment: ReviewComment }) {
+  const { comment } = props;
+  return (
+    <>
+      <Typography variant="caption" color="text.secondary" display="block">
+        {comment.path}:{comment.line} · {comment.state}
+      </Typography>
+      {comment.placement === "summary" ? (
+        <Chip
+          size="small"
+          color="warning"
+          variant="outlined"
+          label="Will post as a summary note (not on the diff)."
+          data-testid={`draft-summary-note-${comment.line}`}
+          sx={{ mt: 0.75, height: "auto", "& .MuiChip-label": { whiteSpace: "normal", py: 0.5 } }}
+        />
+      ) : null}
+    </>
   );
 }

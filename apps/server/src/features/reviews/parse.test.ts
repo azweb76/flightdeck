@@ -7,7 +7,7 @@ describe("parseReviewDraft", () => {
       'Looks close.\n```json\n[{"path":"a.ts","line":3,"body":"Guard this"}]\n```',
     );
     expect(parsed.summary).toBe("Looks close.");
-    expect(parsed.comments).toEqual([{ path: "a.ts", line: 3, body: "Guard this", side: undefined }]);
+    expect(parsed.comments).toEqual([{ path: "a.ts", line: 3, body: "Guard this" }]);
   });
 
   it("keeps Claude's LEFT or RIGHT side from the JSON", () => {
