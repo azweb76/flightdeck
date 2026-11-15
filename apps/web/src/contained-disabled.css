@@ -1,0 +1,8 @@
+/* Unlayered so it beats MUI 7 variant CSS variables inside dialogs. */
+.MuiButton-contained.Mui-disabled {
+  --variant-containedBg: var(--mui-palette-action-disabledBackground) !important;
+  --variant-containedColor: var(--mui-palette-action-disabled) !important;
+  background-color: var(--mui-palette-action-disabledBackground) !important;
+  color: var(--mui-palette-action-disabled) !important;
+  box-shadow: none !important;
+}

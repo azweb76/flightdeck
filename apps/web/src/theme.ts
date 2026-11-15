@@ -97,6 +97,7 @@ export const theme = createTheme({
     MuiAppBar: { defaultProps: { position: "static" } },
     MuiButton: {
       defaultProps: { disableElevation: true },
+      variants: [{ props: { variant: "contained", disabled: true }, style: containedOff }],
       styleOverrides: {
         root: {
           borderRadius: 10,

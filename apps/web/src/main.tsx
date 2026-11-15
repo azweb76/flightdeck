@@ -4,6 +4,7 @@ import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App.tsx";
+import "./contained-disabled.css";
 import { theme } from "./theme.ts";
 
 const root = document.getElementById("root");
