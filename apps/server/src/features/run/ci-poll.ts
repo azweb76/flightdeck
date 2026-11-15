@@ -43,7 +43,7 @@ export async function waitForChecks(
   const checks = deps.checks ?? commitChecks;
   const pullState = deps.pullState ?? getPullState;
   const pollMs = deps.pollMs ?? 15_000;
-  for (let i = 0; i < 40; i += 1) {
+  for (;;) {
     if (signal.aborted) return { state: "stopped", sha: ref, summary: "CI watch stopped." };
     const fresh = getChange(change.id);
     if (!fresh || fresh.status === "archived") {
@@ -61,5 +61,4 @@ export async function waitForChecks(
     if (process.env.FLIGHTDECK_RUN_FAST === "1" && deps.pollMs == null) return result;
     await new Promise((r) => setTimeout(r, process.env.FLIGHTDECK_RUN_FAST === "1" ? 0 : pollMs));
   }
-  return { state: "failing", sha: ref, summary: "Timed out waiting for CI." };
 }

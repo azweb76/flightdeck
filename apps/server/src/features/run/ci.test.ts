@@ -120,6 +120,30 @@ describe("live CI poll", () => {
     expect(getChange(change.id)?.events.some((e) => e.title === "ci fix")).toBe(false);
   });
 
+  it("does not auto-fix while checks stay pending past the old poll cap", async () => {
+    const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.prNumber = 9;
+    change.ciPhase = "watching";
+    change.ciRound = 1;
+    saveChange(change);
+    let polls = 0;
+    await watchLiveCi(change, undefined, {
+      checks: async () => {
+        polls += 1;
+        if (polls > 40) return { state: "passing" as const, sha: "abc", summary: "All checks passed." };
+        return { state: "pending" as const, sha: "abc", summary: "pending" };
+      },
+      pullState: async () => ({ state: "open", merged: false }),
+      pollMs: 0,
+    });
+    expect(polls).toBeGreaterThan(40);
+    expect(change.status).toBe("done");
+    expect(change.ciRound).toBe(1);
+    expect(change.events.some((e) => e.title === "ci fix")).toBe(false);
+    expect(change.events.some((e) => e.detail === "Timed out waiting for CI.")).toBe(false);
+  });
+
   it("marks a parked CI fix done on merge after restart with a full cap", async () => {
     const occupying = parkBehindFullCap();
     dropJobs();
