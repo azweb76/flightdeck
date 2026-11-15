@@ -42,7 +42,7 @@ export function extractIdea(prompt: string): string {
 
 function shortTitle(idea: string): string {
   const line = idea.split("\n").find((l) => l.trim()) ?? idea;
-  return line.replace(/^Refine [^:]+:\s*/, "").slice(0, 72);
+  return line.replace(/^Refine [^:]+:\s*/, "").replace(/^#+\s*/, "").slice(0, 72);
 }
 
 function draftFrom(idea: string, focus: string): IssueDraft {

@@ -44,40 +44,13 @@ const tooltipSlots: TooltipProps["slotProps"] = {
       { name: "preventOverflow", options: { padding: 12, altAxis: true } },
     ],
   },
-  tooltip: {
-    sx: {
-      maxWidth: 280,
-      fontSize: "0.8rem",
-      lineHeight: 1.4,
-      bgcolor: "#f5f5f7",
-      color: "#1d1d1f",
-      border: "1px solid rgba(0,0,0,0.2)",
-      boxShadow: 6,
-      opacity: "1 !important",
-      "@media (prefers-color-scheme: dark)": {
-        bgcolor: "#2c2c2e",
-        color: "#f5f5f7",
-        border: "1px solid rgba(255,255,255,0.24)",
-      },
-      "html.dark &": {
-        bgcolor: "#2c2c2e",
-        color: "#f5f5f7",
-        border: "1px solid rgba(255,255,255,0.24)",
-      },
-    },
-  },
-  arrow: {
-    sx: {
-      color: "#f5f5f7",
-      "@media (prefers-color-scheme: dark)": { color: "#2c2c2e" },
-      "html.dark &": { color: "#2c2c2e" },
-    },
-  },
   transition: { timeout: 0 },
 };
 
 function tooltipTitle(blocked: PreflightCheck | undefined, fallbackTitle: string | undefined, phaseGated: boolean): string {
-  const dep = blocked ? `${blocked.label}: ${blocked.detail}${blocked.fix ? ` Fix: ${blocked.fix}` : ""}` : "";
+  const dep = blocked
+    ? `${blocked.label}: ${blocked.detail}${blocked.fix ? `\nFix: ${blocked.fix}` : ""}`
+    : "";
   if (phaseGated && fallbackTitle) return dep ? `${fallbackTitle}. Also ${dep}` : fallbackTitle;
   return dep || fallbackTitle || "";
 }

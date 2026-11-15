@@ -24,6 +24,7 @@ describe("fake shaping driver", () => {
       if (ev.ask) asks.push(ev.ask.prompt);
     }
     expect(asks[0]).toMatch(/dark mode/i);
+    expect(asks[0]).not.toMatch(/# /);
     let draft = "";
     for await (const ev of driver.run({
       prompt: "New idea:\nAdd dark mode to settings\nanswer: UI",
@@ -32,5 +33,17 @@ describe("fake shaping driver", () => {
     }
     expect(draft).toMatch(/dark mode/i);
     expect(draft).not.toMatch(/Export invoices as CSV/);
+  });
+
+  it("does not quote markdown headings from an existing issue body", async () => {
+    const driver = createFakeDriver();
+    const asks: string[] = [];
+    for await (const ev of driver.run({
+      prompt: "first turn:\nExisting issue:\n# Invoice CSV\n\n## Goal and background\nFinance export",
+    })) {
+      if (ev.ask) asks.push(ev.ask.prompt);
+    }
+    expect(asks[0]).toMatch(/Invoice CSV/);
+    expect(asks[0]).not.toMatch(/# Invoice CSV/);
   });
 });

@@ -8,8 +8,8 @@ const inputFocus = {
   "&:has(.MuiInputBase-input:focus-visible)": { outline: "3px solid #2997ff", outlineOffset: 2 },
 };
 
-const containedOff = { backgroundColor: "#c5dcf5", color: "#1d1d1f" };
-const containedOffDark = { backgroundColor: "#2a6cb3", color: "#f5f5f7" };
+const containedOff = { backgroundColor: "#d2d2d7", color: "#6e6e73" };
+const containedOffDark = { backgroundColor: "#3a3a3c", color: "#a1a1a6" };
 const outlinedOff = {
   border: "1px solid rgba(29,29,31,0.5)",
   color: "rgba(29,29,31,0.78)",
@@ -32,7 +32,7 @@ export const theme = createTheme({
         warning: { main: "#e6a700", light: "#ffd60a" },
         text: { primary: "#1d1d1f", secondary: "#6e6e73" },
         divider: "rgba(0,0,0,0.08)",
-        action: { disabled: "rgba(29,29,31,0.78)", disabledBackground: "#c5dcf5" },
+        action: { disabled: "#6e6e73", disabledBackground: "#d2d2d7" },
       },
     },
     dark: {
@@ -43,7 +43,7 @@ export const theme = createTheme({
         warning: { main: "#ffd60a", light: "#ff9f0a" },
         text: { primary: "#f5f5f7", secondary: "#a1a1a6" },
         divider: "rgba(255,255,255,0.12)",
-        action: { disabled: "#f5f5f7", disabledBackground: "#2a6cb3" },
+        action: { disabled: "#a1a1a6", disabledBackground: "#3a3a3c" },
       },
     },
   },
@@ -101,9 +101,15 @@ export const theme = createTheme({
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
+          padding: "12px 16px",
+          maxWidth: 420,
+          fontSize: "0.8rem",
+          lineHeight: 1.45,
+          whiteSpace: "pre-wrap",
           bgcolor: "#f5f5f7",
           color: "#1d1d1f",
           border: "1px solid rgba(0,0,0,0.2)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
           "@media (prefers-color-scheme: dark)": {
             bgcolor: "#2c2c2e",
             color: "#f5f5f7",

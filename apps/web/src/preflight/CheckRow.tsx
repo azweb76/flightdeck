@@ -25,7 +25,7 @@ export function CheckRow(props: { check: PreflightCheck }) {
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography variant="subtitle2">{check.label}</Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: "pre-wrap" }}>
           {check.detail}
         </Typography>
         {check.fix && !check.ok ? (
@@ -40,6 +40,8 @@ export function CheckRow(props: { check: PreflightCheck }) {
                 px: 1,
                 py: 0.25,
                 borderRadius: 1,
+                whiteSpace: "pre-wrap",
+                display: "block",
               }}
             >
               {check.fix}
