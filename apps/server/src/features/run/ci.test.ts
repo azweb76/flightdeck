@@ -6,9 +6,11 @@ import { closeDb, resetDbForTests } from "../db/index.ts";
 import { patchSettings } from "../settings/index.ts";
 import { watchLiveCi } from "./ci.ts";
 import { setParkedCiDeps, stopParkedCiWatch } from "./ci-slot.ts";
-import { archiveChange, startRunQueue } from "./index.ts";
+import { seedDemo } from "../demo/index.ts";
+import { resetPreflightStore, runChecks } from "../preflight/index.ts";
+import { archiveChange, startChange, startRunQueue } from "./index.ts";
 import { dropJobs } from "./jobs.ts";
-import { getChange, insertChange, saveChange } from "./store.ts";
+import { archiveAllForTests, getChange, insertChange, saveChange } from "./store.ts";
 
 const issue = {
   id: "github:acme/web#1",
@@ -33,8 +35,11 @@ describe("live CI poll", () => {
   afterEach(() => {
     stopParkedCiWatch();
     closeDb();
+    resetPreflightStore();
     delete process.env.GITHUB_TOKEN;
     delete process.env.FLIGHTDECK_DATA_DIR;
+    delete process.env.FLIGHTDECK_DEMO;
+    delete process.env.FLIGHTDECK_RUN_FAST;
   });
 
   it("stops watching when the change is archived", async () => {
@@ -120,6 +125,45 @@ describe("live CI poll", () => {
     expect(getChange(change.id)?.events.some((e) => e.title === "ci fix")).toBe(false);
   });
 
+  it("starts a queued run when the active one begins watching CI", async () => {
+    process.env.FLIGHTDECK_DEMO = "1";
+    process.env.FLIGHTDECK_RUN_FAST = "1";
+    seedDemo();
+    dropJobs();
+    archiveAllForTests();
+    resetPreflightStore();
+    await runChecks();
+    patchSettings({ maxConcurrentAgents: 1 });
+    const watcher = insertChange(
+      { ...issue, id: "github:acme/web#99", key: "acme/web#99" },
+      "live",
+      "",
+      "flightdeck/watch",
+      "opening_pr",
+    );
+    watcher.stage = "pr";
+    watcher.prNumber = 9;
+    saveChange(watcher);
+    const queued = await startChange("github:acme/web#12");
+    expect(queued.status).toBe("queued");
+    const running = watchLiveCi(watcher, undefined, {
+      checks: async () => ({ state: "pending" as const, sha: "abc", summary: "pending" }),
+      pullState: async () => ({ state: "open", merged: false }),
+      pollMs: 20,
+    });
+    await waitForStatus(watcher.id, "watching_ci");
+    await waitUntil(() => {
+      const status = getChange(queued.id)?.status;
+      return Boolean(status && status !== "queued");
+    });
+    expect(getChange(watcher.id)?.status).toBe("watching_ci");
+    expect(getChange(queued.id)?.status).not.toBe("queued");
+    await archiveChange(watcher.id);
+    await running;
+    delete process.env.FLIGHTDECK_DEMO;
+    delete process.env.FLIGHTDECK_RUN_FAST;
+  });
+
   it("does not auto-fix while checks stay pending past the old poll cap", async () => {
     const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
     change.stage = "ci";
@@ -188,10 +232,14 @@ function parkBehindFullCap(): { blocker: ReturnType<typeof insertChange>; parked
 }
 
 async function waitForStatus(id: string, status: string): Promise<void> {
-  const deadline = Date.now() + 1_000;
+  await waitUntil(() => getChange(id)?.status === status, `timed out waiting for ${id} to be ${status} (got ${getChange(id)?.status})`);
+}
+
+async function waitUntil(ok: () => boolean, message = "timed out"): Promise<void> {
+  const deadline = Date.now() + 2_000;
   while (Date.now() < deadline) {
-    if (getChange(id)?.status === status) return;
+    if (ok()) return;
     await new Promise((r) => setTimeout(r, 10));
   }
-  throw new Error(`timed out waiting for ${id} to be ${status} (got ${getChange(id)?.status})`);
+  throw new Error(message);
 }

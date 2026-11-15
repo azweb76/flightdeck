@@ -11,6 +11,7 @@ import { getChange } from "./store.ts";
 import { commitAll, pushBranch, runGates } from "./worktree.ts";
 import { attachCiPoll, detachCiPoll, waitForChecks, type CiPollDeps } from "./ci-poll.ts";
 import { waitForFixSlot, type SlotWaitDeps } from "./ci-slot.ts";
+import { pumpQueue } from "./queue.ts";
 
 export type { CiPollDeps };
 export { abortCiWatch } from "./ci-poll.ts";
@@ -139,6 +140,7 @@ function beginWatch(change: Change): void {
   change.ciPhase = "watching";
   change.ciPushedAt = new Date().toISOString();
   setStage(change, "watching_ci", "ci", "CI", ciRoundCaption(change.ciRound));
+  pumpQueue();
 }
 
 function failCount(scenario: string | undefined): number {
