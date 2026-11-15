@@ -69,14 +69,13 @@ export function ReviewPage() {
           reply={state.reply}
           onReply={state.setReply}
           onSend={(text) => void state.chat(text)}
-          canSend={!state.busy && state.reply.trim().length > 0}
-          disabled={state.busy || review.status === "archived"}
+          canSend={!state.busy && state.reply.trim().length > 0 && !chatLocked(review.status)}
+          disabled={state.busy || chatLocked(review.status)}
           placeholder="Ask Claude about this PR"
           inputTestId="review-reply"
           sendTestId="review-send"
           compact
           autoScroll
-          paperSx={{ minHeight: 360 }}
         />
       </Stack>
       <PostReviewDialog
@@ -90,6 +89,10 @@ export function ReviewPage() {
       />
     </Box>
   );
+}
+
+function chatLocked(status: PrReview["status"]): boolean {
+  return status === "archived" || status === "reviewing" || status === "queued";
 }
 
 function useReview(id: string) {

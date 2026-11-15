@@ -115,9 +115,12 @@ export function saveReview(review: PrReview): void {
   review.updatedAt = new Date().toISOString();
   getDb()
     .prepare(
-      `UPDATE pr_reviews SET status=?, summary=?, worktree_path=?, skill_path=?, cost_usd=?, posted_event=?, selected=?, head_sha=?, updated_at=? WHERE id=?`,
+      `UPDATE pr_reviews SET title=?, url=?, author=?, status=?, summary=?, worktree_path=?, skill_path=?, cost_usd=?, posted_event=?, selected=?, head_sha=?, updated_at=? WHERE id=?`,
     )
     .run(
+      review.title,
+      review.url,
+      review.author,
       review.status,
       review.summary,
       review.worktreePath,

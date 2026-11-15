@@ -31,6 +31,7 @@ export function setJob(id: string, job: Promise<void>): void {
 }
 
 export function attachAbort(id: string): AbortController {
+  aborts.get(id)?.abort();
   const ac = new AbortController();
   aborts.set(id, ac);
   return ac;

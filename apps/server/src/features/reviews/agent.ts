@@ -7,7 +7,7 @@ import { defaultExec } from "../exec/index.ts";
 import { capMessage, evaluateSpend } from "../run/caps.ts";
 import { getSettings } from "../settings/index.ts";
 import { attachAbort } from "../run/jobs.ts";
-import { addWorktreeAtCommit, nestedWorktree } from "../run/worktree.ts";
+import { addWorktreeAtCommit, nestedWorktree, removeWorktree } from "../run/worktree.ts";
 import { listPullFiles } from "../github/pull-files.ts";
 import { resolveGithubToken } from "../github/token.ts";
 import { parseReviewDraft } from "./parse.ts";
@@ -29,9 +29,13 @@ export async function runLiveReview(review: PrReview): Promise<void> {
   await gitFetchPullHead(defaultExec, clone.localPath, review.number, review.headSha);
   if (reviewStopped(review.id, ac)) return;
   const wt = nestedWorktree(clone.localPath, `review-${review.id}`);
-  await addWorktreeAtCommit(clone.localPath, wt.path, review.headSha);
-  if (reviewStopped(review.id, ac)) return;
   review.worktreePath = wt.path;
+  saveReview(review);
+  await addWorktreeAtCommit(clone.localPath, wt.path, review.headSha);
+  if (reviewStopped(review.id, ac)) {
+    await removeWorktree(clone.localPath, wt.path);
+    return;
+  }
   const skill = detectReviewSkill(wt.path);
   review.skillPath = skill?.path ?? "";
   saveReview(review);

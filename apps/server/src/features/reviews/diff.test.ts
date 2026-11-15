@@ -72,4 +72,15 @@ describe("diff comment placement", () => {
     expect(body).not.toContain("Draft");
     expect(body.startsWith("Looks close.")).toBe(true);
   });
+
+  it("keeps Claude text that mentions the notes header mid-summary", () => {
+    const comments = [{ path: "keep.md", line: 2, body: "Keep me", placement: "summary", state: "approved" }];
+    const summary =
+      "Call out Notes not attached to the diff: if the file is missing.\nMore findings.\n\nNotes not attached to the diff:\n- old.md:1: baked";
+    const body = githubReviewBody(summary, comments);
+    expect(body).toContain("if the file is missing.");
+    expect(body).toContain("More findings.");
+    expect(body.match(/Keep me/g)).toHaveLength(1);
+    expect(body).not.toContain("baked");
+  });
 });

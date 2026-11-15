@@ -43,7 +43,7 @@ function persistRemote(remote: ReviewRequest[]): void {
       existing.title = pr.title;
       existing.url = pr.url;
       existing.author = pr.author;
-      existing.headSha = pr.headSha || existing.headSha;
+      if (!headFrozen(existing.status)) existing.headSha = pr.headSha || existing.headSha;
       saveReview(existing);
       continue;
     }
@@ -73,8 +73,12 @@ function overlay(stored: PrReview, remote?: ReviewRequest): PrReview {
     title: remote.title || stored.title,
     url: remote.url || stored.url,
     author: remote.author || stored.author,
-    headSha: remote.headSha || stored.headSha,
+    headSha: headFrozen(stored.status) ? stored.headSha : remote.headSha || stored.headSha,
   };
+}
+
+function headFrozen(status: string): boolean {
+  return status !== "requested" && status !== "selected";
 }
 
 function stubFrom(pr: ReviewRequest): PrReview {

@@ -6,6 +6,7 @@ import { closeDb, getDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "../demo/index.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { patchSettings } from "../settings/index.ts";
+import { capMessage } from "./caps.ts";
 import { dropJobs, getChange, startChange, waitForChange } from "./index.ts";
 import { localDayKey } from "./day.ts";
 import { addEvent, archiveAllForTests, dailySpendUsd, listChanges, saveChange } from "./store.ts";
@@ -30,6 +31,11 @@ describe("dollar caps across concurrent runs", () => {
     delete process.env.FLIGHTDECK_DEMO;
     delete process.env.FLIGHTDECK_RUN_FAST;
     delete process.env.FLIGHTDECK_DATA_DIR;
+  });
+
+  it("says review or chat when a PR review hits the per-run cap", () => {
+    expect(capMessage("run", "review")).toMatch(/review or chat/);
+    expect(capMessage("run")).toMatch(/This run hit the per-run dollar cap/);
   });
 
   it("stops a run on the per-run cap and records why", async () => {

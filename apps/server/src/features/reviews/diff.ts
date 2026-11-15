@@ -63,15 +63,15 @@ export function summaryNotes(comments: { path: string; line: number; body: strin
   ].join("\n");
 }
 
-const NOTES_HEADER = "Notes not attached to the diff:";
+/** Trailing baked-in block from older drafts. Leaves the same header mid-summary alone. */
+const NOTES_BLOCK = /(?:\n\n)?Notes not attached to the diff:\n(?:- .+\n?)*$/;
 
 /** Claude's summary plus approved off-diff notes. Strips a baked-in notes block from older drafts. */
 export function githubReviewBody(
   summary: string,
   comments: { path: string; line: number; body: string; placement?: string; state?: string }[],
 ): string {
-  const idx = summary.indexOf(NOTES_HEADER);
-  const claude = (idx === -1 ? summary : summary.slice(0, idx)).trim();
+  const claude = summary.replace(NOTES_BLOCK, "").trim();
   return [claude, summaryNotes(comments)].filter(Boolean).join("\n\n");
 }
 

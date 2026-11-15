@@ -177,7 +177,7 @@ describe("reviews engine (demo)", () => {
   it("applies dollar caps and abort to PR chat without taking a slot", async () => {
     const origDemo = process.env.FLIGHTDECK_DEMO;
     delete process.env.FLIGHTDECK_DEMO;
-    patchSettings({ dollarCapUsd: 0.05, dailyDollarCapUsd: 10 });
+    patchSettings({ dollarCapUsd: 0.05, dailyDollarCapUsd: 1000 });
     const before = countActive();
     setAgentDriver({
       async *run(opts) {
@@ -188,7 +188,7 @@ describe("reviews engine (demo)", () => {
     });
     const next = await chatReview("github:acme/web#92", "Walk the guard");
     expect(next.status).toBe("drafts");
-    expect(next.messages.map((m) => m.text).join("\n")).toMatch(/dollar cap/);
+    expect(next.messages.map((m) => m.text).join("\n")).toMatch(/review or chat hit the per-run dollar cap/);
     expect(next.messages.some((m) => m.text === "should not land")).toBe(false);
     expect(countActive()).toBe(before);
     expect(countReviewing()).toBe(0);
