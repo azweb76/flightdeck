@@ -10,7 +10,7 @@ import { dropJobs, getJob } from "../run/jobs.ts";
 import { patchSettings } from "../settings/index.ts";
 import { countActive } from "../run/store.ts";
 import { countReviewing } from "./store.ts";
-import { chatReview, getReview, patchComment, postReview, selectReview, startReview } from "./engine.ts";
+import { archiveReview, chatReview, getReview, patchComment, postReview, selectReview, startReview } from "./engine.ts";
 import { listReviews } from "./sync.ts";
 
 describe("reviews engine (demo)", () => {
@@ -116,6 +116,14 @@ describe("reviews engine (demo)", () => {
       process.env.FLIGHTDECK_DEMO = origDemo;
       delete process.env.GITHUB_TOKEN;
     }
+  });
+
+  it("keeps archived when Review is still running", async () => {
+    const p = startReview("github:acme/web#90");
+    const archived = await archiveReview("github:acme/web#90");
+    expect(archived.status).toBe("archived");
+    await p;
+    expect(getReview("github:acme/web#90")?.status).toBe("archived");
   });
 
   it("applies dollar caps and abort to PR chat without taking a slot", async () => {

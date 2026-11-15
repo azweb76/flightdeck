@@ -7,7 +7,7 @@ import { listPullFiles } from "../github/pull-files.ts";
 import { resolveGithubToken } from "../github/token.ts";
 import { placeComments, summaryNotes } from "./diff.ts";
 import { assertPreflightGate } from "../preflight/gate.ts";
-import { currentRunEpoch, getJob, isRunCurrent, setJob } from "../run/jobs.ts";
+import { abortJob, currentRunEpoch, getJob, isRunCurrent, setJob } from "../run/jobs.ts";
 import { pumpQueue, setReviewPump } from "../run/queue.ts";
 import { countActive } from "../run/store.ts";
 import { getSettings } from "../settings/index.ts";
@@ -138,6 +138,7 @@ export async function archiveReview(id: string): Promise<PrReview> {
   const review = mustReview(id);
   review.status = "archived";
   saveReview(review);
+  abortJob(id);
   const [owner, name] = splitSlug(review.repoSlug);
   const root = process.env.FLIGHTDECK_DEMO === "1" ? demoRepoPath(owner, name) : repoPath(owner, name);
   await removeWorktree(root, review.worktreePath);
@@ -164,7 +165,7 @@ async function driveReview(id: string, epoch: number): Promise<void> {
   const review = getReview(id);
   if (!review || review.status === "archived" || review.status === "queued") return;
   try {
-    if (process.env.FLIGHTDECK_DEMO === "1") fillDemoDraft(review);
+    if (process.env.FLIGHTDECK_DEMO === "1") await fillDemoDraft(review);
     else await runLiveReview(review);
   } catch (err) {
     const fresh = getReview(id);

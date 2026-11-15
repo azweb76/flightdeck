@@ -108,6 +108,10 @@ export function upsertReview(partial: Omit<PrReview, "comments" | "messages" | "
 }
 
 export function saveReview(review: PrReview): void {
+  const prev = getDb().prepare("SELECT status FROM pr_reviews WHERE id = ?").get(review.id) as
+    | { status: PrReviewStatus }
+    | undefined;
+  if (prev?.status === "archived") review.status = "archived";
   review.updatedAt = new Date().toISOString();
   getDb()
     .prepare(

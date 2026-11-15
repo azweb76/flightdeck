@@ -6,13 +6,14 @@ import { gitFetchPullHead } from "../github/git-auth.ts";
 import { defaultExec } from "../exec/index.ts";
 import { capMessage, evaluateSpend } from "../run/caps.ts";
 import { getSettings } from "../settings/index.ts";
+import { attachAbort } from "../run/jobs.ts";
 import { addWorktreeAtCommit, nestedWorktree } from "../run/worktree.ts";
 import { listPullFiles } from "../github/pull-files.ts";
 import { resolveGithubToken } from "../github/token.ts";
 import { parseReviewDraft } from "./parse.ts";
 import { placeComments, summaryNotes } from "./diff.ts";
 import { DEFAULT_REVIEW_PROMPT, detectReviewSkill } from "./skill.ts";
-import { addMessage, addReviewCost, replaceComments, saveReview } from "./store.ts";
+import { addMessage, addReviewCost, getReview, replaceComments, saveReview } from "./store.ts";
 import { emitReview, mustReview } from "./emit.ts";
 import { splitSlug } from "./slug.ts";
 
@@ -31,7 +32,7 @@ export async function runLiveReview(review: PrReview): Promise<void> {
   saveReview(review);
   const settings = getSettings();
   const env = claudeSdkEnv(await detectClaudeConfig());
-  const ac = new AbortController();
+  const ac = attachAbort(review.id);
   let text = "";
   for await (const ev of getAgentDriver().run({
     prompt: `${skill?.text ?? DEFAULT_REVIEW_PROMPT}\n\nPR ${review.repoSlug}#${review.number}: ${review.title}\nHead: ${review.headSha}`,
@@ -48,16 +49,19 @@ export async function runLiveReview(review: PrReview): Promise<void> {
   await applyDraft(review, text);
 }
 
-export function fillDemoDraft(review: PrReview): void {
+export async function fillDemoDraft(review: PrReview): Promise<void> {
   if (review.number === 91) review.skillPath = ".cursor/skills/review/SKILL.md";
   addReviewCost(review, 0.4);
-  void applyDraft(
+  await Promise.resolve();
+  await applyDraft(
     review,
     `Looks solid overall on ${review.repoSlug}#${review.number}. One inline note.\n\`\`\`json\n[{"path":"src/api.ts","line":18,"body":"Guard this branch when the list is empty."}]\n\`\`\``,
   );
 }
 
-async function applyDraft(review: PrReview, text: string): Promise<void> {
+export async function applyDraft(review: PrReview, text: string): Promise<void> {
+  const fresh = getReview(review.id);
+  if (!fresh || fresh.status === "archived") return;
   const parsed = parseReviewDraft(text);
   let comments = parsed.comments.map((c) => ({
     ...c,
@@ -73,6 +77,7 @@ async function applyDraft(review: PrReview, text: string): Promise<void> {
     }
   }
   const notes = summaryNotes(comments);
+  if (getReview(review.id)?.status === "archived") return;
   review.summary = [parsed.summary, notes].filter(Boolean).join("\n\n");
   review.comments = replaceComments(review.id, comments);
   review.status = "drafts";
