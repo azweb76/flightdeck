@@ -10,7 +10,7 @@ import { seedDemo } from "../demo/index.ts";
 import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { archiveChange, startChange, startRunQueue } from "./index.ts";
 import { dropJobs } from "./jobs.ts";
-import { archiveAllForTests, getChange, insertChange, saveChange } from "./store.ts";
+import { archiveAllForTests, countActive, getChange, insertChange, saveChange } from "./store.ts";
 
 const issue = {
   id: "github:acme/web#1",
@@ -164,7 +164,7 @@ describe("live CI poll", () => {
     watcher.stage = "pr";
     watcher.prNumber = 9;
     saveChange(watcher);
-    const queued = await startChange("github:acme/web#12");
+    const queued = await startChange("github:acme/web#15");
     expect(queued.status).toBe("queued");
     const running = watchLiveCi(watcher, undefined, {
       checks: async () => ({ state: "pending" as const, sha: "abc", summary: "pending" }),
@@ -172,12 +172,13 @@ describe("live CI poll", () => {
       pollMs: 20,
     });
     await waitForStatus(watcher.id, "watching_ci");
-    await waitUntil(() => {
-      const status = getChange(queued.id)?.status;
-      return Boolean(status && status !== "queued");
-    });
+    await waitUntil(() => getChange(queued.id)?.status === "asking");
     expect(getChange(watcher.id)?.status).toBe("watching_ci");
-    expect(getChange(queued.id)?.status).not.toBe("queued");
+    expect(getChange(queued.id)?.status).toBe("asking");
+    expect(countActive()).toBe(1);
+    const third = await startChange("github:acme/web#50");
+    expect(third.status).toBe("queued");
+    expect(countActive()).toBe(1);
     await archiveChange(watcher.id);
     await running;
     delete process.env.FLIGHTDECK_DEMO;
