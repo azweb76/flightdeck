@@ -28,7 +28,7 @@ export async function getPullState(
   owner: string,
   name: string,
   number: number,
-): Promise<{ state: string; merged: boolean; createdAt?: string; updatedAt?: string }> {
+): Promise<{ state: string; merged: boolean; createdAt?: string; updatedAt?: string; committedAt?: string }> {
   const octokit = createOctokit(token, fetchFn);
   const res = await githubCall(() => octokit.rest.pulls.get({ owner, repo: name, pull_number: number }));
   return {

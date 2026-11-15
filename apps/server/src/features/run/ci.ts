@@ -132,6 +132,7 @@ function beginWatch(change: Change): void {
   if (change.ciPhase === "watching") return;
   change.ciRound += 1;
   change.ciPhase = "watching";
+  change.ciPushedAt = new Date().toISOString();
   setStage(change, "watching_ci", "ci", "CI", ciRoundCaption(change.ciRound));
 }
 
@@ -205,6 +206,7 @@ async function fixLiveCi(change: Change, summary: string, answer?: string): Prom
   if (!gates.ok) return;
   await commitAll(cwd, `flightdeck: ${change.issueKey} CI fix ${change.ciRound}`);
   await pushBranch(cwd, change.branch);
+  change.ciPushedAt = new Date().toISOString();
 }
 
 async function collectFix(change: Change, prompt: string, cwd: string, model: string, env: NodeJS.ProcessEnv): Promise<void> {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetCacheForTests } from "../cache/store.ts";
-import { CHECKS_GRACE_MS, commitChecks, summarize } from "./checks.ts";
+import { CHECKS_GRACE_MS, commitChecks, graceSinceMs, summarize } from "./checks.ts";
 
 describe("commit checks", () => {
   beforeEach(() => resetCacheForTests());
@@ -37,6 +37,18 @@ describe("commit checks", () => {
     ).toBe("passing");
     expect(summarize("abc", "neutral", [], []).state).toBe("passing");
     expect(summarize("abc", "failure", [], []).state).toBe("failing");
+  });
+
+  it("keeps empty success pending 1s after a push on a PR that is an hour old", () => {
+    const created = Date.parse("2026-11-15T11:00:00.000Z");
+    const pushed = Date.parse("2026-11-15T11:59:59.000Z");
+    const now = Date.parse("2026-11-15T12:00:00.000Z");
+    const since = graceSinceMs(
+      { ciPushedAt: new Date(pushed).toISOString(), updatedAt: new Date(created).toISOString() },
+      { createdAt: new Date(created).toISOString(), updatedAt: new Date(created).toISOString() },
+    );
+    expect(since).toBe(pushed);
+    expect(summarize("abc", "success", [], [], { sinceMs: since, now }).state).toBe("pending");
   });
 
   it("uses commit statuses when no check-runs exist", () => {

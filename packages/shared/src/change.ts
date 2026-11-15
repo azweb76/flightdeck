@@ -76,6 +76,7 @@ export const ChangeSchema = z.object({
   reviewRound: z.number().int().min(0),
   ciRound: z.number().int().min(0).default(0),
   ciPhase: z.enum(["", "watching", "fixing", "queued"]).default(""),
+  ciPushedAt: z.string().optional(),
   worktreePath: z.string().default(""),
   branch: z.string().default(""),
   planText: z.string().default(""),

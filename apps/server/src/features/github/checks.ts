@@ -56,6 +56,22 @@ export type SummarizeOpts = { sinceMs?: number; now?: number };
 /** Wait this long after a PR open or push before treating empty checks as "no CI". */
 export const CHECKS_GRACE_MS = 45_000;
 
+export function graceSinceMs(
+  change: { ciPushedAt?: string; updatedAt: string },
+  pr?: { createdAt?: string; updatedAt?: string; committedAt?: string },
+): number | undefined {
+  const pushed = Date.parse(change.ciPushedAt ?? "");
+  if (!Number.isNaN(pushed)) return pushed;
+  const head = Date.parse(pr?.committedAt ?? "");
+  if (!Number.isNaN(head)) return head;
+  const created = Date.parse(pr?.createdAt ?? "");
+  const updated = Date.parse(pr?.updatedAt ?? "");
+  const known = [created, updated].filter((n) => !Number.isNaN(n));
+  if (known.length) return Math.max(...known);
+  const fallback = Date.parse(change.updatedAt);
+  return Number.isNaN(fallback) ? undefined : fallback;
+}
+
 export function summarize(
   sha: string,
   combined: string,

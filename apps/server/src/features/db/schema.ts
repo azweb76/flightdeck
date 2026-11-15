@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -69,7 +69,8 @@ export const CREATE_SQL = `
     updated_at TEXT NOT NULL,
     demo INTEGER NOT NULL DEFAULT 0,
     ci_round INTEGER NOT NULL DEFAULT 0,
-    ci_phase TEXT NOT NULL DEFAULT ''
+    ci_phase TEXT NOT NULL DEFAULT '',
+    ci_pushed_at TEXT
   );
   CREATE TABLE IF NOT EXISTS pull_requests (
     id TEXT PRIMARY KEY,
@@ -170,6 +171,7 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
     { name: "ci_round", addSql: "ci_round INTEGER NOT NULL DEFAULT 0" },
     { name: "ci_phase", addSql: "ci_phase TEXT NOT NULL DEFAULT ''" },
+    { name: "ci_pushed_at", addSql: "ci_pushed_at TEXT" },
   ],
   pull_requests: [
     { name: "id", addSql: "id TEXT" },
