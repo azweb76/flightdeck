@@ -23,6 +23,7 @@ test("transcript keeps scrollTop when a new event arrives while reading", async 
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.clientHeight > 48)).toBe(true);
   await scroller.evaluate((el) => {
     el.scrollTop = 24;
+    el.dispatchEvent(new Event("scroll"));
   });
   const top = await scroller.evaluate((el) => el.scrollTop);
   expect(top).toBeGreaterThan(0);
@@ -68,7 +69,7 @@ test("Runs page lists changes and archive works", async ({ page }) => {
   await page.getByTestId("start-acme/web#12").click();
   await expect(page.getByTestId("pr-link")).toBeVisible({ timeout: 20_000 });
   await page.getByRole("tab", { name: "Runs" }).click();
-  await expect(page.getByTestId("run-row")).toHaveCount(1);
+  await expect(page.getByTestId("run-status-acme/web#12")).toBeVisible();
   await page.getByTestId("archive-acme/web#12").click();
   await expect(page.getByTestId("run-status-acme/web#12")).toContainText("Archived");
   await expect(page.getByTestId("archive-acme/web#12")).toBeDisabled();

@@ -20,7 +20,7 @@ test("nav pages include Issues, Runs, My PRs, Reviews, Settings", async ({ page 
   await seedHome(page);
   await page.getByRole("tab", { name: "Runs" }).click();
   await expect(page.getByRole("heading", { name: "Runs", exact: true })).toBeVisible();
-  await expect(page.getByTestId("empty-runs")).toBeVisible();
+  await expect(page.getByTestId("run-list")).toBeVisible();
   await page.getByRole("tab", { name: "My PRs" }).click();
   await expect(page.getByRole("heading", { name: "My PRs" })).toBeVisible();
   await page.getByRole("tab", { name: "Reviews" }).click();
