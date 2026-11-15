@@ -39,8 +39,9 @@ describe("pull state", () => {
 
     const first = await getPullState("t", fetchFn, "acme", "web", 9);
     expect(first.state).toBe("open");
-    expect(first.committedAt).toBe("2026-11-15T00:01:00Z");
+    expect(first.committedAt).toBeUndefined();
     expect(seen.filter((s) => s.includes("/pulls/9"))).toHaveLength(1);
+    expect(seen.some((s) => s.includes("/commits/abc"))).toBe(false);
     const cached = await getPullState("t", fetchFn, "acme", "web", 9);
     expect(cached.state).toBe("open");
     expect(seen.filter((s) => s.includes("/pulls/9"))).toHaveLength(1);
@@ -48,9 +49,29 @@ describe("pull state", () => {
     resetCacheForTests();
     const third = await getPullState("t", fetchFn, "acme", "web", 9);
     expect(third.state).toBe("open");
-    expect(third.committedAt).toBe("2026-11-15T00:01:00Z");
     expect(noneMatch).toContain('W/"p1"');
     expect(notModified).toBe(1);
+  });
+
+  it("loads the head commit date only when requested", async () => {
+    const seen: string[] = [];
+    const fetchFn = (async (input: string | URL | Request) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
+      seen.push(url.pathname);
+      if (url.pathname.endsWith("/pulls/9")) {
+        return json({ state: "open", merged: false, head: { sha: "abc" } }, { etag: 'W/"p1"' });
+      }
+      if (url.pathname.endsWith("/commits/abc")) {
+        return json({ commit: { committer: { date: "2026-11-15T00:01:00Z" } } });
+      }
+      return json({ message: url.pathname }, {}, 500);
+    }) as typeof fetch;
+    const parked = await getPullState("t", fetchFn, "acme", "web", 9);
+    expect(parked.committedAt).toBeUndefined();
+    expect(seen.some((s) => s.endsWith("/commits/abc"))).toBe(false);
+    const watched = await getPullState("t", fetchFn, "acme", "web", 9, { headCommit: true });
+    expect(watched.committedAt).toBe("2026-11-15T00:01:00Z");
+    expect(seen.filter((s) => s.endsWith("/commits/abc"))).toHaveLength(1);
   });
 });
 

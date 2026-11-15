@@ -51,7 +51,7 @@ export async function waitForChecks(
     }
     let pr: { state: string; merged: boolean; createdAt?: string; updatedAt?: string; committedAt?: string } | undefined;
     if (change.prNumber) {
-      pr = await pullState(token, fetchFn, owner, name, change.prNumber);
+      pr = await pullState(token, fetchFn, owner, name, change.prNumber, { headCommit: true });
       if (pr.merged) return { state: "stopped", sha: ref, summary: "Pull request merged." };
       if (pr.state === "closed") return { state: "stopped", sha: ref, summary: "Pull request closed." };
     }

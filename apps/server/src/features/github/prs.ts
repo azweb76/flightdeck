@@ -8,7 +8,10 @@ export type PullState = {
   createdAt?: string;
   updatedAt?: string;
   committedAt?: string;
+  sha?: string;
 };
+
+export type PullStateOpts = { headCommit?: boolean };
 
 export async function createDraftPr(
   token: string,
@@ -38,9 +41,13 @@ export async function getPullState(
   owner: string,
   name: string,
   number: number,
+  opts?: PullStateOpts,
 ): Promise<PullState> {
   const key = CACHE_KEYS.githubPull(owner, name, number);
-  return getCache().get(key, () => loadPull(token, fetchFn, owner, name, number, key), TTL.githubPull);
+  const pr = await getCache().get(key, () => loadPull(token, fetchFn, owner, name, number, key), TTL.githubPull);
+  if (!opts?.headCommit || pr.committedAt || !pr.sha) return pr;
+  pr.committedAt = await headCommittedAt(createOctokit(token, fetchFn), owner, name, pr.sha);
+  return pr;
 }
 
 async function loadPull(
@@ -62,7 +69,7 @@ async function loadPull(
       merged: Boolean(res.data.merged),
       createdAt: res.data.created_at,
       updatedAt: res.data.updated_at,
-      committedAt: sha ? await headCommittedAt(octokit, owner, name, sha) : undefined,
+      sha: sha || undefined,
     };
     return rememberEtag(key, String(res.headers.etag ?? ""), data);
   } catch (err) {
