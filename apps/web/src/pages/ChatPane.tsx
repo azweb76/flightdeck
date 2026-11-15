@@ -58,7 +58,7 @@ export function ChatPane(props: {
               }}
               inputProps={{ "data-testid": "chat-input" }}
             />
-            <ContainedButton disabled={!canSend} onClick={() => props.onSend(props.reply)} style={{ marginTop: 2 }}>
+            <ContainedButton disabled={!canSend} onClick={() => props.onSend(props.reply)} sx={{ mt: 2 }}>
               Send
             </ContainedButton>
           </Stack>

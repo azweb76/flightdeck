@@ -5,20 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Flightdeck</title>
     <style>
-      html.dark {
-        color-scheme: dark;
-      }
-      html.dark .MuiButton-root.MuiButton-contained.Mui-disabled,
-      html.dark .MuiDialog-root .MuiButton-contained.Mui-disabled {
-        --variant-containedBg: #3a3a3c !important;
-        background: #3a3a3c !important;
-        background-color: #3a3a3c !important;
-        color: #a1a1a6 !important;
+      .MuiButton-contained.Mui-disabled {
+        --variant-containedBg: var(--mui-palette-action-disabledBackground) !important;
+        --variant-containedColor: var(--mui-palette-action-disabled) !important;
+        background-color: var(--mui-palette-action-disabledBackground) !important;
+        color: var(--mui-palette-action-disabled) !important;
         box-shadow: none !important;
-      }
-      html.dark .MuiButton-root.MuiButton-outlined.Mui-disabled {
-        color: #f5f5f7 !important;
-        border-color: #d2d2d7 !important;
+        transition: none !important;
       }
     </style>
   </head>

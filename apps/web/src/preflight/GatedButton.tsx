@@ -1,6 +1,6 @@
 import { Button, Tooltip, type ButtonProps, type TooltipProps } from "@mui/material";
 import type { PreflightCheck, PreflightGate } from "@flightdeck/shared";
-import { containedOffStyle, containedOffSx, useHtmlDark } from "../ui/containedOffSx.ts";
+import { mergeSx } from "../ui/mergeSx.ts";
 import { usePreflight } from "./PreflightContext.tsx";
 
 export function GatedButton(
@@ -11,12 +11,10 @@ export function GatedButton(
     placement?: TooltipProps["placement"];
   },
 ) {
-  const { gate, fallbackTitle, testId, disabled, placement = "left", style, variant, ...rest } = props;
+  const { gate, fallbackTitle, testId, disabled, placement = "left", sx, ...rest } = props;
   const blocked = usePreflight().block(gate);
   const title = tooltipTitle(blocked, fallbackTitle, Boolean(disabled));
   const off = Boolean(blocked) || Boolean(disabled);
-  const dark = useHtmlDark();
-  const contained = variant === "contained";
 
   return (
     <Tooltip
@@ -32,15 +30,7 @@ export function GatedButton(
       slotProps={tooltipSlots}
     >
       <span data-testid={`${testId}-gate`} style={{ display: "inline-flex" }}>
-        <Button
-          {...rest}
-          variant={variant}
-          key={off ? "off" : "on"}
-          disabled={off}
-          data-testid={testId}
-          sx={containedOffSx}
-          style={{ ...style, ...(contained ? containedOffStyle(off, dark) : undefined) }}
-        />
+        <Button {...rest} disabled={off} data-testid={testId} sx={mergeSx(sx)} />
       </span>
     </Tooltip>
   );
