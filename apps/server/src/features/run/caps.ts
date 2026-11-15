@@ -7,7 +7,10 @@ export function evaluateSpend(spentRun: number, add: number): CapHit {
   return checkCaps(spentRun, dailySpendUsd(), add, settings.dollarCapUsd, settings.dailyDollarCapUsd);
 }
 
-export function capMessage(hit: CapHit): string {
+export function capMessage(hit: CapHit, subject: "run" | "review" = "run"): string {
+  if (hit === "run" && subject === "review") {
+    return "This review or chat hit the per-run dollar cap. Raise it in Settings or archive and try a smaller review.";
+  }
   if (hit === "run") return "This run hit the per-run dollar cap. Raise it in Settings or archive and try a smaller run.";
   if (hit === "daily") return "Today's spend hit the daily dollar cap. Raise it in Settings or wait until tomorrow.";
   return "";
