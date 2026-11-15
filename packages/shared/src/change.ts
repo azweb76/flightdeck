@@ -72,15 +72,3 @@ export const ChangeSchema = z.object({
   updatedAt: z.string(),
 });
 export type Change = z.infer<typeof ChangeSchema>;
-
-export function githubCardTitle(status: {
-  loggedIn: boolean;
-  user?: string;
-  detail: string;
-}): string {
-  if (status.loggedIn) return status.user ?? "Connected";
-  if (/missing scopes/i.test(status.detail) || status.user) {
-    return `${status.user ?? "Connected"} · missing scopes`;
-  }
-  return "Not connected";
-}

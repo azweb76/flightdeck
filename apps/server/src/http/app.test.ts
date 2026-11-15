@@ -176,48 +176,34 @@ describe("http", () => {
     expect(types.filter((t) => t === "issues.updated")).toEqual([]);
   });
 
-  it("rechecks Claude in demo without calling a live probe", async () => {
+  it("stores GitHub and Jira secrets without probing connectivity", async () => {
     const app = createApp();
-    const res = await app.request("http://127.0.0.1/api/claude/recheck", { method: "POST" });
-    expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ found: true, detail: expect.stringContaining("demo") });
-  });
-
-  it("accepts and rejects a demo GitHub token", async () => {
-    const app = createApp();
-    const ok = await app.request("http://127.0.0.1/api/github/token", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token: "ghp_demo" }),
-    });
-    expect(ok.status).toBe(200);
-    expect(await ok.json()).toMatchObject({ ok: true, status: { user: "dan-demo", loggedIn: true } });
-    const bad = await app.request("http://127.0.0.1/api/github/token", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token: "fail" }),
-    });
-    expect(bad.status).toBe(400);
-    const skinny = await app.request("http://127.0.0.1/api/github/token", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token: "scopes" }),
-    });
-    expect(skinny.status).toBe(400);
-    expect(await skinny.json()).toMatchObject({ error: expect.stringMatching(/missing scopes/) });
-    await app.request("http://127.0.0.1/api/github/disconnect", { method: "POST" });
-    const status = (await (await app.request("http://127.0.0.1/api/status")).json()) as { github: { loggedIn: boolean } };
-    expect(status.github.loggedIn).toBe(false);
-  });
-
-  it("rejects a Jira connect with a bad token", async () => {
-    const app = createApp();
-    const res = await app.request("http://127.0.0.1/api/jira/connect", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ siteUrl: "https://invalid.example", email: "a@b.c", token: "fail" }),
-    });
-    expect(res.status).toBe(400);
-    expect(await res.json()).toMatchObject({ error: expect.stringMatching(/Jira login failed/i) });
+    const urls: string[] = [];
+    const orig = globalThis.fetch;
+    globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      urls.push(String(input));
+      return orig(input, init);
+    }) as typeof fetch;
+    try {
+      const settings = await app.request("http://127.0.0.1/api/settings");
+      expect(settings.status).toBe(200);
+      const gh = await app.request("http://127.0.0.1/api/github/token", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: "fail" }),
+      });
+      expect(gh.status).toBe(200);
+      expect(await gh.json()).toMatchObject({ ok: true, hasGithubToken: true });
+      const jira = await app.request("http://127.0.0.1/api/jira/save", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ siteUrl: "https://invalid.example", email: "a@b.c", token: "fail" }),
+      });
+      expect(jira.status).toBe(200);
+      expect(preflightBuildCount()).toBe(1);
+      expect(urls.filter((u) => /github\.com|atlassian|anthropic/i.test(u))).toEqual([]);
+    } finally {
+      globalThis.fetch = orig;
+    }
   });
 });

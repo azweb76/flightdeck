@@ -2,11 +2,9 @@ import type {
   CatalogRepo,
   Change,
   Issue,
-  Settings,
+  SettingsView,
   SettingsPatch,
   ShapeSession,
-  ClaudeStatus,
-  GithubStatus,
   PreflightReport,
 } from "@flightdeck/shared";
 
@@ -20,19 +18,11 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
-export type AppStatus = {
-  claude: ClaudeStatus;
-  github: GithubStatus;
-  jira: { configured: boolean; detail: string; hasToken: boolean; lastError?: string };
-  demo: boolean;
-};
-
 export const api = {
   health: () => req<{ ok: boolean; host: string }>("/api/health"),
-  status: () => req<AppStatus>("/api/status"),
-  settings: () => req<Settings>("/api/settings"),
+  settings: () => req<SettingsView>("/api/settings"),
   patchSettings: (patch: SettingsPatch) =>
-    req<Settings>("/api/settings", { method: "PATCH", body: JSON.stringify(patch) }),
+    req<SettingsView>("/api/settings", { method: "PATCH", body: JSON.stringify(patch) }),
   issues: () => req<{ issues: Issue[] }>("/api/issues"),
   syncIssues: () => req<{ issues: Issue[] }>("/api/issues/sync", { method: "POST" }),
   setIssueRepo: (id: string, repoSlug: string) =>
@@ -49,18 +39,20 @@ export const api = {
   saveShape: (id: string, body: { tracker: "jira" | "github"; projectKey?: string; repoSlug?: string }) =>
     req<Issue>(`/api/shape/${id}/save`, { method: "POST", body: JSON.stringify(body) }),
   saveGithubToken: (token: string) =>
-    req<{ ok: boolean; status: GithubStatus }>("/api/github/token", {
+    req<{ ok: true; tokenSource?: SettingsView["githubTokenSource"]; hasGithubToken: boolean }>("/api/github/token", {
       method: "POST",
       body: JSON.stringify({ token }),
     }),
-  disconnectGithub: () => req<{ ok: boolean; status: GithubStatus }>("/api/github/disconnect", { method: "POST" }),
-  connectJira: (body: { siteUrl: string; email: string; token?: string; projectKey?: string }) =>
-    req<{ ok: boolean; detail: string; settings: Settings }>("/api/jira/connect", {
+  disconnectGithub: () =>
+    req<{ ok: true; tokenSource?: SettingsView["githubTokenSource"]; hasGithubToken: boolean }>(
+      "/api/github/disconnect",
+      { method: "POST" },
+    ),
+  saveJira: (body: { siteUrl: string; email: string; token?: string; projectKey?: string }) =>
+    req<{ ok: boolean; settings: SettingsView }>("/api/jira/save", {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  claudeLogin: () => req<{ ok: boolean; detail: string }>("/api/claude/login", { method: "POST" }),
-  recheckClaude: () => req<ClaudeStatus>("/api/claude/recheck", { method: "POST" }),
   preflight: () => req<PreflightReport>("/api/preflight"),
   recheckPreflight: () => req<PreflightReport>("/api/preflight/recheck", { method: "POST" }),
   setDemoPreflight: (fixture: "pass" | "fail") =>

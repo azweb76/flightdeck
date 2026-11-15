@@ -73,34 +73,34 @@ test("save without a tracker shows an error", async ({ page }) => {
   await expect(page.getByTestId("save-error")).toContainText("Choose Jira or GitHub");
 });
 
-test("Settings shows Claude, GitHub, Jira, repos and caps", async ({ page }) => {
+test("Settings shows editable fields and no connectivity cards", async ({ page }) => {
   await seedHome(page);
   await page.goto("/settings");
-  await expect(page.getByTestId("claude-status")).toContainText("apiKeyHelper");
-  await expect(page.getByTestId("github-status")).toContainText("dan-demo");
-  await expect(page.getByTestId("jira-status")).toContainText("Connected");
-  await expect(page.getByTestId("repos-list")).toContainText("acme/web");
+  await expect(page.getByTestId("preflight-section")).toHaveCount(0);
+  await expect(page.getByTestId("github-status")).toHaveCount(0);
+  await expect(page.getByTestId("claude-status")).toHaveCount(0);
+  await expect(page.getByTestId("jira-status")).toHaveCount(0);
+  await expect(page.getByTestId("github-form")).toBeVisible();
+  await expect(page.getByTestId("github-token-source")).toContainText("Using GITHUB_TOKEN from environment");
+  await expect(page.getByTestId("github-pat-link")).toBeVisible();
+  await expect(page.getByTestId("claude-form")).toBeVisible();
+  await expect(page.getByTestId("claude-login-hint")).toContainText("/login");
+  await expect(page.getByTestId("jira-form")).toBeVisible();
   await expect(page.getByTestId("cap-run")).toHaveValue("10");
   await expect(page.getByTestId("cap-daily")).toHaveValue("50");
   await expect(page.getByTestId("cap-concurrent")).toHaveValue("3");
-  await expect(page.getByTestId("github-form")).toBeVisible();
-  await expect(page.getByTestId("github-pat-link")).toBeVisible();
-  await page.getByTestId("preflight-section").getByTestId("preflight-recheck").click();
-  await expect(page.getByTestId("claude-status")).toContainText("apiKeyHelper");
   await page.getByTestId("cap-run").fill("12");
   await page.getByTestId("cap-run").blur();
   await expect(page.getByText("Caps saved")).toBeVisible();
 });
 
-test("Jira connect success is not an error banner", async ({ page }) => {
+test("Jira save stores without a connection test", async ({ page }) => {
   await seedHome(page);
   await page.goto("/settings");
   await page.getByTestId("jira-token").fill("ok");
-  await page.getByTestId("jira-connect").click();
-  await expect(page.getByTestId("jira-form-success")).toContainText("Connected as dan@example.com (demo)");
+  await page.getByTestId("jira-save").click();
+  await expect(page.getByTestId("jira-form-success")).toContainText("Jira settings saved");
   await expect(page.getByTestId("page-error")).toHaveCount(0);
-  await expect(page.locator('[role="alert"].MuiAlert-colorError, [role="alert"].MuiAlert-standardError')).toHaveCount(0);
-  await expect(page.getByTestId("jira-status")).toContainText("Connected");
 });
 
 test("invalid cap error clears once corrected", async ({ page }) => {
@@ -113,16 +113,6 @@ test("invalid cap error clears once corrected", async ({ page }) => {
   await expect(page.getByTestId("cap-error")).toHaveCount(0);
   await page.getByTestId("cap-run").blur();
   await expect(page.getByTestId("cap-saved")).toContainText("Caps saved");
-});
-
-test("Jira connect error is visible", async ({ page }) => {
-  await seedHome(page);
-  await page.goto("/settings");
-  await page.getByTestId("jira-url").fill("https://invalid.example");
-  await page.getByTestId("jira-token").fill("fail");
-  await page.getByTestId("jira-connect").click();
-  await expect(page.getByTestId("jira-form-error")).toContainText(/Jira login failed/);
-  await expect(page.getByTestId("jira-status")).toContainText("Not connected");
 });
 
 test("demo draft follows the idea text", async ({ page }) => {

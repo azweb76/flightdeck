@@ -1,18 +1,20 @@
 import { Alert, Box, Button, Link, Paper, Stack, TextField, Typography } from "@mui/material";
-import { GITHUB_PAT_URL, githubTokenSourceLabel, type GithubStatus } from "@flightdeck/shared";
+import { GITHUB_PAT_URL, githubTokenSourceLabel, type GithubTokenSource } from "@flightdeck/shared";
 import { useState } from "react";
 import { api } from "../api.ts";
-import { ContrastAlert } from "../ui/ContrastAlert.tsx";
 import { FormField } from "../ui/FormField.tsx";
 
-export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<void> }) {
+export function GithubForm(props: {
+  tokenSource?: GithubTokenSource;
+  hasGithubToken: boolean;
+  onDone: (next: { tokenSource?: GithubTokenSource; hasGithubToken: boolean }) => void;
+}) {
   const [token, setToken] = useState("");
   const [err, setErr] = useState("");
   const [ok, setOk] = useState("");
   const [busy, setBusy] = useState(false);
-  const connected = props.status.loggedIn;
-  const sourceLabel = githubTokenSourceLabel(props.status.tokenSource);
-  const envWins = props.status.tokenSource === "GITHUB_TOKEN" || props.status.tokenSource === "GH_TOKEN";
+  const sourceLabel = githubTokenSourceLabel(props.tokenSource);
+  const envWins = props.tokenSource === "GITHUB_TOKEN" || props.tokenSource === "GH_TOKEN";
 
   async function save() {
     setErr("");
@@ -20,12 +22,11 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
     setBusy(true);
     try {
       const res = await api.saveGithubToken(token);
-      setOk(res.status.detail);
+      setOk("GitHub token saved");
       setToken("");
-      await props.onDone();
+      props.onDone(res);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "GitHub token was rejected");
-      await props.onDone();
+      setErr(e instanceof Error ? e.message : "Could not save the GitHub token");
     } finally {
       setBusy(false);
     }
@@ -34,8 +35,7 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
   async function disconnect() {
     setErr("");
     setOk("");
-    await api.disconnectGithub();
-    await props.onDone();
+    props.onDone(await api.disconnectGithub());
   }
 
   return (
@@ -45,9 +45,9 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
       </Typography>
       <GithubHelp envWins={envWins} sourceLabel={sourceLabel} />
       {err ? (
-        <ContrastAlert sx={{ mb: 2 }} data-testid="github-form-error">
+        <Alert severity="error" sx={{ mb: 2 }} data-testid="github-form-error">
           {err}
-        </ContrastAlert>
+        </Alert>
       ) : null}
       {ok ? (
         <Alert severity="success" sx={{ mb: 2 }} data-testid="github-form-success">
@@ -55,23 +55,23 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
         </Alert>
       ) : null}
       <Box sx={{ maxWidth: 480 }}>
-        <FormField label="Personal access token" hint={tokenHint(envWins, sourceLabel, connected)}>
+        <FormField label="Personal access token" hint={tokenHint(envWins, props.hasGithubToken)}>
           <TextField
             type="password"
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            placeholder={connected ? "Stored token" : ""}
+            placeholder={props.hasGithubToken ? "Stored token" : ""}
             inputProps={{ "data-testid": "github-token" }}
           />
         </FormField>
       </Box>
       <Stack direction="row" gap={1}>
         <Button variant="contained" disabled={busy || !token.trim()} onClick={() => void save()} data-testid="github-save">
-          Save token
+          Save
         </Button>
-        {props.status.hasToken || connected ? (
+        {props.hasGithubToken && !envWins ? (
           <Button onClick={() => void disconnect()} data-testid="github-disconnect">
-            Disconnect
+            Clear stored token
           </Button>
         ) : null}
       </Stack>
@@ -79,11 +79,9 @@ export function GithubForm(props: { status: GithubStatus; onDone: () => Promise<
   );
 }
 
-function tokenHint(envWins: boolean, sourceLabel: string, connected: boolean): string {
-  if (envWins) {
-    return `${sourceLabel}. A pasted token is stored for later; the environment variable wins until you unset it.`;
-  }
-  if (connected) return "Leave blank unless you are replacing the stored token.";
+function tokenHint(envWins: boolean, hasToken: boolean): string {
+  if (envWins) return "A pasted token is stored for later; the environment variable wins until you unset it.";
+  if (hasToken) return "Leave blank unless you are replacing the stored token.";
   return "Never stored in the database. GITHUB_TOKEN or GH_TOKEN in the environment overrides this.";
 }
 
@@ -100,15 +98,12 @@ function GithubHelp(props: { envWins: boolean; sourceLabel: string }) {
         <Link href={GITHUB_PAT_URL} target="_blank" rel="noreferrer" data-testid="github-pat-link">
           personal access token
         </Link>{" "}
-        with repo, read:org, and workflow.
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        Fine-grained: Contents, Issues, Metadata, Pull requests, Workflows.
+        with repo, read:org, and workflow. Saving stores it only; connectivity is checked at startup.
       </Typography>
       <Typography variant="body2" color="text.secondary">
         {props.envWins
           ? "GITHUB_TOKEN / GH_TOKEN override the keychain and ~/.flightdeck/secrets until you unset them."
-          : "Stored in the Mac keychain, or ~/.flightdeck/secrets if keychain is unavailable. GITHUB_TOKEN or GH_TOKEN in the environment overrides a stored token."}
+          : "Stored in the Mac keychain, or ~/.flightdeck/secrets if keychain is unavailable."}
       </Typography>
     </Stack>
   );

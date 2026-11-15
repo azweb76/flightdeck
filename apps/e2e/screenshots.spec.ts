@@ -72,7 +72,8 @@ test("phase 1 screenshots", async ({ page }) => {
 
   await page.getByTestId("save-issue").click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByRole("dialog")).toContainText("Choose Jira or GitHub");
+  await expect(page.getByTestId("tracker-github")).toBeVisible();
+  await expect(page.getByTestId("tracker-jira")).toBeVisible();
   await shot(page, "save-dialog-light");
   await page.getByTestId("tracker-github").click();
   await shot(page, "save-github-light");
@@ -82,7 +83,10 @@ test("phase 1 screenshots", async ({ page }) => {
   await shot(page, "shape-saved-light");
 
   await page.goto("/settings");
-  await expect(page.getByTestId("claude-status")).toBeVisible();
+  await expect(page.getByTestId("github-form")).toBeVisible();
+  await expect(page.getByTestId("claude-form")).toBeVisible();
+  await expect(page.getByTestId("github-status")).toHaveCount(0);
+  await expect(page.getByTestId("preflight-section")).toHaveCount(0);
   await shot(page, "settings-light");
   await scheme(page, "dark");
   await shot(page, "settings-dark");
@@ -90,11 +94,10 @@ test("phase 1 screenshots", async ({ page }) => {
   await shot(page, "settings-narrow");
   await page.setViewportSize({ width: 1440, height: 900 });
 
-  await page.getByTestId("jira-token").fill("fail");
-  await page.getByTestId("jira-url").fill("https://invalid.example");
-  await page.getByTestId("jira-connect").click();
-  await expect(page.getByTestId("jira-form-error")).toBeVisible();
-  await shot(page, "settings-jira-error-dark");
+  await page.getByTestId("jira-token").fill("ok");
+  await page.getByTestId("jira-save").click();
+  await expect(page.getByTestId("jira-form-success")).toBeVisible();
+  await shot(page, "settings-jira-saved-dark");
 
   await scheme(page, "light");
   await page.goto("/runs");

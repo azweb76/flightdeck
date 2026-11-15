@@ -1,9 +1,9 @@
-import type { GithubStatus, PreflightCheck, PreflightReport } from "@flightdeck/shared";
+import type { PreflightCheck, PreflightReport } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache } from "../cache/index.ts";
 import { databasePreflightCheck, getDb } from "../db/index.ts";
 import { publish } from "../events/index.ts";
 import { checkClaude } from "./check-claude.ts";
-import { checkGithub, githubCheckFromStatus } from "./check-github.ts";
+import { checkGithub } from "./check-github.ts";
 import { checkJira } from "./check-jira.ts";
 import { checkNode } from "./check-node.ts";
 import { checkGit, checkPnpm } from "./check-tools.ts";
@@ -58,17 +58,6 @@ export async function recheckPreflight(): Promise<PreflightReport> {
   const report = await runChecks();
   publish("preflight.updated", report);
   return report;
-}
-
-export function patchGithubPreflight(status: GithubStatus): PreflightReport {
-  const check = githubCheckFromStatus(status);
-  const current = stored ?? toReport([check], process.env.FLIGHTDECK_DEMO === "1");
-  const checks = current.checks.some((c) => c.id === "github")
-    ? current.checks.map((c) => (c.id === "github" ? check : c))
-    : [...current.checks, check];
-  stored = toReport(checks, current.demo, current.checkedAt);
-  publish("preflight.updated", stored);
-  return stored;
 }
 
 export function toReport(checks: PreflightCheck[], demo: boolean, checkedAt = new Date().toISOString()): PreflightReport {

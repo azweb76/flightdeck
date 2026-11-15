@@ -30,27 +30,21 @@ test("failing preflight shows the banner, Re-check, and gated Shape", async ({ p
   await expect(page.getByTestId("new-idea")).toBeEnabled();
 });
 
-test("Settings lists every preflight check", async ({ page }) => {
+test("Settings stays save-only while the banner holds Re-check", async ({ page }) => {
   await seedHome(page);
   await page.goto("/settings");
-  await expect(page.getByTestId("preflight-section")).toBeVisible();
-  await expect(page.getByTestId("preflight-node")).toContainText("Pass");
-  await expect(page.getByTestId("preflight-github")).toContainText("dan-demo");
-  await expect(page.getByTestId("preflight-github")).toContainText("Using GITHUB_TOKEN from environment");
-  await expect(page.getByTestId("claude-recheck")).toHaveCount(0);
-  await page.getByTestId("preflight-section").getByTestId("preflight-recheck").click();
-  await expect(page.getByTestId("preflight-claude")).toContainText("Pass");
-});
-
-test("failing preflight matches Settings cards", async ({ page }) => {
-  await seedHome(page);
+  await expect(page.getByTestId("preflight-section")).toHaveCount(0);
+  await expect(page.getByTestId("preflight-recheck")).toHaveCount(0);
+  await expect(page.getByTestId("github-token-source")).toContainText("Using GITHUB_TOKEN from environment");
+  await page.goto("/");
   await setPreflight(page, "fail");
+  await expect(page.getByTestId("preflight-banner")).toBeVisible();
+  await expect(page.getByTestId("preflight-github")).toContainText("Fail");
+  await page.getByTestId("preflight-recheck").click();
+  await expect(page.getByTestId("preflight-banner")).toBeVisible();
   await page.goto("/settings");
-  await expect(page.getByTestId("preflight-claude")).toContainText("Fail");
-  await expect(page.getByTestId("claude-status")).toContainText("Needs login");
-  await expect(page.getByTestId("github-status")).toContainText("GITHUB_TOKEN");
-  await expect(page.getByTestId("jira-status")).toContainText("Not connected");
-  await expect(page.getByTestId("jira-status")).toContainText("token is missing");
+  await expect(page.getByTestId("github-form")).toBeVisible();
+  await expect(page.getByTestId("preflight-section")).toHaveCount(0);
 });
 
 test("Save tracker cards explain gated GitHub and Jira", async ({ page }) => {

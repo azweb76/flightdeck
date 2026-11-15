@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { ClaudeStatus } from "@flightdeck/shared";
+import { CLAUDE_LOGIN_HINT, type ClaudeStatus } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { defaultExec, type ExecFn } from "../exec/index.ts";
 
@@ -9,7 +9,7 @@ type ClaudeSettings = { apiKeyHelper?: string; env?: Record<string, string>; ANT
 
 export type ClaudeDeps = { exec?: ExecFn; home?: string; env?: NodeJS.ProcessEnv };
 
-export const CLAUDE_LOGIN_HINT = "In a terminal run: claude\nThen type /login and finish in the browser.";
+export { CLAUDE_LOGIN_HINT };
 
 export async function detectClaudeConfig(deps: ClaudeDeps = {}): Promise<ClaudeStatus> {
   const custom = Boolean(deps.home || deps.env || deps.exec);
@@ -47,10 +47,6 @@ async function readClaudeConfig(deps: ClaudeDeps): Promise<ClaudeStatus> {
     sources: [...new Set(sources)],
     detail: summarize({ found, helper: Boolean(helper), apiKeyHelperOk, baseUrl, hasKeyEnv, oauth }),
   };
-}
-
-export function claudeLoginInstructions(): { ok: true; detail: string } {
-  return { ok: true, detail: CLAUDE_LOGIN_HINT };
 }
 
 const STRIP_FROM_SDK = ["GITHUB_TOKEN", "GH_TOKEN", "GH_ENTERPRISE_TOKEN"] as const;

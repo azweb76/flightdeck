@@ -40,3 +40,4 @@ export const DEFAULT_DAILY_DOLLAR_CAP_USD = 50;
 export const DEFAULT_MAX_CONCURRENT = 3;
 export const DEFAULT_MODEL = "claude-sonnet-4-5";
 export const JIRA_API_TOKEN_URL = "https://id.atlassian.com/manage-profile/security/api-tokens";
+export const CLAUDE_LOGIN_HINT = "In a terminal run: claude\nThen type /login and finish in the browser.";

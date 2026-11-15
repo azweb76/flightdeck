@@ -3,7 +3,6 @@ export {
   buildReport,
   recheckPreflight,
   runChecks,
-  patchGithubPreflight,
   resetPreflightStore,
   preflightBuildCount,
   toReport,

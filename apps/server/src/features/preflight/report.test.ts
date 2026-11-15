@@ -6,9 +6,8 @@ import { CACHE_KEYS, getCache } from "../cache/index.ts";
 import { resetCacheForTests } from "../cache/store.ts";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import { formatPreflight } from "./print.ts";
-import { getPreflightReport, patchGithubPreflight, preflightBuildCount, recheckPreflight, resetPreflightStore, runChecks } from "./report.ts";
+import { getPreflightReport, preflightBuildCount, recheckPreflight, resetPreflightStore, runChecks } from "./report.ts";
 import { resetDemoPreflightFixture, setDemoPreflightFixture } from "./demo.ts";
-import { demoGithubStatus, setDemoGithubMode } from "../github/demo.ts";
 
 describe("preflight report", () => {
   beforeEach(() => {
@@ -81,20 +80,4 @@ describe("preflight report", () => {
     expect(claude).toBe(2);
   });
 
-  it("patches only the GitHub row when the token source changes", async () => {
-    process.env.GITHUB_TOKEN = "test-env-github-token";
-    await runChecks();
-    expect(preflightBuildCount()).toBe(1);
-    expect(getPreflightReport()?.checks.find((c) => c.id === "github")?.detail).toContain(
-      "Using GITHUB_TOKEN from environment",
-    );
-    setDemoGithubMode("empty");
-    const patched = patchGithubPreflight(demoGithubStatus());
-    expect(preflightBuildCount()).toBe(1);
-    const github = patched.checks.find((c) => c.id === "github");
-    expect(github?.ok).toBe(false);
-    expect(github?.detail).toBe("GitHub token from GITHUB_TOKEN was rejected");
-    expect(github?.detail).not.toMatch(/No GitHub token stored/);
-    expect(patched.checks.find((c) => c.id === "git")?.ok).toBe(true);
-  });
 });

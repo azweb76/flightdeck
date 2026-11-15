@@ -30,16 +30,15 @@ async function pair(page: Page, prefix: string): Promise<void> {
   await page.setViewportSize({ width: 1440, height: 900 });
 }
 
-test("settings GitHub missing scopes", async ({ page }) => {
+test("settings GitHub save does not validate scopes", async ({ page }) => {
   await seedHome(page);
   await page.goto("/settings");
   await expect(page.getByTestId("github-form")).toBeVisible();
   await page.getByTestId("github-token").fill("scopes");
   await page.getByTestId("github-save").click();
-  await expect(page.getByTestId("github-form-error")).toContainText("missing scopes");
-  await expect(page.getByTestId("github-status")).toContainText("missing scopes");
-  await expect(page.getByTestId("github-status")).not.toContainText("Not connected");
-  await expect(page.getByTestId("preflight-github")).toContainText("missing scopes");
+  await expect(page.getByTestId("github-form-success")).toContainText("GitHub token saved");
+  await expect(page.getByTestId("github-form-error")).toHaveCount(0);
+  await expect(page.getByTestId("github-status")).toHaveCount(0);
   await page.getByTestId("github-form").scrollIntoViewIfNeeded();
   await scheme(page, "light");
   await pair(page, "settings-github-scopes-light");

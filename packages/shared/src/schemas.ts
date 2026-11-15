@@ -29,6 +29,13 @@ export type Settings = z.infer<typeof SettingsSchema>;
 export const SettingsPatchSchema = SettingsSchema.partial();
 export type SettingsPatch = z.input<typeof SettingsPatchSchema>;
 
+export const SettingsViewSchema = SettingsSchema.extend({
+  githubTokenSource: z.enum(["GITHUB_TOKEN", "GH_TOKEN", "keychain", "file"]).optional(),
+  hasGithubToken: z.boolean(),
+  hasJiraToken: z.boolean(),
+});
+export type SettingsView = z.infer<typeof SettingsViewSchema>;
+
 export const IssueSourceSchema = z.enum(["jira", "github", "local"]);
 export type IssueSource = z.infer<typeof IssueSourceSchema>;
 

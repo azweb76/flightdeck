@@ -1,28 +1,21 @@
 import { Alert, Stack, Typography } from "@mui/material";
-import type { CatalogRepo, Settings } from "@flightdeck/shared";
+import type { SettingsView } from "@flightdeck/shared";
 import { useColorScheme } from "@mui/material/styles";
 import { useCallback, useEffect, useState } from "react";
-import { api, type AppStatus } from "../api.ts";
-import { overlayStatus, PreflightSection, usePreflight } from "../preflight/index.ts";
+import { api } from "../api.ts";
 import { CapsForm } from "./CapsForm.tsx";
+import { ClaudeForm } from "./ClaudeForm.tsx";
 import { GithubForm } from "./GithubForm.tsx";
 import { JiraForm } from "./JiraForm.tsx";
-import { StatusCards } from "./StatusCards.tsx";
 
 export function SettingsPage() {
-  const [settings, setSettings] = useState<Settings>();
-  const [status, setStatus] = useState<AppStatus>();
-  const [repos, setRepos] = useState<CatalogRepo[]>([]);
+  const [settings, setSettings] = useState<SettingsView>();
   const [error, setError] = useState("");
   const { setMode } = useColorScheme();
-  const { report } = usePreflight();
-  const shown = status ? overlayStatus(status, report) : undefined;
 
   const reload = useCallback(async () => {
-    const [s, st, r] = await Promise.all([api.settings(), api.status(), api.repos()]);
+    const s = await api.settings();
     setSettings(s);
-    setStatus(st);
-    setRepos(r.repos);
     if (s.theme !== "system") setMode(s.theme);
   }, [setMode]);
 
@@ -30,7 +23,7 @@ export function SettingsPage() {
     reload().catch((e: Error) => setError(e.message));
   }, [reload]);
 
-  if (!settings || !status || !shown) {
+  if (!settings) {
     return error ? (
       <Alert severity="error" data-testid="page-error">
         {error}
@@ -38,6 +31,12 @@ export function SettingsPage() {
     ) : (
       <Typography color="text.secondary">Loading…</Typography>
     );
+  }
+
+  async function savePatch(patch: Partial<SettingsView>) {
+    const next = await api.patchSettings(patch);
+    setSettings(next);
+    if (patch.theme) setMode(patch.theme === "system" ? "system" : patch.theme);
   }
 
   return (
@@ -48,34 +47,16 @@ export function SettingsPage() {
           {error}
         </Alert>
       ) : null}
-      <PreflightSection />
-      <StatusCards
-        status={shown}
-        repos={repos}
-        onClaudeHint={() => void api.claudeLogin().then((r) => setError(r.detail))}
-      />
       <GithubForm
-        status={shown.github}
-        onDone={() => reload()}
+        tokenSource={settings.githubTokenSource}
+        hasGithubToken={settings.hasGithubToken}
+        onDone={(next) =>
+          setSettings({ ...settings, githubTokenSource: next.tokenSource, hasGithubToken: next.hasGithubToken })
+        }
       />
-      <CapsForm
-        settings={settings}
-        onSaved={async (patch) => {
-          const next = await api.patchSettings(patch);
-          setSettings(next);
-          if (patch.theme) setMode(patch.theme === "system" ? "system" : patch.theme);
-        }}
-      />
-      <JiraForm
-        settings={settings}
-        hasToken={shown.jira.hasToken}
-        onDone={async (next) => {
-          setSettings(next);
-          setError("");
-          await reload();
-        }}
-        onFail={reload}
-      />
+      <ClaudeForm settings={settings} onSaved={savePatch} />
+      <JiraForm settings={settings} onDone={setSettings} />
+      <CapsForm settings={settings} onSaved={savePatch} />
     </Stack>
   );
 }

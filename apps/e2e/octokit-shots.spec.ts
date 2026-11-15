@@ -30,33 +30,24 @@ async function pair(page: Page, prefix: string): Promise<void> {
   await page.setViewportSize({ width: 1440, height: 900 });
 }
 
-test("settings GitHub connected, empty, and error", async ({ page }) => {
+test("settings GitHub token field", async ({ page }) => {
   await seedHome(page);
   await page.goto("/settings");
   await expect(page.getByTestId("github-form")).toBeVisible();
-  await expect(page.getByTestId("github-status")).toContainText("dan-demo");
+  await expect(page.getByTestId("github-token-source")).toContainText("Using GITHUB_TOKEN from environment");
   await page.getByTestId("github-form").scrollIntoViewIfNeeded();
   await scheme(page, "light");
   await pair(page, "settings-github-connected-light");
   await scheme(page, "dark");
   await pair(page, "settings-github-connected-dark");
-  await page.getByTestId("github-disconnect").click();
-  await expect(page.getByTestId("github-status")).toContainText("Not connected");
-  await expect(page.getByTestId("preflight-github")).toContainText("Fail");
-  await page.getByTestId("github-form").scrollIntoViewIfNeeded();
-  await scheme(page, "light");
-  await pair(page, "settings-github-empty-light");
-  await scheme(page, "dark");
-  await pair(page, "settings-github-empty-dark");
-  await page.getByTestId("github-token").fill("fail");
+  await page.getByTestId("github-token").fill("ghp_stored");
   await page.getByTestId("github-save").click();
-  await expect(page.getByTestId("github-form-error")).toBeVisible();
-  await expect(page.getByTestId("preflight-github")).toContainText("rejected");
+  await expect(page.getByTestId("github-form-success")).toContainText("GitHub token saved");
   await page.getByTestId("github-form").scrollIntoViewIfNeeded();
   await scheme(page, "light");
-  await pair(page, "settings-github-error-light");
+  await pair(page, "settings-github-saved-light");
   await scheme(page, "dark");
-  await pair(page, "settings-github-error-dark");
+  await pair(page, "settings-github-saved-dark");
 });
 
 test("preflight GitHub token fail", async ({ page }) => {
@@ -68,7 +59,8 @@ test("preflight GitHub token fail", async ({ page }) => {
   await scheme(page, "dark");
   await pair(page, "preflight-github-fail-dark");
   await page.goto("/settings");
-  await expect(page.getByTestId("preflight-github")).toContainText("Fail");
+  await expect(page.getByTestId("github-form")).toBeVisible();
+  await expect(page.getByTestId("preflight-section")).toHaveCount(0);
   await page.getByTestId("github-form").scrollIntoViewIfNeeded();
   await scheme(page, "light");
   await pair(page, "settings-preflight-github-fail-light");
