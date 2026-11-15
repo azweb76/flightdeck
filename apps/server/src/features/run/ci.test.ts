@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
+import { patchSettings } from "../settings/index.ts";
 import { watchLiveCi } from "./ci.ts";
 import { archiveChange } from "./index.ts";
 import { getChange, insertChange, saveChange } from "./store.ts";
@@ -78,5 +79,41 @@ describe("live CI poll", () => {
     });
     expect(change.status).toBe("done");
     expect(change.events.some((e) => e.detail === "Pull request merged.")).toBe(true);
+  });
+
+  it("stops a parked CI fix when the pull request is merged", async () => {
+    patchSettings({ maxConcurrentAgents: 1 });
+    insertChange({ ...issue, id: "github:acme/web#2", key: "acme/web#2" }, "live", "", "flightdeck/block", "planning");
+    const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.prNumber = 9;
+    change.ciPhase = "queued";
+    change.ciRound = 1;
+    saveChange(change);
+    await watchLiveCi(change, undefined, {
+      checks: async () => ({ state: "pending", sha: "abc", summary: "pending" }),
+      pullState: async () => ({ state: "closed", merged: true }),
+      pollMs: 5,
+    });
+    expect(getChange(change.id)?.status).toBe("done");
+    expect(getChange(change.id)?.events.some((e) => e.detail === "Pull request merged.")).toBe(true);
+    expect(getChange(change.id)?.events.some((e) => e.title === "ci fix")).toBe(false);
+  });
+
+  it("stops after claiming a slot if the pull request is closed", async () => {
+    const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.prNumber = 9;
+    change.ciPhase = "queued";
+    change.ciRound = 1;
+    saveChange(change);
+    await watchLiveCi(change, undefined, {
+      checks: async () => ({ state: "failing", sha: "abc", summary: "CI failed." }),
+      pullState: async () => ({ state: "closed", merged: false }),
+      pollMs: 5,
+    });
+    expect(getChange(change.id)?.status).toBe("done");
+    expect(getChange(change.id)?.events.some((e) => e.detail === "Pull request closed.")).toBe(true);
+    expect(getChange(change.id)?.events.some((e) => e.title === "ci fix")).toBe(false);
   });
 });

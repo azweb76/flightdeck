@@ -10,7 +10,7 @@ import { currentRunEpoch, isRunCurrent } from "./jobs.ts";
 import { getChange } from "./store.ts";
 import { commitAll, pushBranch, runGates } from "./worktree.ts";
 import { attachCiPoll, detachCiPoll, waitForChecks, type CiPollDeps } from "./ci-poll.ts";
-import { waitForFixSlot } from "./ci-slot.ts";
+import { waitForFixSlot, type SlotWaitDeps } from "./ci-slot.ts";
 
 export type { CiPollDeps };
 export { abortCiWatch } from "./ci-poll.ts";
@@ -80,8 +80,9 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
   try {
     while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing" || change.ciPhase === "queued") {
       if (ac.signal.aborted) return;
+      const slot: SlotWaitDeps = { token: token.token, fetchFn: deps.fetchFn, pullState: deps.pullState, pollMs: deps.pollMs };
       if (change.ciPhase === "fixing" || change.ciPhase === "queued") {
-        if (!(await waitForFixSlot(change))) return;
+        if (!(await waitForFixSlot(change, slot))) return;
         await fixLiveCi(change, "Resuming the in-flight CI fix.", answer);
         if (ciHalted(change)) return;
         change.ciPhase = "";
@@ -115,7 +116,7 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
         askCi(change);
         return;
       }
-      if (!(await waitForFixSlot(change))) return;
+      if (!(await waitForFixSlot(change, slot))) return;
       await fixLiveCi(change, result.summary, answer);
       if (ciHalted(change)) return;
       change.ciPhase = "";
