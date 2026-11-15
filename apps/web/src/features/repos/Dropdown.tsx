@@ -1,6 +1,6 @@
-import { createContext, forwardRef, useContext, useLayoutEffect, useRef, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, type ReactNode } from "react";
 import { Button, Paper, Stack, Typography, type PaperProps } from "@mui/material";
-import { capDropdownToActions } from "./popper.ts";
+import { PICKER_MENU } from "./menu.ts";
 
 export type DropdownStatus = {
   loading: boolean;
@@ -20,22 +20,18 @@ export function DropdownUi(props: { value: DropdownStatus; children: ReactNode }
 export const DropdownPaper = forwardRef<HTMLDivElement, PaperProps>(function DropdownPaper(props, ref) {
   const ui = useContext(Ui);
   const { sx, ...rest } = props;
-  const local = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    capDropdownToActions(local.current);
-    const id = requestAnimationFrame(() => capDropdownToActions(local.current));
-    return () => cancelAnimationFrame(id);
-  });
   return (
     <Paper
       {...rest}
-      ref={(node) => {
-        local.current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) ref.current = node;
-      }}
+      ref={ref}
       data-testid="repo-dropdown"
-      sx={{ ...sx, maxHeight: 280, overflow: "hidden" }}
+      sx={{
+        ...sx,
+        bgcolor: "background.paper",
+        backgroundImage: "none",
+        overflow: "hidden",
+        zIndex: PICKER_MENU.zIndex,
+      }}
     >
       {ui ? <DropdownHeader ui={ui} /> : null}
       {props.children}

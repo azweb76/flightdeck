@@ -52,12 +52,14 @@ export function StartIdeaDialog(props: {
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             placeholder="Export invoices as CSV"
-            inputProps={{ "data-testid": "idea-input" }}
+            inputProps={{ "data-testid": "idea-input", id: "idea-input" }}
           />
         </FormField>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        <Button onMouseDown={props.onClose}>Cancel</Button>
+        <Button onMouseDown={(e) => e.preventDefault()} onClick={props.onClose}>
+          Cancel
+        </Button>
         <GatedButton
           gate="refine"
           variant="contained"

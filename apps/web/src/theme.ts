@@ -1,4 +1,5 @@
 import { createTheme } from "@mui/material/styles";
+import { PICKER_MENU } from "./features/repos/menu.ts";
 
 const focus = {
   "&.Mui-focusVisible": { outline: "3px solid #2997ff", outlineOffset: 2 },
@@ -99,7 +100,7 @@ export const theme = createTheme({
         root: {
           flexShrink: 0,
           position: "relative",
-          zIndex: 1,
+          zIndex: PICKER_MENU.actionsZIndex,
           backgroundColor: "var(--mui-palette-background-paper)",
         },
       },

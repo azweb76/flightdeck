@@ -91,7 +91,9 @@ function SaveActions(props: { busy: boolean; blocked: boolean; onClose: () => vo
   const off = props.busy || props.blocked;
   return (
     <DialogActions sx={{ px: 3, pb: 2.5 }}>
-      <Button onMouseDown={props.onClose}>Cancel</Button>
+      <Button onMouseDown={(e) => e.preventDefault()} onClick={props.onClose}>
+        Cancel
+      </Button>
       <ContainedButton disabled={off} onClick={props.onSave} data-testid="confirm-save">
         Save
       </ContainedButton>

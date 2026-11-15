@@ -1,18 +1,22 @@
 import { Autocomplete, Box, TextField } from "@mui/material";
-import { useMemo, useState, type HTMLAttributes, type Key, type ReactNode } from "react";
+import { useMemo, useRef, useState, type HTMLAttributes, type Key, type ReactNode } from "react";
 import { DropdownPaper, DropdownUi } from "./Dropdown.tsx";
 import { catalogOptions, type RepoOption } from "./filter.ts";
+import { PICKER_MENU } from "./menu.ts";
 import { OptionRow } from "./OptionRow.tsx";
 import { pickerPopper } from "./popper.ts";
 import { useRepoCatalog } from "./useRepoCatalog.ts";
 
 export function RepoPicker(props: { value: string; onChange: (slug: string) => void }) {
   const catalog = useRepoCatalog();
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const options = useMemo(() => catalogOptions(catalog.catalog, query), [catalog.catalog, query]);
   const starred = useMemo(() => new Set(catalog.catalog?.favorites ?? []), [catalog.catalog?.favorites]);
   const value = options.find((o) => o.slug === props.value) ?? (props.value ? { slug: props.value, group: "All" as const } : null);
+  const listMax = PICKER_MENU.maxHeight - PICKER_MENU.header;
+  const listMin = PICKER_MENU.minHeight - PICKER_MENU.header;
 
   return (
     <DropdownUi
@@ -25,12 +29,12 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
         onRefresh: () => void catalog.refresh(),
       }}
     >
-      <Box data-testid="repo-picker" sx={open ? { pb: "220px" } : undefined}>
+      <Box ref={wrapRef} data-testid="repo-picker">
         <Autocomplete
           open={open}
           onOpen={() => {
             setOpen(true);
-            queueMicrotask(() => document.querySelector("[data-testid=repo-picker]")?.scrollIntoView({ block: "start" }));
+            queueMicrotask(() => revealMenu(wrapRef.current));
           }}
           onClose={() => {
             setOpen(false);
@@ -54,7 +58,7 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
           slots={{ paper: DropdownPaper }}
           slotProps={{
             popper: pickerPopper,
-            listbox: { sx: { maxHeight: 220, overflow: "auto" }, id: "repo-listbox" },
+            listbox: { sx: { maxHeight: listMax, minHeight: listMin, overflow: "auto" }, id: "repo-listbox" },
           }}
           renderGroup={renderGroup}
           renderOption={(li, option, state) =>
@@ -80,6 +84,13 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
   );
 }
 
+function revealMenu(box: HTMLDivElement | null): void {
+  const content = box?.closest(".MuiDialogContent-root");
+  if (!box || !content) return;
+  const room = content.getBoundingClientRect().bottom - box.getBoundingClientRect().bottom;
+  if (room < PICKER_MENU.minHeight) box.scrollIntoView({ block: "start" });
+}
+
 function renderGroup(params: { key: number; group: string; children?: ReactNode }) {
   const id = params.group === "Favorites" ? "repo-favorites" : params.group === "Recent" ? "repo-recent" : "repo-all";
   return (
@@ -100,14 +111,5 @@ function renderRow(
   onStar: (slug: string, on: boolean) => void,
 ) {
   const { key, ...rest } = li;
-  return (
-    <OptionRow
-      key={key}
-      {...rest}
-      option={option}
-      selected={selected}
-      starred={starred.has(option.slug)}
-      onStar={onStar}
-    />
-  );
+  return <OptionRow key={key} {...rest} option={option} selected={selected} starred={starred.has(option.slug)} onStar={onStar} />;
 }
