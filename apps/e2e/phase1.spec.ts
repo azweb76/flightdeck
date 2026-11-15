@@ -39,6 +39,7 @@ test("repo picker searches cache and stars favorites", async ({ page }) => {
   await expect(page.getByTestId("repo-picker")).toBeVisible();
   await page.getByTestId("repo-star-acme/web").first().click();
   await expect(page.getByTestId("repo-favorites")).toContainText("acme/web");
+  await expect(page.getByTestId("repo-all")).not.toContainText("acme/web");
   await page.getByTestId("repo-search").fill("mobile");
   await expect(page.getByTestId("repo-option-acme/mobile")).toBeVisible();
   await expect(page.getByTestId("repo-option-acme/api")).toHaveCount(0);
@@ -59,6 +60,8 @@ test("start from an existing issue", async ({ page }) => {
   await page.getByTestId("confirm-repo").click();
   await expect(page.getByTestId("chat-pane")).toBeVisible();
   await expect(page.getByTestId("draft-title")).toContainText("Invoice CSV");
+  await expect(page.getByTestId("draft-goal")).not.toContainText("##");
+  await expect(page.getByTestId("draft-goal")).toContainText(/export|finance/i);
 });
 
 test("save to GitHub then Start is enabled", async ({ page }) => {

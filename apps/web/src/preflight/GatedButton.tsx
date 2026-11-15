@@ -54,9 +54,25 @@ const tooltipSlots: TooltipProps["slotProps"] = {
       border: "1px solid rgba(0,0,0,0.2)",
       boxShadow: 6,
       opacity: "1 !important",
+      "@media (prefers-color-scheme: dark)": {
+        bgcolor: "#2c2c2e",
+        color: "#f5f5f7",
+        border: "1px solid rgba(255,255,255,0.24)",
+      },
+      "html.dark &": {
+        bgcolor: "#2c2c2e",
+        color: "#f5f5f7",
+        border: "1px solid rgba(255,255,255,0.24)",
+      },
     },
   },
-  arrow: { sx: { color: "#f5f5f7" } },
+  arrow: {
+    sx: {
+      color: "#f5f5f7",
+      "@media (prefers-color-scheme: dark)": { color: "#2c2c2e" },
+      "html.dark &": { color: "#2c2c2e" },
+    },
+  },
   transition: { timeout: 0 },
 };
 

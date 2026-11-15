@@ -46,8 +46,9 @@ test("repo picker and refine screenshots", async ({ page }) => {
   await page.getByTestId("refine-PROJ-150").click();
   await expect(page.getByRole("dialog")).toContainText("Pick a repo");
   await expect(page.getByTestId("repo-picker")).toBeVisible();
-  await page.getByTestId("repo-star-acme/web").first().click();
-  await expect(page.getByTestId("repo-favorites")).toContainText("acme/web");
+  await page.getByTestId("repo-star-acme/api").first().click();
+  await expect(page.getByTestId("repo-favorites")).toContainText("acme/api");
+  await expect(page.getByTestId("repo-all")).not.toContainText("acme/api");
   await page.getByTestId("repo-search").fill("web");
   await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
   await shot(page, "pick-repo-light");
@@ -58,6 +59,7 @@ test("repo picker and refine screenshots", async ({ page }) => {
   await page.getByTestId("confirm-repo").click();
   await expect(page.getByTestId("chat-pane")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Refine the goal" })).toBeVisible();
+  await expect(page.getByTestId("draft-goal")).not.toContainText("##");
   await shot(page, "refine-page-light");
   await scheme(page, "dark");
   await shot(page, "refine-page-dark");

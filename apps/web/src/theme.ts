@@ -98,6 +98,30 @@ export const theme = createTheme({
         },
       },
     },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          bgcolor: "#f5f5f7",
+          color: "#1d1d1f",
+          border: "1px solid rgba(0,0,0,0.2)",
+          "@media (prefers-color-scheme: dark)": {
+            bgcolor: "#2c2c2e",
+            color: "#f5f5f7",
+            border: "1px solid rgba(255,255,255,0.24)",
+          },
+          "html.dark &": {
+            bgcolor: "#2c2c2e",
+            color: "#f5f5f7",
+            border: "1px solid rgba(255,255,255,0.24)",
+          },
+        },
+        arrow: {
+          color: "#f5f5f7",
+          "@media (prefers-color-scheme: dark)": { color: "#2c2c2e" },
+          "html.dark &": { color: "#2c2c2e" },
+        },
+      },
+    },
     MuiTab: { styleOverrides: { root: { ...focus } } },
     MuiChip: { styleOverrides: { root: { ...focus } } },
     MuiLink: { styleOverrides: { root: { ...focus } } },

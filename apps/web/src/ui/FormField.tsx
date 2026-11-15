@@ -14,12 +14,12 @@ export function FormField(props: { label: string; hint?: string; children: React
       >
         {props.label}
       </FormLabel>
-      {props.children}
       {props.hint ? (
         <Typography variant="caption" color="text.secondary">
           {props.hint}
         </Typography>
       ) : null}
+      {props.children}
     </Stack>
   );
 }

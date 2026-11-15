@@ -12,12 +12,22 @@ export function RepoPicker(props: {
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const q = query.trim().toLowerCase();
+  const favorites = useMemo(
+    () => (props.catalog?.favorites ?? []).filter((slug) => !q || slug.toLowerCase().includes(q)),
+    [props.catalog?.favorites, q],
+  );
+  const recent = useMemo(() => {
+    const fav = new Set(favorites);
+    return (props.catalog?.recent ?? []).filter((slug) => !fav.has(slug) && (!q || slug.toLowerCase().includes(q)));
+  }, [props.catalog?.recent, favorites, q]);
   const filtered = useMemo(() => {
+    const skip = new Set([...favorites, ...recent]);
     const repos = props.catalog?.repos ?? [];
-    return q ? repos.filter((r) => `${r.owner}/${r.name}`.toLowerCase().includes(q)) : repos;
-  }, [props.catalog?.repos, q]);
-  const favorites = (props.catalog?.favorites ?? []).filter((slug) => !q || slug.toLowerCase().includes(q));
-  const recent = (props.catalog?.recent ?? []).filter((slug) => !q || slug.toLowerCase().includes(q));
+    return repos.filter((r) => {
+      const slug = `${r.owner}/${r.name}`;
+      return !skip.has(slug) && (!q || slug.toLowerCase().includes(q));
+    });
+  }, [props.catalog?.repos, favorites, recent, q]);
 
   async function refresh() {
     setBusy(true);
@@ -53,27 +63,40 @@ export function RepoPicker(props: {
         </Typography>
       ) : null}
       <Section title="Favorites" testId="repo-favorites" slugs={favorites} value={props.value} onPick={props.onChange} onStar={star} starred />
-      <Section title="Recent" testId="repo-recent" slugs={recent} value={props.value} onPick={props.onChange} onStar={star} starred={false} favorites={props.catalog?.favorites} />
+      <Section title="Recent" testId="repo-recent" slugs={recent} value={props.value} onPick={props.onChange} onStar={star} starred={false} />
+      <AllList
+        repos={filtered}
+        value={props.value}
+        empty={!props.catalog?.detail && favorites.length === 0 && recent.length === 0}
+        onPick={props.onChange}
+        onStar={star}
+      />
+    </Stack>
+  );
+}
+
+function AllList(props: {
+  repos: { owner: string; name: string }[];
+  value: string;
+  empty: boolean;
+  onPick: (slug: string) => void;
+  onStar: (slug: string, on: boolean) => void;
+}) {
+  if (props.repos.length === 0) {
+    return props.empty ? <Typography color="text.secondary">No matching repositories.</Typography> : null;
+  }
+  return (
+    <>
       <Typography variant="subtitle2">All</Typography>
       <Stack spacing={0.5} sx={{ maxHeight: 240, overflow: "auto" }} data-testid="repo-all">
-        {filtered.map((r) => {
+        {props.repos.map((r) => {
           const slug = `${r.owner}/${r.name}`;
           return (
-            <Row
-              key={slug}
-              slug={slug}
-              selected={props.value === slug}
-              starred={Boolean(props.catalog?.favorites.includes(slug))}
-              onPick={props.onChange}
-              onStar={star}
-            />
+            <Row key={slug} slug={slug} selected={props.value === slug} starred={false} onPick={props.onPick} onStar={props.onStar} />
           );
         })}
-        {filtered.length === 0 && !props.catalog?.detail ? (
-          <Typography color="text.secondary">No matching repositories.</Typography>
-        ) : null}
       </Stack>
-    </Stack>
+    </>
   );
 }
 
@@ -85,7 +108,6 @@ function Section(props: {
   onPick: (slug: string) => void;
   onStar: (slug: string, on: boolean) => void;
   starred: boolean;
-  favorites?: string[];
 }) {
   if (props.slugs.length === 0) return null;
   return (
@@ -99,7 +121,7 @@ function Section(props: {
             key={slug}
             slug={slug}
             selected={props.value === slug}
-            starred={props.starred || Boolean(props.favorites?.includes(slug))}
+            starred={props.starred}
             onPick={props.onPick}
             onStar={props.onStar}
           />
