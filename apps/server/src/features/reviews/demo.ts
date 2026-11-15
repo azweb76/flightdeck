@@ -43,7 +43,7 @@ export function seedDemoReviews(): void {
   posted.summary = "Docs look good.";
   posted.postedEvent = "APPROVE";
   replaceComments(posted.id, [
-    { path: "README.md", line: 12, side: "RIGHT", body: "Link the new endpoint from the table of contents.", state: "posted" },
+    { path: "README.md", line: 12, side: "RIGHT", body: "Link the new endpoint from the table of contents.", state: "posted", placement: "inline" },
   ]);
   addMessage(posted.id, { role: "assistant", text: "Posted an approval review to GitHub." });
   seedRow(94, "requested", false);

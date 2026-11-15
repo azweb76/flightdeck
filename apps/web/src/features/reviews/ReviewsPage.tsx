@@ -1,7 +1,6 @@
 import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
 import type { AppEvent, PrReview } from "@flightdeck/shared";
 import { useCallback, useEffect, useState } from "react";
-<<<<<<< HEAD:apps/web/src/features/reviews/ReviewsPage.tsx
 import { api } from "../../api.ts";
 import { useAppEvents } from "../../useAppEvents.ts";
 import { ReviewRow } from "./ReviewRow.tsx";

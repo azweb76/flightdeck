@@ -1,12 +1,8 @@
 import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 import type { PrReview, ReviewComment } from "@flightdeck/shared";
 import { useState } from "react";
-<<<<<<< HEAD:apps/web/src/features/reviews/DraftComments.tsx
-import { Markdown } from "../markdown/index.ts";
-=======
 import { Markdown } from "../markdown/index.ts";
 import { FormField } from "../../ui/FormField.tsx";
->>>>>>> bb0b938 (fix(reviews): use FormField and keep unsaved text on Approve):apps/web/src/pages/DraftComments.tsx
 
 export function DraftComments(props: {
   review: PrReview;
