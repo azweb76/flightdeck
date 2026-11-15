@@ -162,6 +162,7 @@ function RefineChat(props: {
       disabled={props.busy || props.saved}
       placeholder="Type a reply"
       inputTestId="chat-input"
+      autoScroll
       sendSx={{ mt: 2 }}
       paperSx={{
         flex: { xs: "none", lg: 1 },

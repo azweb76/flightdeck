@@ -11,16 +11,20 @@ export function Thread(props: {
   compact: boolean;
   autoScroll?: boolean;
 }) {
+  const scroller = useRef<HTMLDivElement>(null);
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (props.autoScroll) end.current?.scrollIntoView({ block: "end" });
+    if (!props.autoScroll) return;
+    const box = scroller.current;
+    if (box) box.scrollTop = box.scrollHeight;
+    end.current?.scrollIntoView({ block: "nearest" });
   }, [props.autoScroll, props.entries.length]);
   return (
-    <Stack spacing={props.spacing} sx={{ flex: 1, minHeight: 0, overflow: "auto", pr: 1 }}>
+    <Stack ref={scroller} spacing={props.spacing} sx={{ flex: 1, minHeight: 0, overflow: "auto", pr: 1, pb: 3 }}>
       {props.entries.map((entry) => (
         <Entry key={entry.id} entry={entry} disabled={props.disabled} compact={props.compact} onPick={props.onPick} />
       ))}
-      {props.autoScroll ? <div ref={end} /> : null}
+      {props.autoScroll ? <div ref={end} aria-hidden style={{ height: 8, flexShrink: 0 }} /> : null}
     </Stack>
   );
 }

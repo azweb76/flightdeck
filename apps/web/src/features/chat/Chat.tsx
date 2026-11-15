@@ -45,7 +45,7 @@ export function Chat(props: {
         compact={Boolean(props.compact)}
         autoScroll={props.autoScroll}
       />
-      <Box sx={{ mt: 2 }}>
+      <Box sx={{ mt: 2, flexShrink: 0 }}>
         <Composer
           value={props.reply}
           onChange={props.onReply}
