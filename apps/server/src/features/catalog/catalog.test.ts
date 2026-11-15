@@ -31,7 +31,9 @@ describe("repo catalog", () => {
   it("uses mock repos in demo mode", async () => {
     process.env.FLIGHTDECK_DEMO = "1";
     const view = await listCatalog();
-    expect(view.repos.map((r) => `${r.owner}/${r.name}`)).toEqual(["acme/api", "acme/mobile", "acme/web"]);
+    const slugs = view.repos.map((r) => `${r.owner}/${r.name}`);
+    expect(slugs).toHaveLength(40);
+    expect(slugs).toEqual(expect.arrayContaining(["acme/api", "acme/mobile", "acme/web", "acme/repo-40"]));
     expect(view.detail).toBeUndefined();
   });
 

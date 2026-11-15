@@ -1,7 +1,10 @@
 import type { CatalogRepo } from "@flightdeck/shared";
 
-export const DEMO_REPOS: CatalogRepo[] = [
-  { owner: "acme", name: "web", localPath: "" },
-  { owner: "acme", name: "api", localPath: "" },
-  { owner: "acme", name: "mobile", localPath: "" },
+const names = [
+  "web",
+  "api",
+  "mobile",
+  ...Array.from({ length: 37 }, (_, i) => `repo-${String(i + 4).padStart(2, "0")}`),
 ];
+
+export const DEMO_REPOS: CatalogRepo[] = names.map((name) => ({ owner: "acme", name, localPath: "" }));
