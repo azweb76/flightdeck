@@ -16,27 +16,39 @@ export function createSdkDriver(queryFn?: SdkQuery): AgentDriver {
     async *run(opts: AgentRunOpts): AsyncIterable<AgentEvent> {
       const query = queryFn ?? (await loadQuery());
       const tools = toolsFor(opts.role);
-      const handle = query({
-        prompt: opts.prompt,
-        options: {
-          cwd: opts.cwd,
-          model: opts.model,
-          permissionMode: "dontAsk",
-          settingSources: ["user", "project"],
-          allowedTools: [...tools],
-          env: opts.env,
-          canUseTool: (name: string, input: Record<string, unknown>) => canUseTool(opts.role, name, input),
-        },
-      });
-      for await (const msg of handle) {
-        if (opts.abort?.aborted) {
-          yield { kind: "error", title: "aborted" };
-          return;
+      const ac = abortControllerFor(opts.abort);
+      try {
+        const handle = query({
+          prompt: opts.prompt,
+          options: {
+            cwd: opts.cwd,
+            model: opts.model,
+            permissionMode: "dontAsk",
+            settingSources: ["user", "project"],
+            allowedTools: [...tools],
+            env: opts.env,
+            abortController: ac,
+            canUseTool: (name: string, input: Record<string, unknown>) => canUseTool(opts.role, name, input),
+          },
+        });
+        for await (const msg of handle) {
+          if (opts.abort?.aborted) return;
+          yield* mapSdkMessage(msg);
         }
-        yield* mapSdkMessage(msg);
+      } catch (err) {
+        if (opts.abort?.aborted) return;
+        throw err;
       }
     },
   };
+}
+
+function abortControllerFor(signal?: AbortSignal): AbortController {
+  const ac = new AbortController();
+  if (!signal) return ac;
+  if (signal.aborted) ac.abort();
+  else signal.addEventListener("abort", () => ac.abort(), { once: true });
+  return ac;
 }
 
 export function toolsFor(role: AgentRunOpts["role"] = "shape"): readonly string[] {

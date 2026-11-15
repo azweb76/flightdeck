@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canUseShapeTool, canUseTool, mapSdkMessage, SHAPE_TOOLS } from "./sdk.ts";
+import { canUseShapeTool, canUseTool, createSdkDriver, mapSdkMessage, SHAPE_TOOLS } from "./sdk.ts";
 
 describe("mapSdkMessage", () => {
   it("maps assistant text and AskUserQuestion", () => {
@@ -25,6 +25,31 @@ describe("mapSdkMessage", () => {
   it("allows AskUserQuestion alongside read-only tools", () => {
     expect(SHAPE_TOOLS).toContain("AskUserQuestion");
     expect(SHAPE_TOOLS).toContain("Read");
+  });
+});
+
+describe("createSdkDriver abort", () => {
+  it("stops the query without an error event when aborted on cap", async () => {
+    let aborted = false;
+    const driver = createSdkDriver(async function* query(_args: { prompt: string; options?: Record<string, unknown> }) {
+      const ac = _args.options?.abortController as AbortController | undefined;
+      yield { type: "assistant", message: { content: [{ type: "text", text: "hi" }] } };
+      ac?.abort();
+      if (ac?.signal.aborted) {
+        aborted = true;
+        throw new Error("aborted");
+      }
+      yield { type: "result", total_cost_usd: 1, result: "more" };
+    } as never);
+    const ac = new AbortController();
+    const kinds: string[] = [];
+    for await (const ev of driver.run({ prompt: "x", abort: ac.signal })) {
+      kinds.push(ev.kind);
+      if (ev.kind === "text") ac.abort();
+    }
+    expect(kinds).toEqual(["text"]);
+    expect(kinds).not.toContain("error");
+    expect(aborted || ac.signal.aborted).toBe(true);
   });
 });
 

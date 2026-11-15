@@ -9,6 +9,7 @@ import { implementPrompt, planPrompt, reviewPrompt } from "./prompts.ts";
 import { commitAll, pushBranch, runGates } from "./worktree.ts";
 
 export async function runLive(change: Change, answer?: string): Promise<void> {
+  if (change.status === "archived" || change.status === "queued") return;
   const settings = getSettings();
   const claude = await detectClaudeConfig();
   const env = claudeSdkEnv(claude);
@@ -84,10 +85,20 @@ async function collect(
   env: NodeJS.ProcessEnv,
 ): Promise<string> {
   let text = "";
-  for await (const ev of getAgentDriver().run({ prompt, cwd, model, env, role })) {
-    if (ev.kind === "text" && ev.detail) text += `${ev.detail}\n`;
-    const result = applyAgentEvent(change, ev as AgentEvent);
-    if (result !== "ok") break;
+  const ac = new AbortController();
+  try {
+    for await (const ev of getAgentDriver().run({ prompt, cwd, model, env, role, abort: ac.signal })) {
+      if (ev.kind === "text" && ev.detail) text += `${ev.detail}\n`;
+      const result = applyAgentEvent(change, ev as AgentEvent);
+      if (result === "cap") {
+        ac.abort();
+        return text;
+      }
+      if (result !== "ok") break;
+    }
+  } catch (err) {
+    if (ac.signal.aborted) return text;
+    throw err;
   }
   return text;
 }
