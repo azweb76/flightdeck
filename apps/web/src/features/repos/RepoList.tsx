@@ -1,3 +1,5 @@
+import Star from "@mui/icons-material/Star";
+import StarBorder from "@mui/icons-material/StarBorder";
 import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
 import type { CatalogRepo } from "@flightdeck/shared";
 import type { CatalogSections } from "./filter.ts";
@@ -148,7 +150,7 @@ function Row(props: {
         data-testid={`repo-star-${props.slug}`}
         size="small"
       >
-        {props.starred ? "★" : "☆"}
+        {props.starred ? <Star fontSize="small" /> : <StarBorder fontSize="small" />}
       </IconButton>
     </Stack>
   );

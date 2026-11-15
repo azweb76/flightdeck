@@ -1,5 +1,7 @@
-import { Button, Stack, TextField, Typography } from "@mui/material";
+import Refresh from "@mui/icons-material/Refresh";
+import { IconButton, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import { useMemo, useState, type KeyboardEvent } from "react";
+import { FormField } from "../../ui/FormField.tsx";
 import { filterCatalog, nextActive } from "./filter.ts";
 import { RepoList } from "./RepoList.tsx";
 import { useRepoCatalog } from "./useRepoCatalog.ts";
@@ -29,17 +31,12 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
 
   return (
     <Stack spacing={1.5} data-testid="repo-picker" onKeyDown={onKeyDown}>
-      <Stack direction="row" gap={1} alignItems="flex-start">
-        <TextField
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search repositories"
-          inputProps={{ "data-testid": "repo-search", role: "combobox", "aria-expanded": true }}
-        />
-        <Button onClick={() => void catalog.refresh()} disabled={catalog.refreshing} data-testid="repo-refresh">
-          Refresh
-        </Button>
-      </Stack>
+      <SearchBar
+        query={query}
+        refreshing={catalog.refreshing}
+        onQuery={setQuery}
+        onRefresh={() => void catalog.refresh()}
+      />
       <PickerStatus
         loading={catalog.loading}
         error={catalog.error}
@@ -57,6 +54,39 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
           if (owner && name) void catalog.favorite(owner, name, on);
         }}
       />
+    </Stack>
+  );
+}
+
+function SearchBar(props: {
+  query: string;
+  refreshing: boolean;
+  onQuery: (next: string) => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <Stack direction="row" gap={1} alignItems="flex-end">
+      <FormField label="Search repositories">
+        <TextField
+          value={props.query}
+          onChange={(e) => props.onQuery(e.target.value)}
+          placeholder="Find a repository"
+          inputProps={{ "data-testid": "repo-search", role: "combobox", "aria-expanded": true }}
+        />
+      </FormField>
+      <Tooltip title="Refresh repositories">
+        <span>
+          <IconButton
+            onClick={props.onRefresh}
+            disabled={props.refreshing}
+            aria-label="Refresh repositories"
+            data-testid="repo-refresh"
+            sx={{ mb: 2.5 }}
+          >
+            <Refresh />
+          </IconButton>
+        </span>
+      </Tooltip>
     </Stack>
   );
 }
