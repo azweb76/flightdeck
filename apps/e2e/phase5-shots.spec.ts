@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { raiseConcurrent, scheme, seedHome } from "./helpers.ts";
+import { raiseConcurrent, scheme, seedHome, shotDir } from "./helpers.ts";
 
-const DIR = "/opt/cursor/artifacts";
+const DIR = shotDir("phase5");
 
 test.beforeAll(() => {
   mkdirSync(DIR, { recursive: true });
