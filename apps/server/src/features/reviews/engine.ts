@@ -7,7 +7,7 @@ import { listPullFiles } from "../github/pull-files.ts";
 import { resolveGithubToken } from "../github/token.ts";
 import { githubReviewBody, placeComments } from "./diff.ts";
 import { assertPreflightGate } from "../preflight/gate.ts";
-import { abortJob, currentRunEpoch, getJob, isRunCurrent, setJob } from "../run/jobs.ts";
+import { abortJob, attachAbort, currentRunEpoch, getJob, isRunCurrent, setJob } from "../run/jobs.ts";
 import { pumpQueue, setReviewPump } from "../run/queue.ts";
 import { countActive } from "../run/store.ts";
 import { getSettings } from "../settings/index.ts";
@@ -107,7 +107,7 @@ export async function chatReview(id: string, text: string): Promise<PrReview> {
   addMessage(id, { role: "user", text });
   const blocked = evaluateSpend(review.costUsd, 0);
   if (blocked !== "ok") {
-    addMessage(id, { role: "assistant", text: capMessage(blocked) });
+    addMessage(id, { role: "assistant", text: capMessage(blocked, "review") });
     if (review.status !== "drafts" && review.status !== "posted") {
       review.status = "cap_hit";
       saveReview(review);
@@ -120,7 +120,7 @@ export async function chatReview(id: string, text: string): Promise<PrReview> {
   }
   const settings = getSettings();
   const env = claudeSdkEnv(await detectClaudeConfig());
-  const ac = new AbortController();
+  const ac = attachAbort(id);
   let reply = "";
   for await (const ev of getAgentDriver().run({
     prompt: `PR ${review.repoSlug}#${review.number}\n${review.summary}\n\nDan: ${text}`,
@@ -131,9 +131,12 @@ export async function chatReview(id: string, text: string): Promise<PrReview> {
     role: "pr-review",
   })) {
     if (ev.costUsd) applyCost(review, ev.costUsd, ac);
-    if (ac.signal.aborted || review.status === "cap_hit") return emitReview(mustReview(id));
+    if (ac.signal.aborted || review.status === "cap_hit" || getReview(id)?.status === "archived") {
+      return emitReview(mustReview(id));
+    }
     if (ev.kind === "text" && ev.detail) reply += ev.detail;
   }
+  if (ac.signal.aborted || getReview(id)?.status === "archived") return emitReview(mustReview(id));
   addMessage(id, { role: "assistant", text: reply.trim() || "I read the PR. What else should I look at?" });
   return emitReview(mustReview(id));
 }
