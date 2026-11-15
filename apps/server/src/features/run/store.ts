@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Change, ChangeAsk, ChangeEvent, ChangeStatus, Issue } from "@flightdeck/shared";
 import { getDb } from "../db/index.ts";
+import { occupiesSlot } from "./machine.ts";
 
 type ChangeRow = {
   id: string;
@@ -38,7 +39,13 @@ type EventRow = {
   cost_usd: number | null;
 };
 
-export function insertChange(issue: Issue, scenario: string, worktreePath: string, branch: string): Change {
+export function insertChange(
+  issue: Issue,
+  scenario: string,
+  worktreePath: string,
+  branch: string,
+  status: ChangeStatus = "planning",
+): Change {
   const now = new Date().toISOString();
   const change: Change = {
     id: randomUUID(),
@@ -49,7 +56,7 @@ export function insertChange(issue: Issue, scenario: string, worktreePath: strin
     repoSlug: issue.repoSlug ?? "",
     title: issue.title,
     issueBody: issue.body,
-    status: "planning",
+    status,
     stage: "plan",
     reviewRound: 0,
     worktreePath,
@@ -108,7 +115,7 @@ export function listChanges(): Change[] {
 export function findActiveForIssue(issueId: string): Change | undefined {
   const row = getDb()
     .prepare(
-      `SELECT * FROM changes WHERE issue_id = ? AND status NOT IN ('archived','done','cap_hit','needs_dan','error')
+      `SELECT * FROM changes WHERE issue_id = ? AND status NOT IN ('archived','done','cap_hit','error')
        ORDER BY created_at DESC LIMIT 1`,
     )
     .get(issueId) as ChangeRow | undefined;
@@ -171,12 +178,15 @@ export function dailySpendUsd(day = new Date().toISOString().slice(0, 10)): numb
 }
 
 export function countActive(): number {
+  const rows = getDb().prepare("SELECT status FROM changes").all() as { status: ChangeStatus }[];
+  return rows.filter((row) => occupiesSlot(row.status)).length;
+}
+
+export function nextQueued(): Change | undefined {
   const row = getDb()
-    .prepare(
-      `SELECT COUNT(*) AS n FROM changes WHERE status IN ('planning','implementing','reviewing','asking','opening_pr')`,
-    )
-    .get() as { n: number };
-  return row.n;
+    .prepare(`SELECT * FROM changes WHERE status = 'queued' ORDER BY created_at ASC LIMIT 1`)
+    .get() as ChangeRow | undefined;
+  return row ? fromRow(row, loadEvents(row.id)) : undefined;
 }
 
 function loadEvents(changeId: string): ChangeEvent[] {

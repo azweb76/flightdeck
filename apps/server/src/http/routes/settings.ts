@@ -2,6 +2,7 @@ import type { Hono } from "hono";
 import { SettingsPatchSchema, type SettingsView } from "@flightdeck/shared";
 import { resolveGithubToken } from "../../features/github/token.ts";
 import { createSecretStore } from "../../features/secrets/index.ts";
+import { pumpQueue } from "../../features/run/index.ts";
 import { getSettings, patchSettings } from "../../features/settings/index.ts";
 import { fail } from "../errors.ts";
 
@@ -10,6 +11,7 @@ export function mountSettings(app: Hono): void {
   app.patch("/api/settings", async (c) => {
     const patch = SettingsPatchSchema.parse(await c.req.json());
     patchSettings(patch);
+    if (patch.maxConcurrentAgents != null) pumpQueue();
     return c.json(await settingsView());
   });
   app.post("/api/jira/save", async (c) => {

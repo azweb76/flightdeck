@@ -21,3 +21,8 @@ export function getJob(id: string): Promise<void> | undefined {
 export function setJob(id: string, job: Promise<void>): void {
   jobs.set(id, job);
 }
+
+/** Drop in-memory jobs without bumping epoch (simulates an app restart). */
+export function dropJobs(): void {
+  jobs.clear();
+}

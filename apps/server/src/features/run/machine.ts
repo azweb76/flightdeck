@@ -4,6 +4,9 @@ export { MAX_REVIEW_ROUNDS };
 
 export type CapHit = "ok" | "run" | "daily";
 
+const AGENT_RUNNING: ChangeStatus[] = ["planning", "implementing", "reviewing", "opening_pr"];
+const SLOT: ChangeStatus[] = [...AGENT_RUNNING, "asking", "needs_dan"];
+
 export function reviewLimit(round: number, extra: boolean): number {
   return extra && round >= MAX_REVIEW_ROUNDS ? round + 1 : MAX_REVIEW_ROUNDS;
 }
@@ -18,12 +21,18 @@ export function canReply(status: ChangeStatus): boolean {
   return status === "asking" || status === "needs_dan";
 }
 
-export function canArchive(status: ChangeStatus): boolean {
-  return status !== "planning" && status !== "implementing" && status !== "reviewing" && status !== "opening_pr" && status !== "archived";
+export function isAgentRunning(status: ChangeStatus): boolean {
+  return AGENT_RUNNING.includes(status);
 }
 
-export function activeStatuses(): ChangeStatus[] {
-  return ["planning", "implementing", "reviewing", "asking", "opening_pr"];
+export function occupiesSlot(status: ChangeStatus): boolean {
+  return SLOT.includes(status);
+}
+
+export function canArchive(status: ChangeStatus, interrupted = false): boolean {
+  if (status === "archived") return false;
+  if (interrupted || status === "queued") return true;
+  return !isAgentRunning(status);
 }
 
 export function checkCaps(spentRun: number, spentDaily: number, add: number, runCap: number, dailyCap: number): CapHit {

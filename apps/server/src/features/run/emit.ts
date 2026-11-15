@@ -4,11 +4,13 @@ import { publish } from "../events/index.ts";
 import { capMessage, evaluateSpend } from "./caps.ts";
 import { eventCost } from "./script.ts";
 import { addEvent, getChange, saveChange } from "./store.ts";
+import { presentChange } from "./view.ts";
 
 export function emitChange(change: Change): Change {
   saveChange(change);
   const fresh = getChange(change.id) ?? change;
-  publish("change.updated", { id: fresh.id, change: fresh });
+  const view = presentChange(fresh);
+  publish("change.updated", { id: view.id, change: view });
   return Object.assign(change, fresh);
 }
 
