@@ -32,6 +32,11 @@ export async function startReview(id: string): Promise<PrReview> {
   assertPreflightGate("start");
   const review = mustReview(id);
   if (isInterruptedReview(review)) {
+    if (countActive() >= getSettings().maxConcurrentAgents) {
+      review.status = "queued";
+      saveReview(review);
+      return emitReview(review);
+    }
     kickReview(id);
     if (process.env.FLIGHTDECK_DEMO === "1") await (getJob(id) ?? Promise.resolve());
     return emitReview(mustReview(id));

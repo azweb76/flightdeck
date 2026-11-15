@@ -44,6 +44,14 @@ describe("reviews engine (demo)", () => {
     expect(resumed.interrupted).toBe(false);
   });
 
+  it("queues Resume when every agent slot is full", async () => {
+    patchSettings({ maxConcurrentAgents: 1 });
+    const stuck = (await listReviews()).find((r) => r.number === 91)!;
+    expect(stuck.interrupted).toBe(true);
+    const queued = await startReview(stuck.id);
+    expect(queued.status).toBe("queued");
+  });
+
   it("seeds mixed review-requested states", async () => {
     const reviews = await listReviews();
     expect(reviews.find((r) => r.number === 90)?.status).toBe("selected");
