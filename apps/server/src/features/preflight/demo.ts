@@ -37,7 +37,7 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
       version: "2.14.0",
       detail: "git 2.14.0 is too old for worktrees (need >=2.20.0)",
       fix: "brew install git",
-      gates: ["shape", "start"],
+      gates: ["refine", "start"],
     },
     {
       id: "github",
@@ -47,7 +47,7 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
       status: "fail",
       detail: githubEnvFailDetail(envGithubToken()?.source),
       fix: "Add a GitHub token in Settings",
-      gates: ["shape", "start", "saveGithub"],
+      gates: ["refine", "start", "saveGithub"],
     },
     {
       id: "claude",
@@ -57,7 +57,7 @@ export function failingChecks(database: PreflightCheck): PreflightCheck[] {
       status: "fail",
       detail: "No apiKeyHelper or Claude login.",
       fix: "Run claude, then type /login",
-      gates: ["shape", "start"],
+      gates: ["refine", "start"],
     },
     {
       id: "jira",
@@ -107,7 +107,7 @@ function passClaude(): PreflightCheck {
     ok: true,
     status: "pass",
     detail: "apiKeyHelper found (demo)",
-    gates: ["shape", "start"],
+    gates: ["refine", "start"],
   };
 }
 

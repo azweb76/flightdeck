@@ -46,14 +46,14 @@ export function IssueList(props: {
             </Box>
             <Stack direction="row" gap={1}>
               <GatedButton
-                gate="shape"
+                gate="refine"
                 variant="outlined"
                 placement="top"
                 disabled={props.busy === issue.id}
                 onClick={() => props.onShape(issue)}
-                testId={`shape-${issue.key}`}
+                testId={`refine-${issue.key}`}
               >
-                Shape
+                Refine
               </GatedButton>
               <GatedButton
                 gate="start"

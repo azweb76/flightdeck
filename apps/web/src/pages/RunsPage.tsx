@@ -52,7 +52,7 @@ export function RunsPage() {
           <Typography variant="h6" gutterBottom>
             No runs yet
           </Typography>
-          <Typography color="text.secondary">Click Start on a shaped issue to run a change.</Typography>
+          <Typography color="text.secondary">Click Start on a refined issue to run a change.</Typography>
         </Paper>
       ) : (
         <Stack spacing={2}>

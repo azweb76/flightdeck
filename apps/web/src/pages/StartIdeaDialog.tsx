@@ -1,9 +1,10 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Select, TextField } from "@mui/material";
-import type { CatalogRepo } from "@flightdeck/shared";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
+import type { CatalogView } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
 import { GatedButton } from "../preflight/index.ts";
 import { FormField } from "../ui/FormField.tsx";
+import { RepoPicker } from "./RepoPicker.tsx";
 
 export function StartIdeaDialog(props: {
   open: boolean;
@@ -11,7 +12,7 @@ export function StartIdeaDialog(props: {
   onError: (msg: string) => void;
   onStarted: (id: string) => void;
 }) {
-  const [repos, setRepos] = useState<CatalogRepo[]>([]);
+  const [catalog, setCatalog] = useState<CatalogView>();
   const [repo, setRepo] = useState("");
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
@@ -20,7 +21,7 @@ export function StartIdeaDialog(props: {
     if (!props.open) return;
     setIdea("");
     setRepo("");
-    api.repos().then((r) => setRepos(r.repos));
+    void api.repos().then(setCatalog);
   }, [props.open]);
 
   async function start() {
@@ -45,19 +46,7 @@ export function StartIdeaDialog(props: {
       <DialogTitle>Start from a new idea</DialogTitle>
       <DialogContent>
         <FormField label="Repository" hint="The agent reads this repo. Nothing is pushed.">
-          <Select displayEmpty value={repo} onChange={(e) => setRepo(e.target.value)} data-testid="repo-select">
-            <MenuItem value="">
-              <em>Choose a repo</em>
-            </MenuItem>
-            {repos.map((r) => {
-              const slug = `${r.owner}/${r.name}`;
-              return (
-                <MenuItem key={slug} value={slug}>
-                  {slug}
-                </MenuItem>
-              );
-            })}
-          </Select>
+          <RepoPicker catalog={catalog} value={repo} onChange={setRepo} onCatalog={setCatalog} />
         </FormField>
         <FormField label="Idea">
           <TextField
@@ -73,13 +62,13 @@ export function StartIdeaDialog(props: {
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
         <Button onClick={props.onClose}>Cancel</Button>
         <GatedButton
-          gate="shape"
+          gate="refine"
           variant="contained"
           disabled={busy || !repo || !idea.trim()}
           onClick={start}
           testId="start-idea"
         >
-          Shape
+          Refine
         </GatedButton>
       </DialogActions>
     </Dialog>

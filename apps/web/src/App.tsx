@@ -38,6 +38,7 @@ export function App() {
             }
           />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/refine/:id" element={<ShapePage />} />
           <Route path="/shape/:id" element={<ShapePage />} />
         </Route>
       </Routes>

@@ -14,6 +14,6 @@ export async function checkClaude(ctx: PreflightCtx): Promise<PreflightCheck> {
     status: ok ? "pass" : "fail",
     detail: helperFailed ? "apiKeyHelper failed" : status.detail,
     fix: ok ? undefined : "Run claude, then type /login",
-    gates: ["shape", "start"],
+    gates: ["refine", "start"],
   };
 }

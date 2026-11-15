@@ -16,13 +16,13 @@ export function PreflightBanner() {
       sx={{ p: 3, border: 1, borderColor: "error.light", bgcolor: "background.paper" }}
     >
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2} sx={{ mb: 1 }}>
-        <Typography variant="h6">Fix these before shaping</Typography>
+        <Typography variant="h6">Fix these before refining</Typography>
         <Button variant="outlined" onClick={() => void recheck()} data-testid="preflight-recheck">
           Re-check
         </Button>
       </Stack>
       <ContrastAlert sx={{ mb: 2 }}>
-        Flightdeck can still run, but Shape and GitHub save stay off until the required tools are ready.
+        Flightdeck can still run, but Refine and GitHub save stay off until the required tools are ready.
       </ContrastAlert>
       {failed.map((check, i) => (
         <BoxBlock key={check.id} divider={i > 0}>

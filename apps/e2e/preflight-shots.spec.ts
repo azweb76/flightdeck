@@ -49,7 +49,7 @@ test("banner failing", async ({ page }) => {
   await pair(page, "banner-fail-dark");
 });
 
-test("tooltips on New idea, Shape, and Start", async ({ page }) => {
+test("tooltips on New idea, Refine, and Start", async ({ page }) => {
   await seedHome(page);
   await setPreflight(page, "fail");
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -57,7 +57,7 @@ test("tooltips on New idea, Shape, and Start", async ({ page }) => {
     await scheme(page, mode);
     await openTip(page, "new-idea-gate", "brew install git");
     await shot(page, `tooltip-new-idea-${mode}-1440`, false);
-    await openTip(page, "shape-PROJ-150-gate", "brew install git");
+    await openTip(page, "refine-PROJ-150-gate", "brew install git");
     await shot(page, `tooltip-shape-${mode}-1440`, false);
     await openTip(page, "start-PROJ-150-gate", "brew install git");
     await shot(page, `tooltip-start-${mode}-1440`, false);
@@ -66,14 +66,14 @@ test("tooltips on New idea, Shape, and Start", async ({ page }) => {
   await scheme(page, "light");
   await openTip(page, "new-idea-gate", "brew install git");
   await shot(page, "tooltip-new-idea-light-1024", false);
-  await openTip(page, "shape-PROJ-150-gate", "brew install git");
+  await openTip(page, "refine-PROJ-150-gate", "brew install git");
   await shot(page, "tooltip-shape-light-1024", false);
   await openTip(page, "start-PROJ-150-gate", "brew install git");
   await shot(page, "tooltip-start-light-1024", false);
   await scheme(page, "dark");
   await openTip(page, "new-idea-gate", "brew install git");
   await shot(page, "tooltip-new-idea-dark-1024", false);
-  await openTip(page, "shape-PROJ-150-gate", "brew install git");
+  await openTip(page, "refine-PROJ-150-gate", "brew install git");
   await shot(page, "tooltip-shape-dark-1024", false);
   await openTip(page, "start-PROJ-150-gate", "brew install git");
   await shot(page, "tooltip-start-dark-1024", false);

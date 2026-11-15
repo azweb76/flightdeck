@@ -117,7 +117,7 @@ function Header(props: { session: ShapeSession; saved: boolean; onSave: () => vo
   return (
     <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2} sx={{ flexShrink: 0 }}>
       <Box>
-        <Typography variant="h4">Shape the goal</Typography>
+        <Typography variant="h4">Refine the goal</Typography>
         <Typography color="text.secondary" sx={{ mt: 0.5 }}>
           Chat and draft stay in view. Repo {props.session.repoSlug}.
         </Typography>

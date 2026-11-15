@@ -9,7 +9,7 @@ export function PlaceholderPage(props: { title: string; phase: string; detail: s
           Coming in {props.phase}
         </Typography>
         <Typography color="text.secondary" sx={{ maxWidth: 480, mx: "auto" }}>
-          {props.detail} Goal shaping is ready now on Issues.
+          {props.detail} Goal refining is ready now on Issues.
         </Typography>
       </Paper>
     </Stack>

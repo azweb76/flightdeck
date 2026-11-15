@@ -1,21 +1,21 @@
 import { expect, test } from "@playwright/test";
 import { seedHome, setPreflight, startNewIdea } from "./helpers.ts";
 
-test("demo home has no preflight banner and Shape stays enabled", async ({ page }) => {
+test("demo home has no preflight banner and Refine stays enabled", async ({ page }) => {
   await seedHome(page);
   await expect(page.getByTestId("preflight-banner")).toHaveCount(0);
   await expect(page.getByTestId("new-idea")).toBeEnabled();
-  await expect(page.getByTestId("shape-PROJ-150")).toBeEnabled();
+  await expect(page.getByTestId("refine-PROJ-150")).toBeEnabled();
 });
 
-test("failing preflight shows the banner, Re-check, and gated Shape", async ({ page }) => {
+test("failing preflight shows the banner, Re-check, and gated Refine", async ({ page }) => {
   await seedHome(page);
   await setPreflight(page, "fail");
   await expect(page.getByTestId("preflight-banner")).toBeVisible();
   await expect(page.getByTestId("preflight-banner")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("preflight-fix-github")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("new-idea")).toBeDisabled();
-  await expect(page.getByTestId("shape-PROJ-150")).toBeDisabled();
+  await expect(page.getByTestId("refine-PROJ-150")).toBeDisabled();
   await page.getByTestId("new-idea-gate").hover();
   await expect(page.getByRole("tooltip").filter({ hasText: "brew install git" })).toHaveCount(1);
   await page.getByRole("heading", { name: "My issues" }).hover();
