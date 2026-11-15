@@ -11,7 +11,7 @@ export function GatedButton(
     placement?: TooltipProps["placement"];
   },
 ) {
-  const { gate, fallbackTitle, testId, disabled, placement = "left", sx, style, variant, ...rest } = props;
+  const { gate, fallbackTitle, testId, disabled, placement = "left", style, variant, ...rest } = props;
   const blocked = usePreflight().block(gate);
   const title = tooltipTitle(blocked, fallbackTitle, Boolean(disabled));
   const off = Boolean(blocked) || Boolean(disabled);
@@ -38,7 +38,7 @@ export function GatedButton(
           key={off ? "off" : "on"}
           disabled={off}
           data-testid={testId}
-          sx={[containedOffSx, sx]}
+          sx={containedOffSx}
           style={{ ...style, ...(contained ? containedOffStyle(off, dark) : undefined) }}
         />
       </span>

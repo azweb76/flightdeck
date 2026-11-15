@@ -2,7 +2,7 @@ import { Button, type ButtonProps } from "@mui/material";
 import { containedOffStyle, containedOffSx, useHtmlDark } from "./containedOffSx.ts";
 
 export function ContainedButton(props: ButtonProps) {
-  const { disabled, sx, style, ...rest } = props;
+  const { disabled, style, ...rest } = props;
   const dark = useHtmlDark();
   const off = Boolean(disabled);
   return (
@@ -10,7 +10,7 @@ export function ContainedButton(props: ButtonProps) {
       {...rest}
       variant="contained"
       disabled={disabled}
-      sx={[containedOffSx, sx]}
+      sx={containedOffSx}
       style={{ ...style, ...containedOffStyle(off, dark) }}
     />
   );
