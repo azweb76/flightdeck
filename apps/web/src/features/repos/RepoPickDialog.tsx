@@ -1,8 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import type { CatalogView } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
-import { api } from "../api.ts";
-import { FormField } from "../ui/FormField.tsx";
+import { FormField } from "../../ui/FormField.tsx";
 import { RepoPicker } from "./RepoPicker.tsx";
 
 export function RepoPickDialog(props: {
@@ -11,13 +9,10 @@ export function RepoPickDialog(props: {
   onClose: () => void;
   onPicked: (slug: string) => void;
 }) {
-  const [catalog, setCatalog] = useState<CatalogView>();
   const [repo, setRepo] = useState("");
 
   useEffect(() => {
-    if (!props.open) return;
-    setRepo("");
-    void api.repos().then(setCatalog);
+    if (props.open) setRepo("");
   }, [props.open]);
 
   return (
@@ -25,7 +20,7 @@ export function RepoPickDialog(props: {
       <DialogTitle>{props.title ?? "Pick a repository"}</DialogTitle>
       <DialogContent>
         <FormField label="Repository" hint="Needed for Claude to read the code. Remembered as a repo:org/repo Jira label.">
-          <RepoPicker catalog={catalog} value={repo} onChange={setRepo} onCatalog={setCatalog} />
+          <RepoPicker value={repo} onChange={setRepo} />
         </FormField>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>

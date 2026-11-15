@@ -78,6 +78,11 @@ test("idea, draft, save, and settings screenshots", async ({ page }) => {
   await scheme(page, "light");
   await page.getByTestId("new-idea").click();
   await expect(page.getByRole("dialog")).toContainText("Start from a new idea");
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await shot(page, "picker-new-idea-light");
+  await scheme(page, "dark");
+  await shot(page, "picker-new-idea-dark");
+  await scheme(page, "light");
   await pickRepo(page);
   await page.getByTestId("idea-input").fill("Export invoices as CSV");
   await shot(page, "new-idea-dialog-light");
@@ -104,7 +109,15 @@ test("idea, draft, save, and settings screenshots", async ({ page }) => {
   await page.getByTestId("tracker-jira").click();
   await expect(page.getByTestId("repo-picker")).toBeVisible();
   await shot(page, "save-jira-picker-light");
+  await scheme(page, "dark");
+  await shot(page, "save-jira-picker-dark");
+  await scheme(page, "light");
   await page.getByTestId("tracker-github").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await shot(page, "save-github-picker-light");
+  await scheme(page, "dark");
+  await shot(page, "save-github-picker-dark");
+  await scheme(page, "light");
   await shot(page, "save-github-light");
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toBeVisible();

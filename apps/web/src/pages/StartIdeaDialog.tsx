@@ -1,10 +1,9 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
-import type { CatalogView } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
+import { RepoPicker } from "../features/repos/index.ts";
 import { GatedButton } from "../preflight/index.ts";
 import { FormField } from "../ui/FormField.tsx";
-import { RepoPicker } from "./RepoPicker.tsx";
 
 export function StartIdeaDialog(props: {
   open: boolean;
@@ -12,7 +11,6 @@ export function StartIdeaDialog(props: {
   onError: (msg: string) => void;
   onStarted: (id: string) => void;
 }) {
-  const [catalog, setCatalog] = useState<CatalogView>();
   const [repo, setRepo] = useState("");
   const [idea, setIdea] = useState("");
   const [busy, setBusy] = useState(false);
@@ -21,7 +19,6 @@ export function StartIdeaDialog(props: {
     if (!props.open) return;
     setIdea("");
     setRepo("");
-    void api.repos().then(setCatalog);
   }, [props.open]);
 
   async function start() {
@@ -46,7 +43,7 @@ export function StartIdeaDialog(props: {
       <DialogTitle>Start from a new idea</DialogTitle>
       <DialogContent>
         <FormField label="Repository" hint="The agent reads this repo. Nothing is pushed.">
-          <RepoPicker catalog={catalog} value={repo} onChange={setRepo} onCatalog={setCatalog} />
+          <RepoPicker value={repo} onChange={setRepo} />
         </FormField>
         <FormField label="Idea">
           <TextField

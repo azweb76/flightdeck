@@ -1,0 +1,54 @@
+import { afterEach, describe, expect, it } from "vitest";
+import type { CatalogView } from "@flightdeck/shared";
+import {
+  configureRepoCatalog,
+  ensureRepoCatalog,
+  refreshRepoCatalog,
+  repoCatalogSnapshot,
+  resetRepoCatalogCache,
+  toggleRepoFavorite,
+} from "./cache.ts";
+
+const empty: CatalogView = { repos: [], favorites: [], recent: [] };
+
+describe("repo catalog cache", () => {
+  afterEach(() => {
+    resetRepoCatalogCache();
+    configureRepoCatalog({
+      load: async () => empty,
+      favorite: async () => empty,
+    });
+  });
+
+  it("shares one in-flight load across ensure calls", async () => {
+    let n = 0;
+    configureRepoCatalog({
+      load: async () => {
+        n += 1;
+        return { ...empty, favorites: ["dan/app"] };
+      },
+    });
+    const [a, b] = await Promise.all([ensureRepoCatalog(), ensureRepoCatalog()]);
+    expect(n).toBe(1);
+    expect(a.favorites).toEqual(["dan/app"]);
+    expect(b.favorites).toEqual(["dan/app"]);
+    await ensureRepoCatalog();
+    expect(n).toBe(1);
+  });
+
+  it("Refresh hits the loader again and favorite writes into the same snapshot", async () => {
+    let n = 0;
+    configureRepoCatalog({
+      load: async () => {
+        n += 1;
+        return { ...empty, fetchedAt: String(n) };
+      },
+      favorite: async () => ({ ...empty, favorites: ["acme/web"] }),
+    });
+    await ensureRepoCatalog();
+    await refreshRepoCatalog(true);
+    expect(n).toBe(2);
+    await toggleRepoFavorite("acme", "web", true);
+    expect(repoCatalogSnapshot().data?.favorites).toEqual(["acme/web"]);
+  });
+});

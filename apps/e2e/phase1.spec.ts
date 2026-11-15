@@ -71,6 +71,8 @@ test("save to GitHub then Start is enabled", async ({ page }) => {
   await answerFirstQuestion(page);
   await page.getByTestId("save-issue").click();
   await page.getByTestId("tracker-github").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toContainText(/Saved as acme\/web#/);
   await expect(page.getByTestId("start-run")).toBeEnabled();
@@ -82,8 +84,22 @@ test("save to Jira", async ({ page }) => {
   await answerFirstQuestion(page);
   await page.getByTestId("save-issue").click();
   await page.getByTestId("tracker-jira").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toContainText(/PROJ-200/);
+});
+
+test("repo picker keyboard selects a repo from New idea", async ({ page }) => {
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await page.getByTestId("repo-search").click();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await page.getByTestId("idea-input").fill("Export invoices as CSV");
+  await page.getByTestId("start-idea").click();
+  await expect(page.getByTestId("chat-pane")).toBeVisible();
 });
 
 test("save without a tracker shows an error", async ({ page }) => {

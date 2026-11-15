@@ -1,10 +1,10 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from "@mui/material";
-import type { CatalogView, Issue, PreflightCheck, ShapeSession } from "@flightdeck/shared";
+import type { Issue, PreflightCheck, ShapeSession } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
 import { api } from "../api.ts";
+import { RepoPicker } from "../features/repos/index.ts";
 import { TrackerChoice, usePreflight } from "../preflight/index.ts";
 import { FormField } from "../ui/FormField.tsx";
-import { RepoPicker } from "./RepoPicker.tsx";
 
 export function SaveIssueDialog(props: {
   open: boolean;
@@ -15,7 +15,6 @@ export function SaveIssueDialog(props: {
   const [tracker, setTracker] = useState<"jira" | "github" | "">("");
   const [projectKey, setProjectKey] = useState("PROJ");
   const [repoSlug, setRepoSlug] = useState(props.session.repoSlug);
-  const [catalog, setCatalog] = useState<CatalogView>();
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState("");
   const preflight = usePreflight();
@@ -28,7 +27,6 @@ export function SaveIssueDialog(props: {
       setLocalError("");
       setTracker("");
       setRepoSlug(props.session.repoSlug);
-      void api.repos().then(setCatalog);
     }
   }, [props.open, props.session.repoSlug]);
 
@@ -37,12 +35,12 @@ export function SaveIssueDialog(props: {
       setLocalError("Choose Jira or GitHub");
       return;
     }
-    if (tracker === "jira" && !repoSlug.includes("/")) {
-      setLocalError("Pick a repo for this Jira issue");
+    if (!repoSlug.includes("/")) {
+      setLocalError("Pick a repo for this issue");
       return;
     }
     if (blocked) {
-      setLocalError(`${blocked.detail}${blocked.fix ? ` Fix: ${blocked.fix}` : ""}`);
+      setLocalError(`${blocked.detail}${blocked.fix ? `.\nFix: ${blocked.fix}` : ""}`);
       return;
     }
     setBusy(true);
@@ -70,39 +68,27 @@ export function SaveIssueDialog(props: {
           tracker={tracker}
           projectKey={projectKey}
           repoSlug={repoSlug}
-          catalog={catalog}
           ghBlock={ghBlock}
           jiraBlock={jiraBlock}
           onTracker={setTracker}
           onProjectKey={setProjectKey}
           onRepoSlug={setRepoSlug}
-          onCatalog={setCatalog}
         />
         <TrackerGateHint blocked={blocked} />
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        <Button onClick={props.onClose}>Cancel</Button>
-        <SaveConfirm busy={busy} blocked={Boolean(blocked)} onSave={() => void save()} />
-      </DialogActions>
+      <SaveActions busy={busy} blocked={Boolean(blocked)} onClose={props.onClose} onSave={() => void save()} />
     </Dialog>
   );
 }
 
-function SaveConfirm(props: { busy: boolean; blocked: boolean; onSave: () => void }) {
+function SaveActions(props: { busy: boolean; blocked: boolean; onClose: () => void; onSave: () => void }) {
   return (
-    <Button
-      variant={props.blocked ? "outlined" : "contained"}
-      disabled={props.busy || props.blocked}
-      onClick={props.onSave}
-      data-testid="confirm-save"
-      sx={
-        props.blocked
-          ? { "&.Mui-disabled": { bgcolor: "action.hover", color: "text.disabled", borderColor: "divider" } }
-          : undefined
-      }
-    >
-      Save
-    </Button>
+    <DialogActions sx={{ px: 3, pb: 2.5 }}>
+      <Button onClick={props.onClose}>Cancel</Button>
+      <Button variant="contained" disabled={props.busy || props.blocked} onClick={props.onSave} data-testid="confirm-save">
+        Save
+      </Button>
+    </DialogActions>
   );
 }
 
@@ -111,12 +97,7 @@ function TrackerGateHint(props: { blocked?: PreflightCheck }) {
   return (
     <Alert
       severity="warning"
-      sx={{
-        mt: 1,
-        bgcolor: "#ffd60a",
-        color: "#1d1d1f",
-        "& .MuiAlert-icon": { color: "#1d1d1f" },
-      }}
+      sx={{ mt: 1, bgcolor: "#ffd60a", color: "#1d1d1f", "& .MuiAlert-icon": { color: "#1d1d1f" } }}
       data-testid="tracker-gate-hint"
     >
       {props.blocked.detail}
@@ -134,13 +115,11 @@ function TrackerFields(props: {
   tracker: "jira" | "github" | "";
   projectKey: string;
   repoSlug: string;
-  catalog?: CatalogView;
   ghBlock?: PreflightCheck;
   jiraBlock?: PreflightCheck;
   onTracker: (v: "jira" | "github") => void;
   onProjectKey: (v: string) => void;
   onRepoSlug: (v: string) => void;
-  onCatalog: (next: CatalogView) => void;
 }) {
   return (
     <>
@@ -168,13 +147,13 @@ function TrackerFields(props: {
             <TextField value={props.projectKey} onChange={(e) => props.onProjectKey(e.target.value)} inputProps={{ "data-testid": "jira-project" }} />
           </FormField>
           <FormField label="Repository" hint="Written as a repo:org/repo Jira label so Start can find the code.">
-            <RepoPicker catalog={props.catalog} value={props.repoSlug} onChange={props.onRepoSlug} onCatalog={props.onCatalog} />
+            <RepoPicker value={props.repoSlug} onChange={props.onRepoSlug} />
           </FormField>
         </>
       ) : null}
       {props.tracker === "github" && !props.ghBlock ? (
-        <FormField label="GitHub repo">
-          <TextField value={props.repoSlug} onChange={(e) => props.onRepoSlug(e.target.value)} inputProps={{ "data-testid": "gh-repo" }} />
+        <FormField label="GitHub repo" hint="The issue is created in this repository.">
+          <RepoPicker value={props.repoSlug} onChange={props.onRepoSlug} />
         </FormField>
       ) : null}
     </>

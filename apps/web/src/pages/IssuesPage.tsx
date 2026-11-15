@@ -6,7 +6,7 @@ import { api } from "../api.ts";
 import { GatedButton, PreflightBanner } from "../preflight/index.ts";
 import { useAppEvents } from "../useAppEvents.ts";
 import { IssueList } from "./IssueList.tsx";
-import { RepoPickDialog } from "./RepoPickDialog.tsx";
+import { RepoPickDialog } from "../features/repos/index.ts";
 import { StartIdeaDialog } from "./StartIdeaDialog.tsx";
 
 export function IssuesPage() {
