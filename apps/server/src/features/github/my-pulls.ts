@@ -3,6 +3,8 @@ import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { createOctokit, githubCall, type FetchFn } from "./octokit.ts";
 import { commitChecks } from "./checks.ts";
 import { etagHit, isNotModified, rememberedEtag, rememberEtag } from "./etag.ts";
+import { listAuthoredPullsGql } from "./my-pulls-gql.ts";
+import { reduceReviews } from "./reviews.ts";
 
 type SearchItem = {
   number: number;
@@ -20,6 +22,14 @@ export async function listAuthoredPulls(token: string, fetchFn: FetchFn): Promis
 }
 
 async function loadPulls(token: string, fetchFn: FetchFn, key: string): Promise<OwnPr[]> {
+  try {
+    return await listAuthoredPullsGql(token, fetchFn);
+  } catch {
+    return loadPullsRest(token, fetchFn, key);
+  }
+}
+
+async function loadPullsRest(token: string, fetchFn: FetchFn, key: string): Promise<OwnPr[]> {
   const octokit = createOctokit(token, fetchFn);
   const headers = rememberedEtag(key) ? { "If-None-Match": rememberedEtag(key)! } : {};
   try {
@@ -83,11 +93,7 @@ async function reviewState(
 ): Promise<PrReviewState> {
   const octokit = createOctokit(token, fetchFn);
   const res = await githubCall(() => octokit.rest.pulls.listReviews({ owner, repo: name, pull_number: number, per_page: 100 }));
-  const states = (res.data ?? []).map((r) => String(r.state ?? "").toUpperCase());
-  if (states.includes("CHANGES_REQUESTED")) return "changes_requested";
-  if (states.includes("APPROVED")) return "approved";
-  if (states.includes("COMMENTED")) return "commented";
-  return "none";
+  return reduceReviews(res.data ?? []);
 }
 
 function repoFrom(item: SearchItem): string {

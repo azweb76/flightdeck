@@ -48,6 +48,22 @@ describe("live CI poll", () => {
     expect(getChange(change.id)?.status).toBe("archived");
   });
 
+  it("watchLiveCi marks the change done when checks pass", async () => {
+    const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.prNumber = 9;
+    change.ciPhase = "watching";
+    change.ciRound = 1;
+    saveChange(change);
+    await watchLiveCi(change, undefined, {
+      checks: async () => ({ state: "passing", sha: "abc", summary: "All checks passed." }),
+      pullState: async () => ({ state: "open", merged: false }),
+      pollMs: 5,
+    });
+    expect(change.status).toBe("done");
+    expect(change.events.some((e) => e.detail === "All checks passed.")).toBe(true);
+  });
+
   it("stops watching when the pull request is merged", async () => {
     const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
     change.stage = "ci";
