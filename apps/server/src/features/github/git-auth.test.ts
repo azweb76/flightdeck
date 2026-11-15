@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
-import { askpassPath, gitAuthEnv } from "./git-auth.ts";
+import { askpassPath, gitAuthEnv, gitFetchPullHead } from "./git-auth.ts";
 
 describe("git askpass helper", () => {
   const prev = process.env.FLIGHTDECK_DATA_DIR;
@@ -45,5 +45,17 @@ describe("git askpass helper", () => {
       if (prev === undefined) delete process.env.GITHUB_TOKEN;
       else process.env.GITHUB_TOKEN = prev;
     }
+  });
+
+  it("fetches pull/<n>/head and errors if the commit is missing", async () => {
+    const calls: string[][] = [];
+    const exec = async (_cmd: string, args: string[]) => {
+      calls.push(args);
+      if (args[0] === "fetch") return { code: 0, stdout: "", stderr: "" };
+      return { code: 1, stdout: "", stderr: "missing" };
+    };
+    await expect(gitFetchPullHead(exec, "/tmp/repo", 12, "abc")).rejects.toThrow(/PR head abc is not in the clone/);
+    expect(calls[0]).toEqual(["fetch", "--no-tags", "origin", "pull/12/head"]);
+    await expect(gitFetchPullHead(exec, "/tmp/repo", 12, "HEAD")).rejects.toThrow(/no head commit/);
   });
 });

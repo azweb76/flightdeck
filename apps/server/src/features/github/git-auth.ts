@@ -45,3 +45,23 @@ export async function gitFetch(exec: ExecFn, dest: string): Promise<void> {
   const r = await exec("git", ["fetch", "origin"], { cwd: dest, timeoutMs: 60_000, env: await gitAuthEnv() });
   if (r.code !== 0) throw new Error(r.stderr || "git fetch failed");
 }
+
+/** Fetch the PR head ref, then require the commit object before a detached worktree. */
+export async function gitFetchPullHead(exec: ExecFn, dest: string, number: number, sha: string): Promise<void> {
+  if (!sha.trim() || sha === "HEAD") {
+    throw new Error("This pull request has no head commit to check out.");
+  }
+  const ref = `pull/${number}/head`;
+  const fetched = await exec("git", ["fetch", "--no-tags", "origin", ref], {
+    cwd: dest,
+    timeoutMs: 60_000,
+    env: await gitAuthEnv(),
+  });
+  if (fetched.code !== 0) {
+    throw new Error(fetched.stderr || `Could not fetch origin ${ref}`);
+  }
+  const has = await exec("git", ["cat-file", "-e", `${sha}^{commit}`], { cwd: dest, timeoutMs: 15_000 });
+  if (has.code !== 0) {
+    throw new Error(`PR head ${sha} is not in the clone after fetching origin ${ref}.`);
+  }
+}

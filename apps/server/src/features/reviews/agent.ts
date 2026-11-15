@@ -2,6 +2,8 @@ import type { PrReview } from "@flightdeck/shared";
 import { getAgentDriver } from "../agent/index.ts";
 import { detectClaudeConfig, claudeSdkEnv } from "../claude/index.ts";
 import { ensureClone } from "../clone/index.ts";
+import { gitFetchPullHead } from "../github/git-auth.ts";
+import { defaultExec } from "../exec/index.ts";
 import { capMessage, evaluateSpend } from "../run/caps.ts";
 import { getSettings } from "../settings/index.ts";
 import { addWorktreeAtCommit, nestedWorktree } from "../run/worktree.ts";
@@ -16,9 +18,13 @@ import { splitSlug } from "./slug.ts";
 
 export async function runLiveReview(review: PrReview): Promise<void> {
   const [owner, name] = splitSlug(review.repoSlug);
+  if (!review.headSha.trim() || review.headSha === "HEAD") {
+    throw new Error("This pull request has no head commit to check out.");
+  }
   const clone = await ensureClone(owner, name);
+  await gitFetchPullHead(defaultExec, clone.localPath, review.number, review.headSha);
   const wt = nestedWorktree(clone.localPath, `review-${review.id}`);
-  await addWorktreeAtCommit(clone.localPath, wt.path, review.headSha || "HEAD");
+  await addWorktreeAtCommit(clone.localPath, wt.path, review.headSha);
   review.worktreePath = wt.path;
   const skill = detectReviewSkill(wt.path);
   review.skillPath = skill?.path ?? "";

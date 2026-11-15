@@ -39,11 +39,14 @@ export async function addWorktreeAtCommit(
   commit: string,
   exec: ExecFn = defaultExec,
 ): Promise<void> {
+  if (!commit.trim() || commit === "HEAD") {
+    throw new Error("Need the PR head commit to create a review worktree.");
+  }
   if (existsSync(join(dest, ".git")) || existsSync(join(dest, "HEAD"))) return;
   ignoreFlightdeckDir(repoDir);
   mkdirSync(join(dest, ".."), { recursive: true });
   const r = await exec("git", ["worktree", "add", "--detach", dest, commit], { cwd: repoDir, timeoutMs: 60_000 });
-  if (r.code !== 0) throw new Error(r.stderr || "git worktree add at commit failed");
+  if (r.code !== 0) throw new Error(r.stderr || `Could not check out ${commit}`);
 }
 
 export async function removeWorktree(

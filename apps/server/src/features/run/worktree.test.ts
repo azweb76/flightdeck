@@ -57,6 +57,11 @@ describe("worktrees", () => {
     expect(head.stdout.trim()).toBe(sha);
   });
 
+  it("does not fall back to HEAD for a review worktree", async () => {
+    await expect(addWorktreeAtCommit("/tmp/repo", "/tmp/wt", "HEAD")).rejects.toThrow(/PR head commit/);
+    await expect(addWorktreeAtCommit("/tmp/repo", "/tmp/wt", "")).rejects.toThrow(/PR head commit/);
+  });
+
   it("retries worktree remove after prune when the first remove fails", async () => {
     delete process.env.FLIGHTDECK_DEMO;
     const repo = mkdtempSync(join(tmpdir(), "fd-wt-retry-"));
