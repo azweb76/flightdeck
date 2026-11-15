@@ -73,7 +73,6 @@ function statusWord(change: Change): string {
   if (change.status === "queued" || change.ciPhase === "queued") return "Waiting for a free slot";
   if (change.status === "asking") return "Paused for your answer";
   if (change.status === "cap_hit") return "Stopped on the dollar cap";
-  if (change.status === "needs_dan" && change.stage === "ci") return "Stopped after 3 CI attempts";
   if (change.status === "needs_dan") return "Stopped after 3 review rounds";
   if (change.status === "watching_ci") return "Watching GitHub checks";
   if (change.status === "fixing_ci") return "Fixing failed checks";
