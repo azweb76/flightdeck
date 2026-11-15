@@ -7,7 +7,7 @@ import { api } from "../api.ts";
 import { useAppEvents } from "../useAppEvents.ts";
 import { ChangeHeader } from "./ChangeHeader.tsx";
 import { StageTimeline } from "./StageTimeline.tsx";
-import { TranscriptPane } from "./TranscriptPane.tsx";
+import { Chat, fromEvents } from "../features/chat/index.ts";
 
 export function ChangePage() {
   const { id } = useParams();
@@ -37,7 +37,7 @@ export function ChangePage() {
         <Box sx={{ width: { lg: 320 }, flexShrink: 0 }}>
           <StageTimeline change={state.change} />
         </Box>
-        <TranscriptPane
+        <RunChat
           change={state.change}
           reply={state.reply}
           busy={state.busy}
@@ -103,4 +103,33 @@ function useChange(id: string | undefined) {
       }
     },
   };
+}
+
+function RunChat(props: {
+  change: Change;
+  reply: string;
+  busy: boolean;
+  onReply: (v: string) => void;
+  onSend: (text: string) => void;
+}) {
+  const waiting = props.change.status === "asking" || props.change.status === "needs_dan";
+  return (
+    <Chat
+      title="Transcript"
+      testId="transcript"
+      entries={fromEvents(props.change.events)}
+      reply={props.reply}
+      onReply={props.onReply}
+      onSend={props.onSend}
+      canSend={waiting && !props.busy && props.reply.trim().length > 0}
+      disabled={!waiting || props.busy}
+      placeholder={waiting ? "Answer the agent" : "The agent only pauses when it needs you"}
+      inputTestId="run-reply"
+      sendTestId="run-send"
+      compact
+      autoScroll
+      spacing={1.25}
+      paperSx={{ flex: 1, minHeight: { xs: 480, lg: 0 } }}
+    />
+  );
 }

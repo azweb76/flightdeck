@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api.ts";
 import { GatedButton } from "../preflight/index.ts";
 import { sessionFromEvent, useAppEvents } from "../useAppEvents.ts";
-import { ChatPane } from "./ChatPane.tsx";
+import { Chat, fromMessages } from "../features/chat/index.ts";
 import { DraftPane } from "./DraftPane.tsx";
 import { SaveIssueDialog } from "./SaveIssueDialog.tsx";
 
@@ -79,7 +79,7 @@ export function ShapePage() {
         alignItems="stretch"
         sx={{ flex: { lg: 1 }, minHeight: { lg: 0 }, overflow: { lg: "hidden" } }}
       >
-        <ChatPane session={session} reply={reply} busy={busy} saved={saved} onReply={setReply} onSend={(t) => void send(t)} />
+        <RefineChat session={session} reply={reply} busy={busy} saved={saved} onReply={setReply} onSend={(t) => void send(t)} />
         <DraftPane session={session} />
       </Stack>
       <SaveIssueDialog
@@ -139,5 +139,36 @@ function Header(props: { session: ShapeSession; saved: boolean; onSave: () => vo
         </GatedButton>
       </Stack>
     </Stack>
+  );
+}
+
+function RefineChat(props: {
+  session: ShapeSession;
+  reply: string;
+  busy: boolean;
+  saved: boolean;
+  onReply: (v: string) => void;
+  onSend: (text: string) => void;
+}) {
+  return (
+    <Chat
+      title="Chat"
+      testId="chat-pane"
+      entries={fromMessages(props.session.messages)}
+      reply={props.reply}
+      onReply={props.onReply}
+      onSend={props.onSend}
+      canSend={!props.busy && !props.saved && props.reply.trim().length > 0}
+      disabled={props.busy || props.saved}
+      placeholder="Type a reply"
+      inputTestId="chat-input"
+      sendSx={{ mt: 2 }}
+      paperSx={{
+        flex: { xs: "none", lg: 1 },
+        minHeight: { xs: 520, lg: 0 },
+        height: { lg: "100%" },
+        overflow: "hidden",
+      }}
+    />
   );
 }
