@@ -1,6 +1,7 @@
 import { markdownToAdf } from "@flightdeck/shared";
 import { CACHE_KEYS, getCache, TTL } from "../cache/index.ts";
 import { authHeaders, jiraFetch } from "./http.ts";
+import { parseLabelNames, withRepoLabel } from "./labels.ts";
 import { searchJira } from "./search.ts";
 import type { JiraIssue } from "./types.ts";
 
@@ -34,6 +35,13 @@ export type JiraClient = {
     key: string;
     body: string;
   }): Promise<void>;
+  setRepoLabel(opts: {
+    siteUrl: string;
+    email: string;
+    token: string;
+    key: string;
+    repoSlug: string;
+  }): Promise<void>;
 };
 
 type FetchFn = typeof fetch;
@@ -52,6 +60,7 @@ export function createJiraClient(fetchFn: FetchFn = fetch): JiraClient {
     createIssue: (opts) => jiraCreate(fetchFn, opts),
     updateIssue: (opts) => jiraUpdate(fetchFn, opts),
     commentIssue: (opts) => jiraComment(fetchFn, opts),
+    setRepoLabel: (opts) => setJiraRepoLabel(fetchFn, opts),
   };
 }
 
@@ -129,4 +138,30 @@ async function jiraComment(
     },
     "Jira comment failed",
   );
+}
+
+async function setJiraRepoLabel(
+  fetchFn: FetchFn,
+  opts: { siteUrl: string; email: string; token: string; key: string; repoSlug: string },
+): Promise<void> {
+  const base = opts.siteUrl.replace(/\/$/, "");
+  const res = await jiraFetch(
+    fetchFn,
+    `${base}/rest/api/3/issue/${opts.key}?fields=labels`,
+    { headers: authHeaders(opts.email, opts.token) },
+    "Jira labels failed",
+  );
+  const body = (await res.json()) as { fields?: { labels?: unknown } };
+  const labels = withRepoLabel(parseLabelNames(body.fields), opts.repoSlug);
+  await jiraFetch(
+    fetchFn,
+    `${base}/rest/api/3/issue/${opts.key}`,
+    {
+      method: "PUT",
+      headers: { ...authHeaders(opts.email, opts.token), "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: { labels } }),
+    },
+    "Jira label update failed",
+  );
+  getCache().invalidate(CACHE_KEYS.jiraAll);
 }

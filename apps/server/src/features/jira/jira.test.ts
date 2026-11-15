@@ -39,7 +39,56 @@ describe("jira adapter", () => {
       jql: "assignee = currentUser() ORDER BY updated",
     });
     expect(calls[0]?.url).toBe("https://ex.atlassian.net/rest/api/3/search/jql");
+    expect((calls[0]?.body as { fields?: string[] }).fields).toContain("labels");
     expect(issues[0]?.body).toContain("Ship it");
+  });
+
+  it("maps repo:org/repo labels from search and writes them on setRepoLabel", async () => {
+    const calls: { method?: string; url: string; body: unknown }[] = [];
+    const fetchFn = (async (url: string, init?: RequestInit) => {
+      const method = (init?.method ?? "GET").toUpperCase();
+      const raw = init?.body ? String(init.body) : "{}";
+      calls.push({ method, url: String(url), body: raw === "{}" ? undefined : JSON.parse(raw) });
+      if (String(url).includes("search/jql")) {
+        return new Response(
+          JSON.stringify({
+            isLast: true,
+            issues: [
+              {
+                key: "PROJ-1",
+                fields: {
+                  summary: "CSV",
+                  updated: "2026-11-12T00:00:00.000Z",
+                  labels: ["needs-review", "repo:acme/web"],
+                },
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      if (method === "GET") {
+        return new Response(JSON.stringify({ fields: { labels: ["needs-review", "repo:old/app"] } }), { status: 200 });
+      }
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    const client = createJiraClient(fetchFn);
+    const found = await client.search({
+      siteUrl: "https://ex.atlassian.net",
+      email: "a@b.c",
+      token: "t",
+      jql: "assignee = currentUser()",
+    });
+    expect(found[0]?.repoSlug).toBe("acme/web");
+    await client.setRepoLabel({
+      siteUrl: "https://ex.atlassian.net",
+      email: "a@b.c",
+      token: "t",
+      key: "PROJ-1",
+      repoSlug: "acme/api",
+    });
+    const put = calls.find((c) => c.method === "PUT");
+    expect(put?.body).toEqual({ fields: { labels: ["needs-review", "repo:acme/api"] } });
   });
 
   it("keeps ORDER BY last on incremental JQL", () => {

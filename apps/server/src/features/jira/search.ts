@@ -1,12 +1,13 @@
 import { adfToMarkdown } from "@flightdeck/shared";
 import { authHeaders, jiraFetch } from "./http.ts";
+import { parseLabelNames, repoSlugFromLabels } from "./labels.ts";
 import type { JiraIssue } from "./types.ts";
 
 const MAX_PAGES = 10;
 
 type JiraApiIssue = {
   key: string;
-  fields?: { summary?: string; description?: unknown; updated?: string };
+  fields?: { summary?: string; description?: unknown; updated?: string; labels?: unknown };
 };
 
 type SearchPage = { issues?: JiraApiIssue[]; nextPageToken?: string; isLast?: boolean };
@@ -25,7 +26,7 @@ export async function searchJira(
     const body: Record<string, unknown> = {
       jql: opts.jql,
       maxResults: 50,
-      fields: ["summary", "description", "updated"],
+      fields: ["summary", "description", "updated", "labels"],
     };
     if (nextPageToken) body.nextPageToken = nextPageToken;
     const res = await jiraFetch(
@@ -49,5 +50,6 @@ function toIssue(base: string, issue: JiraApiIssue): JiraIssue {
     body: adfToMarkdown(issue.fields?.description),
     url: `${base}/browse/${issue.key}`,
     updatedAt: issue.fields?.updated ?? new Date().toISOString(),
+    repoSlug: repoSlugFromLabels(parseLabelNames(issue.fields)),
   };
 }

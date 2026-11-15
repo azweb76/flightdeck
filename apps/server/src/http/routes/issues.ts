@@ -8,6 +8,6 @@ export function mountIssues(app: Hono): void {
   app.patch("/api/issues/:id/repo", async (c) => {
     const body = await c.req.json<{ repoSlug?: string }>();
     if (!body.repoSlug) fail("Pick a repo");
-    return c.json(setIssueRepo(decodeURIComponent(c.req.param("id")), body.repoSlug));
+    return c.json(await setIssueRepo(decodeURIComponent(c.req.param("id")), body.repoSlug));
   });
 }

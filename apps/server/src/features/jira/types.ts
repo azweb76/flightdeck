@@ -4,4 +4,5 @@ export type JiraIssue = {
   body: string;
   url: string;
   updatedAt: string;
+  repoSlug?: string;
 };
