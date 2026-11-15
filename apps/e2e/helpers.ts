@@ -16,6 +16,16 @@ export async function resetDemo(page: Page, seed: boolean): Promise<void> {
   expect(res.ok()).toBeTruthy();
 }
 
+export async function scheme(page: Page, mode: "light" | "dark"): Promise<void> {
+  await page.emulateMedia({ colorScheme: mode });
+  await page.evaluate((next) => {
+    const root = document.documentElement;
+    root.classList.toggle("dark", next === "dark");
+    root.classList.toggle("light", next === "light");
+    root.style.colorScheme = next;
+  }, mode);
+}
+
 export async function seedHome(page: Page): Promise<void> {
   await resetDemo(page, true);
   await page.goto("/");
@@ -37,12 +47,30 @@ export async function startNewIdea(page: Page, idea = "Export invoices as CSV"):
   await expect(page.getByTestId("chat-pane")).toBeVisible();
 }
 
+export async function disabledContainedGrey(page: Page): Promise<string> {
+  const dark = await page.evaluate(() => {
+    const root = document.documentElement;
+    return root.classList.contains("dark") || root.style.colorScheme === "dark";
+  });
+  return dark ? "rgb(58, 58, 60)" : "rgb(210, 210, 215)";
+}
+
 export async function expectDisabledNotPrimary(page: Page, testId: string): Promise<void> {
   const btn = page.getByTestId(testId);
   await expect(btn).toBeDisabled();
   const bg = await btn.evaluate((el) => getComputedStyle(el).backgroundColor);
-  expect(bg).not.toBe("rgb(0, 113, 227)");
-  expect(bg).not.toBe("rgb(41, 151, 255)");
+  expect(bg).toBe(await disabledContainedGrey(page));
+}
+
+export async function expectAllDisabledContainedGrey(page: Page): Promise<void> {
+  const expected = await disabledContainedGrey(page);
+  const loc = page.locator("button.MuiButton-contained.Mui-disabled");
+  const n = await loc.count();
+  expect(n).toBeGreaterThan(0);
+  for (let i = 0; i < n; i += 1) {
+    const bg = await loc.nth(i).evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(bg).toBe(expected);
+  }
 }
 
 export function watchRepoCatalogGets(page: Page): { count: () => number } {

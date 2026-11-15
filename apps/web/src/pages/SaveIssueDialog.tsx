@@ -82,10 +82,17 @@ export function SaveIssueDialog(props: {
 }
 
 function SaveActions(props: { busy: boolean; blocked: boolean; onClose: () => void; onSave: () => void }) {
+  const off = props.busy || props.blocked;
   return (
     <DialogActions sx={{ px: 3, pb: 2.5 }}>
       <Button onClick={props.onClose}>Cancel</Button>
-      <Button variant="contained" disabled={props.busy || props.blocked} onClick={props.onSave} data-testid="confirm-save">
+      <Button
+        key={off ? "off" : "on"}
+        variant="contained"
+        disabled={off}
+        onClick={props.onSave}
+        data-testid="confirm-save"
+      >
         Save
       </Button>
     </DialogActions>
