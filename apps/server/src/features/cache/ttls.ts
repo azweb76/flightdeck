@@ -10,6 +10,7 @@ export const TTL = {
   githubPulls: 60_000,
   githubChecks: 20_000,
   githubPull: 20_000,
+  githubReviewRequests: 60_000,
 } as const;
 
 export const CACHE_KEYS = {
@@ -23,6 +24,7 @@ export const CACHE_KEYS = {
   cloneFetch: (owner: string, name: string) => `clone:fetch:${owner}/${name}`,
   githubPulls: "gh:pulls",
   githubPull: (owner: string, name: string, number: number) => `gh:pull:${owner}/${name}#${number}`,
+  githubReviewRequests: "gh:reviews",
   githubChecks: (owner: string, name: string, ref: string) => `gh:checks:${owner}/${name}:${ref}`,
   jiraSearch: (site: string, email: string, jql: string) => `jira:search:${site}:${email}:${jql}`,
   jiraTest: (site: string, email: string) => `jira:test:${site}:${email}`,

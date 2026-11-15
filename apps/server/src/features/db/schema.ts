@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -96,6 +96,44 @@ export const CREATE_SQL = `
     detail TEXT,
     ask_json TEXT,
     cost_usd REAL,
+    demo INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS pr_reviews (
+    id TEXT PRIMARY KEY,
+    repo_slug TEXT NOT NULL,
+    number INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL DEFAULT '',
+    author TEXT NOT NULL DEFAULT '',
+    head_sha TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL,
+    summary TEXT NOT NULL DEFAULT '',
+    worktree_path TEXT NOT NULL DEFAULT '',
+    skill_path TEXT NOT NULL DEFAULT '',
+    cost_usd REAL NOT NULL DEFAULT 0,
+    posted_event TEXT,
+    selected INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    demo INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS pr_review_comments (
+    id TEXT PRIMARY KEY,
+    review_id TEXT NOT NULL,
+    path TEXT NOT NULL,
+    line INTEGER NOT NULL,
+    side TEXT NOT NULL DEFAULT 'RIGHT',
+    body TEXT NOT NULL,
+    state TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT NOT NULL,
+    demo INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS pr_review_messages (
+    id TEXT PRIMARY KEY,
+    review_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    text TEXT NOT NULL,
+    at TEXT NOT NULL,
     demo INTEGER NOT NULL DEFAULT 0
   );
 `;
@@ -197,6 +235,44 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "detail", addSql: "detail TEXT" },
     { name: "ask_json", addSql: "ask_json TEXT" },
     { name: "cost_usd", addSql: "cost_usd REAL" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
+  ],
+  pr_reviews: [
+    { name: "id", addSql: "id TEXT" },
+    { name: "repo_slug", addSql: "repo_slug TEXT NOT NULL DEFAULT ''" },
+    { name: "number", addSql: "number INTEGER NOT NULL DEFAULT 0" },
+    { name: "title", addSql: "title TEXT NOT NULL DEFAULT ''" },
+    { name: "url", addSql: "url TEXT NOT NULL DEFAULT ''" },
+    { name: "author", addSql: "author TEXT NOT NULL DEFAULT ''" },
+    { name: "head_sha", addSql: "head_sha TEXT NOT NULL DEFAULT ''" },
+    { name: "status", addSql: "status TEXT NOT NULL DEFAULT ''" },
+    { name: "summary", addSql: "summary TEXT NOT NULL DEFAULT ''" },
+    { name: "worktree_path", addSql: "worktree_path TEXT NOT NULL DEFAULT ''" },
+    { name: "skill_path", addSql: "skill_path TEXT NOT NULL DEFAULT ''" },
+    { name: "cost_usd", addSql: "cost_usd REAL NOT NULL DEFAULT 0" },
+    { name: "posted_event", addSql: "posted_event TEXT" },
+    { name: "selected", addSql: "selected INTEGER NOT NULL DEFAULT 0" },
+    { name: "created_at", addSql: "created_at TEXT NOT NULL DEFAULT ''" },
+    { name: "updated_at", addSql: "updated_at TEXT NOT NULL DEFAULT ''" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
+  ],
+  pr_review_comments: [
+    { name: "id", addSql: "id TEXT" },
+    { name: "review_id", addSql: "review_id TEXT NOT NULL DEFAULT ''" },
+    { name: "path", addSql: "path TEXT NOT NULL DEFAULT ''" },
+    { name: "line", addSql: "line INTEGER NOT NULL DEFAULT 0" },
+    { name: "side", addSql: "side TEXT NOT NULL DEFAULT 'RIGHT'" },
+    { name: "body", addSql: "body TEXT NOT NULL DEFAULT ''" },
+    { name: "state", addSql: "state TEXT NOT NULL DEFAULT 'draft'" },
+    { name: "created_at", addSql: "created_at TEXT NOT NULL DEFAULT ''" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
+  ],
+  pr_review_messages: [
+    { name: "id", addSql: "id TEXT" },
+    { name: "review_id", addSql: "review_id TEXT NOT NULL DEFAULT ''" },
+    { name: "role", addSql: "role TEXT NOT NULL DEFAULT ''" },
+    { name: "text", addSql: "text TEXT NOT NULL DEFAULT ''" },
+    { name: "at", addSql: "at TEXT NOT NULL DEFAULT ''" },
     { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],
 };
