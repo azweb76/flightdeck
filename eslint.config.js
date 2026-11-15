@@ -38,9 +38,15 @@ export default tseslint.config(
     },
   },
   {
-    files: ["**/*.test.ts", "**/*.test.tsx", "scripts/**", "eslint.config.js"],
+    files: ["**/*.test.ts", "**/*.test.tsx", "scripts/**", "eslint.config.js", "apps/e2e/**/*.mjs"],
     languageOptions: {
-      globals: { process: "readonly", console: "readonly", Buffer: "readonly" },
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        Buffer: "readonly",
+        fetch: "readonly",
+        setTimeout: "readonly",
+      },
     },
     rules: {
       "max-lines-per-function": "off",

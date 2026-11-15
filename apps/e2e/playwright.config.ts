@@ -11,6 +11,7 @@ const preflightShots = process.env.PREFLIGHT_SHOTS === "1";
 const octokitShots = process.env.OCTOKIT_SHOTS === "1";
 const octokitFixes = process.env.OCTOKIT_FIXES === "1";
 const phase2Shots = process.env.PHASE2_SHOTS === "1";
+const reviewShots = process.env.REVIEW_SHOTS === "1";
 process.env.FLIGHTDECK_DATA_DIR = dataDir;
 process.env.FLIGHTDECK_DEMO = "1";
 process.env.FLIGHTDECK_PORT = apiPort;
@@ -38,7 +39,9 @@ export default defineConfig({
           ? ["octokit-fixes.spec.ts"]
           : phase2Shots
             ? ["phase2-shots.spec.ts"]
-            : ["phase1.spec.ts", "preflight.spec.ts", "phase2.spec.ts"],
+            : reviewShots
+              ? ["review-shots.spec.ts"]
+              : ["phase1.spec.ts", "preflight.spec.ts", "phase2.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,
@@ -48,20 +51,31 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     colorScheme: "light",
   },
-  webServer: [
-    {
-      command: "pnpm --filter @flightdeck/server start",
-      url: `http://127.0.0.1:${apiPort}/api/health`,
-      reuseExistingServer: false,
-      cwd: join(import.meta.dirname, "../.."),
-      env,
-    },
-    {
-      command: "pnpm --filter @flightdeck/web dev",
-      url: `http://127.0.0.1:${webPort}`,
-      reuseExistingServer: false,
-      cwd: join(import.meta.dirname, "../.."),
-      env,
-    },
-  ],
+  webServer: reviewShots
+    ? [
+        {
+          command: "node apps/e2e/start-live-after-demo.mjs",
+          url: `http://127.0.0.1:${webPort}`,
+          reuseExistingServer: false,
+          cwd: join(import.meta.dirname, "../.."),
+          env,
+          timeout: 120_000,
+        },
+      ]
+    : [
+        {
+          command: "pnpm --filter @flightdeck/server start",
+          url: `http://127.0.0.1:${apiPort}/api/health`,
+          reuseExistingServer: false,
+          cwd: join(import.meta.dirname, "../.."),
+          env,
+        },
+        {
+          command: "pnpm --filter @flightdeck/web dev",
+          url: `http://127.0.0.1:${webPort}`,
+          reuseExistingServer: false,
+          cwd: join(import.meta.dirname, "../.."),
+          env,
+        },
+      ],
 });

@@ -39,6 +39,17 @@ async function pair(page: Page, prefix: string): Promise<void> {
   await page.setViewportSize({ width: 1440, height: 900 });
 }
 
+test("no-token picker empty state", async ({ page }) => {
+  await seedHome(page);
+  await setPreflight(page, "github");
+  await scheme(page, "light");
+  await page.getByTestId("new-idea").click();
+  await expect(page.getByTestId("repo-picker-detail")).toContainText("Add a GitHub token in Settings");
+  await shot(page, "picker-no-token-light");
+  await scheme(page, "dark");
+  await shot(page, "picker-no-token-dark");
+});
+
 test("banner failing", async ({ page }) => {
   await seedHome(page);
   await setPreflight(page, "fail");
@@ -47,6 +58,10 @@ test("banner failing", async ({ page }) => {
   await pair(page, "banner-fail-light");
   await scheme(page, "dark");
   await pair(page, "banner-fail-dark");
+  await scheme(page, "light");
+  await page.getByTestId("preflight-claude").scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("preflight-fix-claude")).toContainText("Then type /login");
+  await shot(page, "claude-banner-light");
 });
 
 test("tooltips on New idea, Refine, and Start", async ({ page }) => {

@@ -59,6 +59,7 @@ test("start from an existing issue", async ({ page }) => {
   await pickRepo(page);
   await page.getByTestId("confirm-repo").click();
   await expect(page.getByTestId("chat-pane")).toBeVisible();
+  await expect(page.getByTestId("chat-pane")).not.toContainText("# Invoice CSV");
   await expect(page.getByTestId("draft-title")).toContainText("Invoice CSV");
   await expect(page.getByTestId("draft-goal")).not.toContainText("##");
   await expect(page.getByTestId("draft-goal")).toContainText(/export|finance/i);
@@ -121,6 +122,8 @@ test("Settings shows editable fields and no connectivity cards", async ({ page }
 test("Jira save stores without a connection test", async ({ page }) => {
   await seedHome(page);
   await page.goto("/settings");
+  await page.getByTestId("jira-url").fill("https://example.atlassian.net");
+  await page.getByTestId("jira-email").fill("dan@example.com");
   await page.getByTestId("jira-token").fill("ok");
   await page.getByTestId("jira-save").click();
   await expect(page.getByTestId("jira-form-success")).toContainText("Jira settings saved");

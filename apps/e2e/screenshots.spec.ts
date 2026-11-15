@@ -115,6 +115,8 @@ test("idea, draft, save, and settings screenshots", async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 900 });
   await shot(page, "settings-narrow");
   await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByTestId("jira-url").fill("https://example.atlassian.net");
+  await page.getByTestId("jira-email").fill("dan@example.com");
   await page.getByTestId("jira-token").fill("ok");
   await page.getByTestId("jira-save").click();
   await expect(page.getByTestId("jira-form-success")).toBeVisible();
