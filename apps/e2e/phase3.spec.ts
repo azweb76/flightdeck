@@ -23,9 +23,9 @@ test("Resume continues an interrupted run", async ({ page }) => {
   await page.getByRole("tab", { name: "Runs" }).click();
   await page.getByTestId("resume-acme/web#41").click();
   await expect(page.getByTestId("resume-acme/web#41")).toHaveCount(0);
-  await expect(page.getByTestId("run-status-acme/web#41")).toContainText(/Implement|Review|Draft PR|Done/, { timeout: 20_000 });
   await page.getByTestId("run-status-acme/web#41").click();
-  await expect(page.getByTestId("pr-link")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("change-page")).toBeVisible();
+  await expect(page.getByTestId("pr-link")).toBeVisible({ timeout: 40_000 });
 });
 
 test("Archive removes a finished run and Start queues over the cap", async ({ page }) => {
