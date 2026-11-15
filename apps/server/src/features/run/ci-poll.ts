@@ -61,6 +61,24 @@ export async function waitForChecks(
     const result = await checks(token, fetchFn, owner, name, ref, { fresh: true, sinceMs });
     if (result.state !== "pending") return result;
     if (process.env.FLIGHTDECK_RUN_FAST === "1" && deps.pollMs == null) return result;
-    await new Promise((r) => setTimeout(r, process.env.FLIGHTDECK_RUN_FAST === "1" ? 0 : pollMs));
+    await sleep(process.env.FLIGHTDECK_RUN_FAST === "1" ? 0 : pollMs, signal);
   }
+}
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve();
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
 }

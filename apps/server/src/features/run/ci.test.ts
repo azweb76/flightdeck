@@ -42,6 +42,26 @@ describe("live CI poll", () => {
     delete process.env.FLIGHTDECK_RUN_FAST;
   });
 
+  it("aborts the CI poll delay as soon as the run is archived", async () => {
+    const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
+    change.stage = "ci";
+    change.prNumber = 9;
+    change.ciPhase = "watching";
+    change.ciRound = 1;
+    saveChange(change);
+    const started = Date.now();
+    const running = watchLiveCi(change, undefined, {
+      checks: async () => ({ state: "pending" as const, sha: "abc", summary: "pending" }),
+      pullState: async () => ({ state: "open", merged: false }),
+      pollMs: 30_000,
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    await archiveChange(change.id);
+    await running;
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(getChange(change.id)?.status).toBe("archived");
+  });
+
   it("stops watching when the change is archived", async () => {
     const change = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
     change.stage = "ci";
