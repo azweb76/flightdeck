@@ -1,8 +1,8 @@
 import { Autocomplete, Box, TextField } from "@mui/material";
-import { useMemo, useRef, useState, type HTMLAttributes, type Key, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type HTMLAttributes, type Key, type ReactNode } from "react";
 import { DropdownPaper, DropdownUi } from "./Dropdown.tsx";
 import { catalogOptions, type RepoOption } from "./filter.ts";
-import { PICKER_MENU } from "./menu.ts";
+import { PICKER_MENU, fitPickerMenu } from "./menu.ts";
 import { OptionRow } from "./OptionRow.tsx";
 import { pickerPopper } from "./popper.ts";
 import { useRepoCatalog } from "./useRepoCatalog.ts";
@@ -16,7 +16,10 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
   const starred = useMemo(() => new Set(catalog.catalog?.favorites ?? []), [catalog.catalog?.favorites]);
   const value = options.find((o) => o.slug === props.value) ?? (props.value ? { slug: props.value, group: "All" as const } : null);
   const listMax = PICKER_MENU.maxHeight - PICKER_MENU.header;
-  const listMin = PICKER_MENU.minHeight - PICKER_MENU.header;
+
+  useLayoutEffect(() => {
+    if (open) fitPickerMenu(wrapRef.current);
+  }, [open, options.length]);
 
   return (
     <DropdownUi
@@ -32,10 +35,7 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
       <Box ref={wrapRef} data-testid="repo-picker">
         <Autocomplete
           open={open}
-          onOpen={() => {
-            setOpen(true);
-            queueMicrotask(() => revealMenu(wrapRef.current));
-          }}
+          onOpen={() => setOpen(true)}
           onClose={() => {
             setOpen(false);
             setQuery("");
@@ -58,7 +58,10 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
           slots={{ paper: DropdownPaper }}
           slotProps={{
             popper: pickerPopper,
-            listbox: { sx: { maxHeight: listMax, minHeight: listMin, overflow: "auto" }, id: "repo-listbox" },
+            listbox: {
+              sx: { maxHeight: listMax, overflow: "auto", listStyle: "none", py: 0, "& li": { listStyle: "none" } },
+              id: "repo-listbox",
+            },
           }}
           renderGroup={renderGroup}
           renderOption={(li, option, state) =>
@@ -84,21 +87,30 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
   );
 }
 
-function revealMenu(box: HTMLDivElement | null): void {
-  const content = box?.closest(".MuiDialogContent-root");
-  if (!box || !content) return;
-  const room = content.getBoundingClientRect().bottom - box.getBoundingClientRect().bottom;
-  if (room < PICKER_MENU.minHeight) box.scrollIntoView({ block: "start" });
-}
-
 function renderGroup(params: { key: number; group: string; children?: ReactNode }) {
   const id = params.group === "Favorites" ? "repo-favorites" : params.group === "Recent" ? "repo-recent" : "repo-all";
   return (
-    <li key={params.key} data-testid={id}>
-      <Box component="div" sx={{ px: 1.5, pt: 1, typography: "subtitle2" }}>
+    <li key={params.key} data-testid={id} style={{ listStyle: "none", padding: 0, margin: 0, display: "block" }}>
+      <Box
+        component="div"
+        sx={{
+          px: 1.5,
+          minHeight: 48,
+          width: "100%",
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          typography: "subtitle2",
+          position: "sticky",
+          top: 0,
+          zIndex: 2,
+          bgcolor: "background.paper",
+          backgroundImage: "none",
+        }}
+      >
         {params.group}
       </Box>
-      <ul style={{ padding: 0, margin: 0 }}>{params.children}</ul>
+      <ul style={{ padding: 0, margin: 0, listStyle: "none" }}>{params.children}</ul>
     </li>
   );
 }
