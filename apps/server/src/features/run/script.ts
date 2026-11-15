@@ -1,9 +1,10 @@
 import type { AgentEvent } from "../agent/types.ts";
 
-export type DemoScenario = "success" | "ask" | "fail-review" | "cap" | "ci-fix" | "ci-ask";
+export type DemoScenario = "success" | "ask" | "fail-review" | "cap" | "ci-fix" | "ci-ask" | "ci-action";
 
 export function demoScenarioFor(issue: { key: string; title: string }): DemoScenario {
   if (/#8\b/.test(issue.key) || /dollar cap|spend cap/i.test(issue.title)) return "cap";
+  if (/#72\b/.test(issue.key) || /github action/i.test(issue.title)) return "ci-action";
   if (/#70\b/.test(issue.key) || /ci keep|gave up|ci ask/i.test(issue.title)) return "ci-ask";
   if (/#71\b/.test(issue.key) || /ci fix|auto-fix/i.test(issue.title)) return "ci-fix";
   if (/#21\b/.test(issue.key) || /retry|webhook/i.test(issue.title)) return "fail-review";

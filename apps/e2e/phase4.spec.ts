@@ -56,6 +56,19 @@ test("Leave it chip ends the CI run without another attempt", async ({ page }) =
   await expect(page.getByTestId("transcript")).not.toContainText("Attempt 4");
 });
 
+test("action_required ask is not the gave-up copy", async ({ page }) => {
+  await seedHome(page);
+  await archiveAllChanges(page);
+  await raiseConcurrent(page, 10);
+  await page.goto("/");
+  await page.getByTestId("start-acme/web#72").click();
+  await expect(page.getByTestId("needs-dan")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("needs-dan")).toContainText("A GitHub check needs your action");
+  await expect(page.getByTestId("needs-dan")).not.toContainText("CI still fails after 3");
+  await expect(page.getByTestId("needs-dan-pr")).toHaveAttribute("href", /github\.com/);
+  await expect(page.getByTestId("change-status")).toHaveText("GitHub action");
+});
+
 test("reviewing seed is Review and queued banner is not error-red", async ({ page }) => {
   await seedHome(page);
   await page.getByRole("tab", { name: "Runs" }).click();

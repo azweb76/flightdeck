@@ -43,6 +43,10 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
       emitChange(change);
       return;
     }
+    if (change.scenario === "ci-action") {
+      askActionRequired(change);
+      return;
+    }
     if (change.ciRound >= limit) {
       askCi(change);
       return;
@@ -104,17 +108,7 @@ export async function watchLiveCi(change: Change, answer?: string, deps: CiPollD
         return;
       }
       if (result.state === "action_required") {
-        change.ciPhase = "";
-        change.status = "needs_dan";
-        change.ask = {
-          prompt: "CI is waiting for a GitHub action. How should I proceed?",
-          options: [
-            { id: "retry", label: "Try one more fix" },
-            { id: "leave", label: "Leave it for me" },
-          ],
-        };
-        log(change, { kind: "ask", title: "Need a decision", detail: change.ask.prompt, ask: change.ask });
-        emitChange(change);
+        askActionRequired(change);
         return;
       }
       if (change.ciRound >= limit) {
@@ -142,7 +136,7 @@ function beginWatch(change: Change): void {
 
 function failCount(scenario: string | undefined): number {
   if (scenario === "ci-ask") return MAX_CI_ROUNDS;
-  if (scenario === "ci-fix") return 1;
+  if (scenario === "ci-fix" || scenario === "ci-action") return 1;
   return 0;
 }
 
@@ -155,6 +149,7 @@ function askCi(change: Change): void {
       { id: "retry", label: "Try one more fix" },
       { id: "leave", label: "Leave it for me" },
     ],
+    reason: "ci_gave_up",
   };
   log(change, {
     kind: "ask",
@@ -162,6 +157,22 @@ function askCi(change: Change): void {
     detail: change.ask.prompt,
     ask: change.ask,
   });
+  emitChange(change);
+}
+
+function askActionRequired(change: Change): void {
+  change.ciPhase = "";
+  change.status = "needs_dan";
+  change.ask = {
+    prompt: "A GitHub check needs your action. How should I proceed?",
+    options: [
+      { id: "retry", label: "Try one more fix" },
+      { id: "leave", label: "Leave it for me" },
+    ],
+    reason: "ci_action_required",
+    link: change.prUrl,
+  };
+  log(change, { kind: "ask", title: "Need a decision", detail: change.ask.prompt, ask: change.ask });
   emitChange(change);
 }
 

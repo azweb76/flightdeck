@@ -49,7 +49,7 @@ export function archiveDisabled(status: ChangeStatus, interrupted = false): bool
   return ["planning", "implementing", "reviewing", "opening_pr", "fixing_ci", "archived"].includes(status);
 }
 
-export function statusChip(status: ChangeStatus, interrupted = false): string {
+export function statusChip(status: ChangeStatus, interrupted = false, askReason?: string): string {
   if (interrupted) return "Interrupted";
   if (status === "queued") return "Queued";
   if (status === "planning") return "Plan";
@@ -60,7 +60,7 @@ export function statusChip(status: ChangeStatus, interrupted = false): string {
   if (status === "watching_ci") return "CI";
   if (status === "fixing_ci") return "Fixing CI";
   if (status === "done") return "Done";
-  if (status === "needs_dan") return "Needs you";
+  if (status === "needs_dan") return askReason === "ci_action_required" ? "GitHub action" : "Needs you";
   if (status === "cap_hit") return "Cap hit";
   if (status === "archived") return "Archived";
   return "Error";

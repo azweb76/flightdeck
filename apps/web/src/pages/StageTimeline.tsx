@@ -59,7 +59,7 @@ function dotColor(change: Change, stage: ChangeStage): string {
 function caption(change: Change, stage: ChangeStage): string {
   if (stage === "review") return reviewRoundCaption(change.reviewRound);
   if (stage === "pr") return change.prUrl ? "Draft PR opened" : "Opens after review";
-  if (stage === "ci") return ciRoundCaption(change.ciRound, change.status, change.ciPhase);
+  if (stage === "ci") return ciRoundCaption(change.ciRound, change.status, change.ciPhase, change.ask?.reason);
   if (stage === "plan") {
     if (change.status === "asking") return "Paused for your answer";
     if (change.status === "cap_hit") return "Stopped on the dollar cap";

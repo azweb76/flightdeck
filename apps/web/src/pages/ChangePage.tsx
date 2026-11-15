@@ -1,4 +1,4 @@
-import { Alert, Box, Container, Stack, Typography } from "@mui/material";
+import { Alert, Box, Container, Link, Stack, Typography } from "@mui/material";
 import { ContrastAlert } from "../ui/ContrastAlert.tsx";
 import type { AppEvent, Change } from "@flightdeck/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -40,9 +40,23 @@ export function ChangePage() {
       ) : null}
       {state.change.status === "needs_dan" ? (
         <ContrastAlert severity="warning" data-testid="needs-dan">
-          {state.change.stage === "ci"
-            ? "CI still fails after 3 automatic fixes. Tell me how to proceed, or archive this run."
-            : "Review failed 3 times. Tell me how to proceed, or archive this run."}
+          {state.change.ask?.reason === "ci_action_required" ? (
+            <>
+              A GitHub check needs your action. Open the pull request, then tell me how to proceed.
+              {state.change.ask.link || state.change.prUrl ? (
+                <>
+                  {" "}
+                  <Link href={state.change.ask.link || state.change.prUrl} target="_blank" rel="noreferrer" data-testid="needs-dan-pr">
+                    Open the pull request
+                  </Link>
+                </>
+              ) : null}
+            </>
+          ) : state.change.stage === "ci" ? (
+            "CI still fails after 3 automatic fixes. Tell me how to proceed, or archive this run."
+          ) : (
+            "Review failed 3 times. Tell me how to proceed, or archive this run."
+          )}
         </ContrastAlert>
       ) : null}
       {state.change.status === "cap_hit" ? (

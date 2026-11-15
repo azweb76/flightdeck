@@ -14,8 +14,9 @@ export function extraRoundLabel(round: number): string {
   return round > MAX_REVIEW_ROUNDS ? "Follow-up after Dan answered" : `Round ${round}`;
 }
 
-export function ciRoundCaption(round: number, status?: string, ciPhase?: string): string {
+export function ciRoundCaption(round: number, status?: string, ciPhase?: string, askReason?: string): string {
   if (ciPhase === "queued") return "Waiting for a free slot";
+  if (status === "needs_dan" && askReason === "ci_action_required") return "A GitHub check needs you";
   if (status === "needs_dan") return `Stopped after ${MAX_CI_ROUNDS} failed attempts`;
   if (round <= 0) return "Waiting for checks";
   if (round > MAX_CI_ROUNDS) return "Follow-up after Dan answered";
@@ -45,6 +46,8 @@ export type ChangeStage = z.infer<typeof ChangeStageSchema>;
 export const ChangeAskSchema = z.object({
   prompt: z.string(),
   options: z.array(z.object({ id: z.string(), label: z.string() })),
+  reason: z.enum(["ci_gave_up", "ci_action_required"]).optional(),
+  link: z.string().optional(),
 });
 export type ChangeAsk = z.infer<typeof ChangeAskSchema>;
 

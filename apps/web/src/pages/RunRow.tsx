@@ -23,7 +23,7 @@ export function RunRow(props: {
         <Chip
           size="small"
           color={chipColor(change.status, change.interrupted)}
-          label={statusChip(change.status, change.interrupted)}
+          label={statusChip(change.status, change.interrupted, change.ask?.reason)}
           data-testid={`run-status-${change.issueKey}`}
           sx={chipSx(change.status, change.interrupted)}
         />

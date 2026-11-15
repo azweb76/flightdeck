@@ -49,6 +49,7 @@ describe("run state machine", () => {
     expect(demoScenarioFor({ key: "acme/web#15", title: "Clarify CSV refund rows" })).toBe("ask");
     expect(demoScenarioFor({ key: "acme/web#21", title: "Add retry to webhook handler" })).toBe("fail-review");
     expect(demoScenarioFor({ key: "acme/api#8", title: "Spend-cap sensitive refactor" })).toBe("cap");
+    expect(demoScenarioFor({ key: "acme/web#72", title: "CI needs a GitHub action" })).toBe("ci-action");
     expect(demoScenarioFor({ key: "acme/web#70", title: "CI keep failing after three auto-fixes" })).toBe("ci-ask");
     expect(demoScenarioFor({ key: "acme/web#71", title: "CI auto-fix lint on the invoices page" })).toBe("ci-fix");
   });

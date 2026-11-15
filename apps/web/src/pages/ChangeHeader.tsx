@@ -12,7 +12,7 @@ export function ChangeHeader(props: { change: Change; onRuns: () => void; onArch
           <Chip
             size="small"
             color={chipColor(change.status, change.interrupted)}
-            label={statusChip(change.status, change.interrupted)}
+            label={statusChip(change.status, change.interrupted, change.ask?.reason)}
             data-testid="change-status"
             sx={chipSx(change.status, change.interrupted)}
           />
