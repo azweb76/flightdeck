@@ -36,6 +36,7 @@ test("phase 5 screenshots", async ({ page }) => {
   await page.getByRole("tab", { name: "Reviews" }).click();
   await page.getByTestId("review-row-92").click();
   await expect(page.getByTestId("draft-comments")).toBeVisible();
+  await expect(page.getByTestId("review-summary")).toContainText("Looks close");
   await expect(page.getByTestId("draft-approve-24")).toBeVisible();
   await pair(page, "review-drafts");
 

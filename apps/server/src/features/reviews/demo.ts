@@ -1,6 +1,6 @@
 import { holdSlot } from "../run/jobs.ts";
 import type { ReviewRequest } from "../github/review-requests.ts";
-import { addMessage, listStoredReviews, replaceComments, upsertReview } from "./store.ts";
+import { addMessage, listStoredReviews, replaceComments, saveReview, upsertReview } from "./store.ts";
 
 const NOW = "2026-11-15T18:00:00.000Z";
 
@@ -26,6 +26,7 @@ export function seedDemoReviews(): void {
   addMessage(reviewing.id, { role: "assistant", text: "Reading the diff at the PR head." });
   const drafts = seedRow(92, "drafts", true);
   drafts.summary = "Looks close. One guard is missing on the empty list.";
+  saveReview(drafts);
   replaceComments(drafts.id, [
     { path: "src/checkout.ts", line: 24, side: "RIGHT", body: "Return early when items is empty.", state: "draft", placement: "inline" },
     { path: "src/checkout.ts", line: 40, side: "RIGHT", body: "This error message should mention the field name.", state: "draft", placement: "inline" },
@@ -42,6 +43,7 @@ export function seedDemoReviews(): void {
   const posted = seedRow(93, "posted", true);
   posted.summary = "Docs look good.";
   posted.postedEvent = "APPROVE";
+  saveReview(posted);
   replaceComments(posted.id, [
     { path: "README.md", line: 12, side: "RIGHT", body: "Link the new endpoint from the table of contents.", state: "posted", placement: "inline" },
   ]);
