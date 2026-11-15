@@ -1,5 +1,6 @@
 import { execSync, spawn } from "node:child_process";
 import { dirname, join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -36,9 +37,32 @@ function start(filter, extraEnv) {
   });
 }
 
+function insertLiveSurvivors(dir) {
+  const db = new DatabaseSync(join(dir, "app.sqlite"));
+  db.prepare("INSERT OR REPLACE INTO repos (owner, name, local_path, demo) VALUES (?,?,?,0)").run(
+    "dan",
+    "app",
+    "/Users/dan/src/app",
+  );
+  db.prepare("INSERT OR REPLACE INTO repo_favorites (owner, name, demo) VALUES (?,?,0)").run("dan", "app");
+  const row = db.prepare("SELECT value FROM settings WHERE key = 'app'").get();
+  const settings = row ? JSON.parse(row.value) : {};
+  settings.theme = "dark";
+  db.prepare("INSERT INTO settings (key, value) VALUES ('app', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(
+    JSON.stringify(settings),
+  );
+  db.close();
+}
+
 function freePort(port) {
   try {
     execSync(`fuser -k ${port}/tcp`, { stdio: "ignore" });
+  } catch {
+    /* nothing listening */
+  }
+  try {
+    const pids = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, { encoding: "utf8" }).trim();
+    if (pids) execSync(`kill -9 ${pids.split(/\s+/).join(" ")}`, { stdio: "ignore" });
   } catch {
     /* nothing listening */
   }
@@ -69,9 +93,14 @@ await fetch(`${apiUrl}/api/settings`, {
     jiraConfigured: true,
   }),
 });
-demo.kill("SIGTERM");
+try {
+  demo.kill("SIGTERM");
+} catch {
+  /* already gone */
+}
 freePort(apiPort);
-await waitFor(async () => !(await health()), 15_000, "demo server stop");
+await waitFor(async () => !(await health()), 30_000, "demo server stop");
+insertLiveSurvivors(dataDir);
 
 const liveEnv = { ...process.env };
 delete liveEnv.FLIGHTDECK_DEMO;

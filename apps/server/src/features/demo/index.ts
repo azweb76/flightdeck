@@ -5,12 +5,19 @@ import { rememberRepo } from "../clone/index.ts";
 import { getDb } from "../db/index.ts";
 import { upsertIssue } from "../issues/store.ts";
 import { resetDemoGithubMode } from "../github/index.ts";
+import { purgeLiveDemoRows } from "./purge.ts";
 import { seedIssues } from "./seed-issues.ts";
 
-export { purgeLiveDemoRows } from "./purge.ts";
+export { purgeLiveDemoRows };
 
 export function shouldSeed(): boolean {
   return process.env.FLIGHTDECK_DEMO === "1" && process.env.FLIGHTDECK_SEED !== "0";
+}
+
+/** Seed or purge before the startup preflight snapshot is taken. */
+export function applyDemoLifecycle(): void {
+  if (shouldSeed()) seedDemo();
+  else purgeLiveDemoRows();
 }
 
 export function seedDemo(): void {
