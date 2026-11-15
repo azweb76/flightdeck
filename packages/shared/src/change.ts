@@ -14,6 +14,7 @@ export function extraRoundLabel(round: number): string {
 }
 
 export const ChangeStatusSchema = z.enum([
+  "queued",
   "planning",
   "implementing",
   "reviewing",
@@ -71,5 +72,6 @@ export const ChangeSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   demo: z.boolean().optional(),
+  interrupted: z.boolean().optional(),
 });
 export type Change = z.infer<typeof ChangeSchema>;
