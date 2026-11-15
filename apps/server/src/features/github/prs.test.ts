@@ -14,15 +14,26 @@ describe("pull state", () => {
       const inm = new Headers(init?.headers).get("if-none-match") || new Headers(init?.headers).get("If-None-Match");
       if (inm === 'W/"p1"' && round > 0) return new Response(null, { status: 304, headers: { etag: 'W/"p1"' } });
       if (url.pathname.endsWith("/pulls/9")) {
-        return json({ state: "open", merged: false, created_at: "2026-11-15T00:00:00Z", updated_at: "2026-11-15T00:00:00Z" }, {
-          etag: 'W/"p1"',
-        });
+        return json(
+          {
+            state: "open",
+            merged: false,
+            created_at: "2026-11-15T00:00:00Z",
+            updated_at: "2026-11-15T00:00:00Z",
+            head: { sha: "abc" },
+          },
+          { etag: 'W/"p1"' },
+        );
+      }
+      if (url.pathname.endsWith("/commits/abc")) {
+        return json({ commit: { committer: { date: "2026-11-15T00:01:00Z" }, author: { date: "2026-11-15T00:01:00Z" } } });
       }
       return json({ message: url.pathname }, {}, 500);
     }) as typeof fetch;
 
     const first = await getPullState("t", fetchFn, "acme", "web", 9);
     expect(first.state).toBe("open");
+    expect(first.committedAt).toBe("2026-11-15T00:01:00Z");
     expect(seen.filter((s) => s.includes("/pulls/9"))).toHaveLength(1);
     const cached = await getPullState("t", fetchFn, "acme", "web", 9);
     expect(cached.state).toBe("open");

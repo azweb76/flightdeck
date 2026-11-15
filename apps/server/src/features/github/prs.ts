@@ -56,11 +56,13 @@ async function loadPull(
   const headers = etag ? { "If-None-Match": etag } : {};
   try {
     const res = await githubCall(() => octokit.rest.pulls.get({ owner, repo: name, pull_number: number, headers }));
+    const sha = String(res.data.head?.sha ?? "");
     const data: PullState = {
       state: String(res.data.state ?? "open"),
       merged: Boolean(res.data.merged),
       createdAt: res.data.created_at,
       updatedAt: res.data.updated_at,
+      committedAt: sha ? await headCommittedAt(octokit, owner, name, sha) : undefined,
     };
     return rememberEtag(key, String(res.headers.etag ?? ""), data);
   } catch (err) {
@@ -70,6 +72,16 @@ async function loadPull(
     }
     throw err;
   }
+}
+
+async function headCommittedAt(
+  octokit: ReturnType<typeof createOctokit>,
+  owner: string,
+  name: string,
+  sha: string,
+): Promise<string | undefined> {
+  const commit = await githubCall(() => octokit.rest.repos.getCommit({ owner, repo: name, ref: sha }));
+  return commit.data.commit.committer?.date ?? commit.data.commit.author?.date;
 }
 
 export async function commentIssue(

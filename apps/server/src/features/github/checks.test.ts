@@ -51,6 +51,20 @@ describe("commit checks", () => {
     expect(summarize("abc", "success", [], [], { sinceMs: since, now }).state).toBe("pending");
   });
 
+  it("uses the head commit time when ciPushedAt is missing", () => {
+    const created = Date.parse("2026-11-15T11:00:00.000Z");
+    const committed = Date.parse("2026-11-15T11:59:59.000Z");
+    const since = graceSinceMs(
+      { updatedAt: new Date(created).toISOString() },
+      {
+        createdAt: new Date(created).toISOString(),
+        updatedAt: new Date(created).toISOString(),
+        committedAt: new Date(committed).toISOString(),
+      },
+    );
+    expect(since).toBe(committed);
+  });
+
   it("uses commit statuses when no check-runs exist", () => {
     expect(summarize("abc", "pending", [], [{ state: "pending" }]).state).toBe("pending");
     expect(summarize("abc", "failure", [], [{ state: "failure" }]).state).toBe("failing");
