@@ -40,6 +40,12 @@ test("phase 4 screenshots at 1280", async ({ page }) => {
   await pair(page, "ci-timeline");
 
   await page.getByRole("tab", { name: "Runs" }).click();
+  await page.getByTestId("run-status-acme/web#73").click();
+  await expect(page.getByTestId("stage-caption-ci")).toHaveText("Waiting for a free slot");
+  await expect(page.getByTestId("run-queued")).toBeVisible();
+  await pair(page, "ci-waiting-slot");
+
+  await page.getByRole("tab", { name: "Runs" }).click();
   await page.getByTestId("run-status-acme/web#40").click();
   await expect(page.getByTestId("run-queued")).toBeVisible();
   await pair(page, "queued-info");
@@ -57,7 +63,12 @@ test("phase 4 screenshots at 1280", async ({ page }) => {
   await archiveAllChanges(page);
   await raiseConcurrent(page, 10);
   await page.goto("/");
+  await page.getByTestId("start-acme/web#72").click();
+  await expect(page.getByTestId("needs-dan")).toContainText("A GitHub check needs your action", { timeout: 20_000 });
+  await pair(page, "ci-action-required");
+
+  await page.goto("/");
   await page.getByTestId("start-acme/web#70").click();
-  await expect(page.getByTestId("needs-dan")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("needs-dan")).toContainText("CI still fails after 3", { timeout: 20_000 });
   await pair(page, "ci-gave-up");
 });
