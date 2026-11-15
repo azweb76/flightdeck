@@ -29,6 +29,7 @@ export const theme = createTheme({
         warning: { main: "#ffd60a", light: "#ff9f0a" },
         text: { primary: "#f5f5f7", secondary: "#a1a1a6" },
         divider: "rgba(255,255,255,0.12)",
+        action: { disabled: "#d6ebff", disabledBackground: "rgba(41,151,255,0.45)" },
       },
     },
   },
@@ -62,26 +63,25 @@ export const theme = createTheme({
           paddingInline: 16,
           paddingBlock: 8,
           ...focus,
-          "&.Mui-disabled":
-            theme.palette.mode === "dark"
-              ? { opacity: 1, color: "rgba(245,245,247,0.62)" }
-              : { opacity: 0.55 },
+          "&.Mui-disabled": {
+            opacity: 0.55,
+            ...theme.applyStyles("dark", { opacity: 1, color: "#d6ebff" }),
+          },
         }),
         contained: ({ theme }) => ({
-          "&.Mui-disabled":
-            theme.palette.mode === "dark"
-              ? { backgroundColor: "rgba(41,151,255,0.28)", color: "#d6ebff" }
-              : {},
+          "&.Mui-disabled": theme.applyStyles("dark", {
+            backgroundColor: "rgba(41,151,255,0.45)",
+            color: "#f0f7ff",
+          }),
         }),
         outlined: ({ theme }) => ({
-          "&.Mui-disabled":
-            theme.palette.mode === "dark"
-              ? { borderColor: "rgba(245,245,247,0.38)", color: "rgba(245,245,247,0.68)" }
-              : {},
+          "&.Mui-disabled": theme.applyStyles("dark", {
+            borderColor: "rgba(245,245,247,0.45)",
+            color: "rgba(245,245,247,0.78)",
+          }),
         }),
         text: ({ theme }) => ({
-          "&.Mui-disabled":
-            theme.palette.mode === "dark" ? { color: "rgba(245,245,247,0.62)" } : {},
+          "&.Mui-disabled": theme.applyStyles("dark", { color: "rgba(245,245,247,0.72)" }),
         }),
       },
     },

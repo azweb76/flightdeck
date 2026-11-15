@@ -80,7 +80,7 @@ export function GithubForm(props: {
 }
 
 function tokenHint(envWins: boolean, hasToken: boolean): string {
-  if (envWins) return "A pasted token is stored for later; the environment variable wins until you unset it.";
+  if (envWins) return "A pasted token is stored for later; GITHUB_TOKEN / GH_TOKEN win until you unset them.";
   if (hasToken) return "Leave blank unless you are replacing the stored token.";
   return "Never stored in the database. GITHUB_TOKEN or GH_TOKEN in the environment overrides this.";
 }
@@ -100,11 +100,11 @@ function GithubHelp(props: { envWins: boolean; sourceLabel: string }) {
         </Link>{" "}
         with repo, read:org, and workflow. Saving stores it only; connectivity is checked at startup.
       </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {props.envWins
-          ? "GITHUB_TOKEN / GH_TOKEN override the keychain and ~/.flightdeck/secrets until you unset them."
-          : "Stored in the Mac keychain, or ~/.flightdeck/secrets if keychain is unavailable."}
-      </Typography>
+      {props.envWins ? null : (
+        <Typography variant="body2" color="text.secondary">
+          Stored in the Mac keychain, or ~/.flightdeck/secrets if keychain is unavailable.
+        </Typography>
+      )}
     </Stack>
   );
 }
