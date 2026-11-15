@@ -39,8 +39,8 @@ export function repoCatalogSnapshot(key = REPOS_QUERY_KEY): Entry {
 
 export function ensureRepoCatalog(key = REPOS_QUERY_KEY): Promise<CatalogView> {
   const entry = take(key);
-  if (entry.data && !entry.inflight) return Promise.resolve(entry.data);
   if (entry.inflight) return entry.inflight;
+  if (entry.data && isSticky(entry.data)) return Promise.resolve(entry.data);
   return refreshRepoCatalog(false, key);
 }
 
@@ -85,6 +85,11 @@ function fail(entry: Entry, err: unknown): Promise<CatalogView> {
   entry.inflight = undefined;
   emit();
   return Promise.reject(err);
+}
+
+function isSticky(data: CatalogView): boolean {
+  if (data.detail) return false;
+  return data.repos.length > 0 || data.favorites.length > 0 || data.recent.length > 0;
 }
 
 function emit(): void {

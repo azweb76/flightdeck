@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  REPOS_QUERY_KEY,
   ensureRepoCatalog,
   refreshRepoCatalog,
   repoCatalogSnapshot,
@@ -12,11 +11,14 @@ export function useRepoCatalog() {
   const [, setTick] = useState(0);
   useEffect(() => subscribeRepoCatalog(() => setTick((n) => n + 1)), []);
   useEffect(() => {
-    void ensureRepoCatalog();
+    void ensureRepoCatalog().catch(() => undefined);
   }, []);
   const snap = repoCatalogSnapshot();
+  useEffect(() => {
+    if (snap.data || snap.loading || snap.inflight) return;
+    void ensureRepoCatalog().catch(() => undefined);
+  }, [snap.data, snap.loading, snap.inflight]);
   return {
-    queryKey: REPOS_QUERY_KEY,
     catalog: snap.data,
     loading: snap.loading && !snap.data,
     refreshing: snap.loading,

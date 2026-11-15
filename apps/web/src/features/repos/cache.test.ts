@@ -36,6 +36,30 @@ describe("repo catalog cache", () => {
     expect(n).toBe(1);
   });
 
+  it("does not treat no-token or empty catalog responses as sticky", async () => {
+    let n = 0;
+    configureRepoCatalog({
+      load: async () => {
+        n += 1;
+        return { ...empty, detail: "Add a GitHub token in Settings to list repositories you can access." };
+      },
+    });
+    await ensureRepoCatalog();
+    await ensureRepoCatalog();
+    expect(n).toBe(2);
+    resetRepoCatalogCache();
+    n = 0;
+    configureRepoCatalog({
+      load: async () => {
+        n += 1;
+        return empty;
+      },
+    });
+    await ensureRepoCatalog();
+    await ensureRepoCatalog();
+    expect(n).toBe(2);
+  });
+
   it("Refresh hits the loader again and favorite writes into the same snapshot", async () => {
     let n = 0;
     configureRepoCatalog({

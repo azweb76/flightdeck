@@ -2,6 +2,7 @@ import { Alert, Box, Button, Link, Paper, Stack, TextField, Typography } from "@
 import { GITHUB_PAT_URL, githubTokenSourceLabel, type GithubTokenSource } from "@flightdeck/shared";
 import { useState } from "react";
 import { api } from "../api.ts";
+import { resetRepoCatalogCache } from "../features/repos/index.ts";
 import { FormField } from "../ui/FormField.tsx";
 
 export function GithubForm(props: {
@@ -22,6 +23,7 @@ export function GithubForm(props: {
     setBusy(true);
     try {
       const res = await api.saveGithubToken(token);
+      resetRepoCatalogCache();
       setOk("GitHub token saved");
       setToken("");
       props.onDone(res);
@@ -35,7 +37,9 @@ export function GithubForm(props: {
   async function disconnect() {
     setErr("");
     setOk("");
-    props.onDone(await api.disconnectGithub());
+    const next = await api.disconnectGithub();
+    resetRepoCatalogCache();
+    props.onDone(next);
   }
 
   return (
