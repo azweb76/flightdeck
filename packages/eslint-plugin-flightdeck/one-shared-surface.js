@@ -71,12 +71,17 @@ export const oneSharedSurface = {
     const file = context.filename.replaceAll("\\", "/");
     if (!file.includes("apps/web/src/")) return {};
     const inRepos = file.includes("features/repos/");
-    const inMd = file.includes("features/markdown/");
+    const allowPreWrap =
+      file.includes("features/markdown/") ||
+      file.endsWith("theme.ts") ||
+      file.endsWith("ClaudeForm.tsx") ||
+      file.endsWith("CheckRow.tsx");
+    const inUi = /apps\/web\/src\/(pages|features|preflight)\//.test(file);
     return {
       ImportDeclaration(node) {
         const source = node.source.value;
         if (typeof source !== "string") return;
-        if (inMd) return;
+        if (file.includes("features/markdown/")) return;
         if (/react-markdown|remark-gfm/.test(source)) {
           context.report({ node, messageId: "markdownImport", data: { source } });
         }
@@ -99,7 +104,7 @@ export const oneSharedSurface = {
         const id = testId(node);
         const hit = HOMES.find((h) => h.id === id);
         if (hit && !file.includes(hit.dir)) context.report({ node, messageId: "home", data: hit });
-        if (!inMd && file.includes("features/chat/") && isPreWrapAttr(node)) {
+        if (inUi && !allowPreWrap && isPreWrapAttr(node)) {
           context.report({ node, messageId: "prewrap" });
         }
       },

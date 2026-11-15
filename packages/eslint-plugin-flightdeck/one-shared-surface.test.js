@@ -45,6 +45,15 @@ describe("one-shared-surface", () => {
     assert.equal(hits(`export function Chat() { return null; }`, "apps/web/src/pages/ChatPane.tsx").length, 1);
   });
 
+  it("flags Composer and Thread declared outside features/chat", () => {
+    assert.equal(hits(`export function Composer() { return null; }`, "apps/web/src/pages/Fork.tsx").length, 1);
+    assert.equal(hits(`export function Thread() { return null; }`, "apps/web/src/pages/Fork.tsx").length, 1);
+  });
+
+  it("flags Markdown declared outside features/markdown", () => {
+    assert.equal(hits(`export function Markdown() { return null; }`, "apps/web/src/pages/Draft.tsx").length, 1);
+  });
+
   it("allows Chat declared inside features/chat", () => {
     assert.equal(hits(`export function Chat() { return null; }`, "apps/web/src/features/chat/Chat.tsx").length, 0);
   });
@@ -56,6 +65,13 @@ describe("one-shared-surface", () => {
   it("flags pre-wrap bodies outside features/markdown", () => {
     const code = `export const F = () => <p sx={{ whiteSpace: "pre-wrap" }}>hi</p>;`;
     assert.equal(hits(code, "apps/web/src/features/chat/Thread.tsx").length, 1);
+    assert.equal(hits(code, "apps/web/src/pages/Fork.tsx").length, 1);
+  });
+
+  it("allows pre-wrap on ClaudeForm and CheckRow", () => {
+    const code = `export const F = () => <p sx={{ whiteSpace: "pre-wrap" }}>hi</p>;`;
+    assert.equal(hits(code, "apps/web/src/pages/ClaudeForm.tsx").length, 0);
+    assert.equal(hits(code, "apps/web/src/preflight/CheckRow.tsx").length, 0);
   });
 
   it("allows pre-wrap inside features/markdown", () => {
