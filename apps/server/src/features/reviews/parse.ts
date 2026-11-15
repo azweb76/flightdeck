@@ -1,4 +1,4 @@
-export type DraftComment = { path: string; line: number; body: string };
+export type DraftComment = { path: string; line: number; body: string; side?: "LEFT" | "RIGHT" };
 
 export function parseReviewDraft(text: string): { summary: string; comments: DraftComment[] } {
   const fence = text.match(/```json\s*([\s\S]*?)```/i);
@@ -14,12 +14,13 @@ function commentsFrom(raw: string): DraftComment[] {
     if (!Array.isArray(parsed)) return [];
     return parsed
       .map((item) => {
-        const row = item as { path?: unknown; line?: unknown; body?: unknown };
+        const row = item as { path?: unknown; line?: unknown; body?: unknown; side?: unknown };
         const path = String(row.path ?? "").trim();
         const line = Number(row.line);
         const body = String(row.body ?? "").trim();
+        const side = row.side === "LEFT" || row.side === "RIGHT" ? row.side : undefined;
         if (!path || !body || !Number.isInteger(line) || line < 1) return undefined;
-        return { path, line, body };
+        return { path, line, body, side };
       })
       .filter((c): c is DraftComment => Boolean(c));
   } catch {

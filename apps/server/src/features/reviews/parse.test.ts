@@ -7,7 +7,12 @@ describe("parseReviewDraft", () => {
       'Looks close.\n```json\n[{"path":"a.ts","line":3,"body":"Guard this"}]\n```',
     );
     expect(parsed.summary).toBe("Looks close.");
-    expect(parsed.comments).toEqual([{ path: "a.ts", line: 3, body: "Guard this" }]);
+    expect(parsed.comments).toEqual([{ path: "a.ts", line: 3, body: "Guard this", side: undefined }]);
+  });
+
+  it("keeps Claude's LEFT or RIGHT side from the JSON", () => {
+    const parsed = parseReviewDraft('```json\n[{"path":"a.ts","line":4,"side":"LEFT","body":"Old line"}]\n```');
+    expect(parsed.comments[0]?.side).toBe("LEFT");
   });
 
   it("drops invalid comments and missing fences", () => {

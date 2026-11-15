@@ -65,7 +65,7 @@ export async function applyDraft(review: PrReview, text: string): Promise<void> 
   const parsed = parseReviewDraft(text);
   let comments = parsed.comments.map((c) => ({
     ...c,
-    side: "RIGHT" as const,
+    side: c.side === "LEFT" ? ("LEFT" as const) : ("RIGHT" as const),
     state: "draft" as const,
     placement: "inline" as const,
   }));
