@@ -37,6 +37,10 @@ export function repoCatalogSnapshot(key = REPOS_QUERY_KEY): Entry {
   return take(key);
 }
 
+export function shouldAutoLoadCatalog(entry: Entry): boolean {
+  return !entry.data && !entry.loading && !entry.inflight && !entry.error;
+}
+
 export function ensureRepoCatalog(key = REPOS_QUERY_KEY): Promise<CatalogView> {
   const entry = take(key);
   if (entry.inflight) return entry.inflight;

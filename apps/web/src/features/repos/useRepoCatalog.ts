@@ -3,6 +3,7 @@ import {
   ensureRepoCatalog,
   refreshRepoCatalog,
   repoCatalogSnapshot,
+  shouldAutoLoadCatalog,
   subscribeRepoCatalog,
   toggleRepoFavorite,
 } from "./cache.ts";
@@ -15,15 +16,15 @@ export function useRepoCatalog() {
   }, []);
   const snap = repoCatalogSnapshot();
   useEffect(() => {
-    if (snap.data || snap.loading || snap.inflight) return;
+    if (!shouldAutoLoadCatalog(snap)) return;
     void ensureRepoCatalog().catch(() => undefined);
-  }, [snap.data, snap.loading, snap.inflight]);
+  }, [snap.data, snap.loading, snap.inflight, snap.error]);
   return {
     catalog: snap.data,
     loading: snap.loading && !snap.data,
     refreshing: snap.loading,
     error: snap.error,
-    refresh: () => refreshRepoCatalog(true),
+    refresh: () => refreshRepoCatalog(true).catch(() => undefined),
     favorite: (owner: string, name: string, on: boolean) => toggleRepoFavorite(owner, name, on),
   };
 }

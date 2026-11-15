@@ -6,6 +6,7 @@ import {
   refreshRepoCatalog,
   repoCatalogSnapshot,
   resetRepoCatalogCache,
+  shouldAutoLoadCatalog,
   toggleRepoFavorite,
 } from "./cache.ts";
 
@@ -58,6 +59,26 @@ describe("repo catalog cache", () => {
     await ensureRepoCatalog();
     await ensureRepoCatalog();
     expect(n).toBe(2);
+  });
+
+  it("does not auto-load again after a failed fetch", async () => {
+    let n = 0;
+    configureRepoCatalog({
+      load: async () => {
+        n += 1;
+        throw new Error("GitHub is down");
+      },
+    });
+    await ensureRepoCatalog().catch(() => undefined);
+    expect(n).toBe(1);
+    const snap = repoCatalogSnapshot();
+    expect(snap.error).toBe("GitHub is down");
+    expect(shouldAutoLoadCatalog(snap)).toBe(false);
+    await ensureRepoCatalog().catch(() => undefined);
+    expect(n).toBe(2);
+    await refreshRepoCatalog(true).catch(() => undefined);
+    expect(n).toBe(3);
+    expect(shouldAutoLoadCatalog(repoCatalogSnapshot())).toBe(false);
   });
 
   it("Refresh hits the loader again and favorite writes into the same snapshot", async () => {
