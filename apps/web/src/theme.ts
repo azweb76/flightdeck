@@ -9,18 +9,11 @@ const inputFocus = {
 };
 
 const containedOff = {
+  "--variant-containedBg": "var(--mui-palette-action-disabledBackground) !important",
+  "--variant-containedColor": "var(--mui-palette-action-disabled) !important",
   backgroundColor: "var(--mui-palette-action-disabledBackground) !important",
   color: "var(--mui-palette-action-disabled) !important",
   boxShadow: "none",
-  "--variant-containedBg": "var(--mui-palette-action-disabledBackground)",
-  "--variant-containedColor": "var(--mui-palette-action-disabled)",
-};
-const containedOffDark = {
-  backgroundColor: "#3a3a3c !important",
-  color: "#a1a1a6 !important",
-  boxShadow: "none",
-  "--variant-containedBg": "#3a3a3c",
-  "--variant-containedColor": "#a1a1a6",
 };
 const outlinedOff = {
   border: "1px solid rgba(29,29,31,0.5)",
@@ -81,7 +74,14 @@ export const theme = createTheme({
   shape: { borderRadius: 14 },
   spacing: 8,
   components: {
-    MuiCssBaseline: { styleOverrides: { body: { minHeight: "100vh" } } },
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: { minHeight: "100vh" },
+        ".MuiButton-contained.Mui-disabled": containedOff,
+        ".MuiButton-root.MuiButton-contained.Mui-disabled": containedOff,
+        ".MuiDialog-root .MuiButton-contained.Mui-disabled": containedOff,
+      },
+    },
     MuiPaper: { styleOverrides: { root: { backgroundImage: "none" } } },
     MuiBackdrop: {
       styleOverrides: { root: { backgroundColor: "rgba(0,0,0,0.5)" } },
@@ -104,9 +104,9 @@ export const theme = createTheme({
           paddingBlock: 8,
           ...focus,
           "&.Mui-disabled": { opacity: 1 },
-          "&.MuiButton-contained.Mui-disabled": containedOff,
-          "@media (prefers-color-scheme: dark)": { "&.MuiButton-contained.Mui-disabled": containedOffDark },
-          ".dark &.MuiButton-contained.Mui-disabled": containedOffDark,
+        },
+        contained: {
+          "&.Mui-disabled": containedOff,
         },
         outlined: {
           "&.Mui-disabled": outlinedOff,
