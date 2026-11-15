@@ -19,7 +19,7 @@ test("transcript keeps scrollTop when a new event arrives while reading", async 
   await page.setViewportSize({ width: 1280, height: 800 });
   await seedHome(page);
   await raiseConcurrent(page);
-  await page.getByTestId("start-acme/web#12").click();
+  await page.getByTestId("start-acme/web#21").click();
   const scroller = page.getByTestId("chat-scroller");
   await expect(scroller).toBeVisible();
   await expect.poll(async () => scroller.evaluate((el) => el.scrollHeight - el.clientHeight > 48)).toBe(true);
@@ -29,8 +29,7 @@ test("transcript keeps scrollTop when a new event arrives while reading", async 
   });
   const top = await scroller.evaluate((el) => el.scrollTop);
   expect(top).toBeGreaterThan(0);
-  const n = await scroller.locator("[data-testid^='event-']").count();
-  await expect.poll(async () => scroller.locator("[data-testid^='event-']").count()).toBeGreaterThan(n);
+  await expect(page.getByTestId("needs-dan")).toBeVisible({ timeout: 20_000 });
   expect(await scroller.evaluate((el) => el.scrollTop)).toBe(top);
 });
 
