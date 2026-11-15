@@ -33,6 +33,28 @@ export async function seedHome(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "My issues" })).toBeVisible();
 }
 
+export async function raiseConcurrent(page: Page, n = 10): Promise<void> {
+  const apiPort = process.env.FLIGHTDECK_PORT ?? "47421";
+  const res = await page.request.patch(`http://127.0.0.1:${apiPort}/api/settings`, {
+    data: { maxConcurrentAgents: n },
+  });
+  expect(res.ok()).toBeTruthy();
+}
+
+export async function archiveAllChanges(page: Page): Promise<void> {
+  const apiPort = process.env.FLIGHTDECK_PORT ?? "47421";
+  const api = `http://127.0.0.1:${apiPort}`;
+  const body = (await (await page.request.get(`${api}/api/changes`)).json()) as {
+    changes: { id: string; status: string }[];
+  };
+  const queued = body.changes.filter((c) => c.status === "queued");
+  const rest = body.changes.filter((c) => c.status !== "queued");
+  for (const change of [...queued, ...rest]) {
+    const res = await page.request.post(`${api}/api/changes/${change.id}/archive`);
+    expect(res.ok()).toBeTruthy();
+  }
+}
+
 export async function openRepoPicker(page: Page): Promise<void> {
   await expect(page.getByTestId("repo-picker")).toBeVisible();
   if ((await page.getByTestId("repo-dropdown").count()) > 0) return;

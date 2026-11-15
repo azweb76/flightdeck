@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { expectLastAboveComposer, seedHome } from "./helpers.ts";
+import { expectLastAboveComposer, raiseConcurrent, seedHome } from "./helpers.ts";
 
 test("successful run opens a draft PR", async ({ page }) => {
   await seedHome(page);
+  await raiseConcurrent(page);
   await page.getByTestId("start-acme/web#12").click();
   await expect(page.getByTestId("change-page")).toBeVisible();
   await expect(page.getByTestId("transcript")).toBeVisible();
@@ -17,6 +18,7 @@ test("successful run opens a draft PR", async ({ page }) => {
 test("transcript keeps scrollTop when a new event arrives while reading", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await seedHome(page);
+  await raiseConcurrent(page);
   await page.getByTestId("start-acme/web#12").click();
   const scroller = page.getByTestId("chat-scroller");
   await expect(scroller).toBeVisible();
@@ -35,6 +37,7 @@ test("transcript keeps scrollTop when a new event arrives while reading", async 
 test("run can pause for a question and continue after a reply", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await seedHome(page);
+  await raiseConcurrent(page);
   await page.getByTestId("start-acme/web#15").click();
   await expect(page.getByTestId("run-option-paid")).toBeVisible({ timeout: 20_000 });
   await expectLastAboveComposer(page, "run-option-paid", "run-reply");
@@ -46,6 +49,7 @@ test("run can pause for a question and continue after a reply", async ({ page })
 
 test("failed review rounds ask Dan", async ({ page }) => {
   await seedHome(page);
+  await raiseConcurrent(page);
   await page.getByTestId("start-acme/web#21").click();
   await expect(page.getByTestId("needs-dan")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId("stage-review")).toContainText("Round 3 of 3");
@@ -59,6 +63,7 @@ test("failed review rounds ask Dan", async ({ page }) => {
 
 test("dollar cap stops the run", async ({ page }) => {
   await seedHome(page);
+  await raiseConcurrent(page);
   await page.getByTestId("start-acme/api#8").click();
   await expect(page.getByTestId("cap-hit")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId("change-cost")).not.toContainText("$0.00");
@@ -66,6 +71,7 @@ test("dollar cap stops the run", async ({ page }) => {
 
 test("Runs page lists changes and archive works", async ({ page }) => {
   await seedHome(page);
+  await raiseConcurrent(page);
   await page.getByTestId("start-acme/web#12").click();
   await expect(page.getByTestId("pr-link")).toBeVisible({ timeout: 20_000 });
   await page.getByRole("tab", { name: "Runs" }).click();

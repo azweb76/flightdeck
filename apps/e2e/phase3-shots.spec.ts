@@ -25,14 +25,13 @@ test("phase 3 screenshots at 1280", async ({ page }) => {
   await seedHome(page);
   await page.getByRole("tab", { name: "Runs" }).click();
   await expect(page.getByTestId("run-list")).toBeVisible();
+  await expect(page.getByTestId("run-status-acme/web#41")).toHaveText("Interrupted");
   await pair(page, "runs-mixed");
 
-  await page.getByRole("tab", { name: "Settings" }).click();
-  await expect(page.getByTestId("cap-run")).toBeVisible();
-  await page.getByTestId("cap-concurrent").scrollIntoViewIfNeeded();
-  await pair(page, "settings-caps");
+  await page.getByTestId("archive-acme/web#42").click();
+  await expect(page.getByTestId("run-status-acme/web#40")).not.toHaveText("Queued", { timeout: 20_000 });
+  await pair(page, "queued-started");
 
-  await page.getByRole("tab", { name: "Runs" }).click();
   await page.getByTestId("run-status-acme/api#43").click();
   await expect(page.getByTestId("cap-hit")).toBeVisible();
   await pair(page, "cap-hit");
