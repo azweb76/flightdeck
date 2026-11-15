@@ -42,17 +42,28 @@ const GATE_ACTION: Record<PreflightGate, string> = {
   saveJira: "Jira save",
 };
 
+export function listedChecks(report: PreflightReport): PreflightCheck[] {
+  return report.checks.filter((check) => !check.ok && check.severity === "required");
+}
+
 export function gatedActionNames(report: PreflightReport): string[] {
   const names: string[] = [];
   const seen = new Set<string>();
+  const listed = listedChecks(report);
   for (const gate of PreflightGateSchema.options) {
-    if (!blockedBy(report, gate)) continue;
+    if (!listed.some((check) => check.gates?.includes(gate))) continue;
     const name = GATE_ACTION[gate];
     if (seen.has(name)) continue;
     seen.add(name);
     names.push(name);
   }
   return names;
+}
+
+export function bannerTitle(report: PreflightReport): string {
+  const names = gatedActionNames(report);
+  if (!names.length) return "Fix these checks";
+  return `Fix these before ${joinEnglish(names)}`;
 }
 
 export function stayOffCopy(report: PreflightReport): string {

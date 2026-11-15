@@ -31,6 +31,7 @@ describe("assertPreflightGate", () => {
       expect(err).toBeInstanceOf(PreflightBlockedError);
       expect((err as PreflightBlockedError).status).toBe(409);
       expect((err as Error).message).toMatch(/git/i);
+      expect((err as Error).message).toMatch(/\.\nFix:/);
     }
   });
 

@@ -1,4 +1,4 @@
-import { stayOffCopy } from "@flightdeck/shared";
+import { bannerTitle, stayOffCopy } from "@flightdeck/shared";
 import { Button, Divider, Paper, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 import { ContrastAlert } from "../ui/ContrastAlert.tsx";
@@ -17,7 +17,9 @@ export function PreflightBanner() {
       sx={{ p: 3, border: 1, borderColor: "error.light", bgcolor: "background.paper" }}
     >
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" gap={2} sx={{ mb: 1 }}>
-        <Typography variant="h6">Fix these before refining</Typography>
+        <Typography variant="h6" data-testid="preflight-banner-title">
+          {bannerTitle(report)}
+        </Typography>
         <Button variant="outlined" onClick={() => void recheck()} data-testid="preflight-recheck">
           Re-check
         </Button>

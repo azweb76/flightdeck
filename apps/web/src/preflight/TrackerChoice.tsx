@@ -33,7 +33,7 @@ export function TrackerChoice(props: {
     >
       <Stack spacing={0.5}>
         <Typography variant="subtitle2">
-          {blocked ? `${props.title} (needs ${needsLabel(props.title)})` : props.title}
+          {blocked ? `${props.title} (needs a token)` : props.title}
         </Typography>
         {blocked ? (
           <>
@@ -66,8 +66,4 @@ export function TrackerChoice(props: {
       </Stack>
     </Box>
   );
-}
-
-function needsLabel(title: string): string {
-  return title === "GitHub" ? "a token" : title;
 }

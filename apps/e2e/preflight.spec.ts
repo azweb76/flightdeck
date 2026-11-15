@@ -17,6 +17,9 @@ test("github-only failure still opens the repo picker empty state", async ({ pag
   await expect(page.getByTestId("start-PROJ-150")).toBeDisabled();
   await expect(page.getByTestId("preflight-stay-off")).toContainText("Start and GitHub save stay off");
   await expect(page.getByTestId("preflight-stay-off")).not.toContainText("Refine");
+  await expect(page.getByTestId("preflight-stay-off")).not.toContainText("Jira");
+  await expect(page.getByTestId("preflight-banner-title")).toContainText("Start and GitHub save");
+  await expect(page.getByTestId("preflight-banner-title")).not.toContainText("refining");
   await page.getByTestId("new-idea").click();
   await expect(page.getByTestId("repo-picker-detail")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("repo-all")).toHaveCount(0);
@@ -67,6 +70,7 @@ test("Save tracker cards explain gated GitHub and Jira", async ({ page }) => {
   await setPreflight(page, "fail");
   await page.getByTestId("save-issue").click();
   await expect(page.getByTestId("tracker-github")).toContainText("Add a GitHub token in Settings");
+  await expect(page.getByTestId("tracker-jira")).toContainText("needs a token");
   await expect(page.getByTestId("tracker-jira")).toContainText("Add a Jira API token");
   await page.getByTestId("tracker-github").click();
   await expect(page.getByTestId("tracker-gate-hint")).toContainText("Add a GitHub token in Settings");

@@ -55,6 +55,7 @@ test("banner with only GitHub failing", async ({ page }) => {
   await setPreflight(page, "github");
   await expect(page.getByTestId("preflight-stay-off")).toContainText("Start and GitHub save stay off");
   await expect(page.getByTestId("preflight-stay-off")).not.toContainText("Refine");
+  await expect(page.getByTestId("preflight-banner-title")).toContainText("Start and GitHub save");
   await scheme(page, "light");
   await shot(page, "banner-github-only-light");
   await scheme(page, "dark");
@@ -144,8 +145,10 @@ test("save tracker cards gated", async ({ page }) => {
   await page.getByTestId("save-issue").click({ force: true });
   await expect(page.getByTestId("tracker-github")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("tracker-jira")).toContainText("Add a Jira API token");
+  await expect(page.getByTestId("tracker-jira")).toContainText("needs a token");
   await page.getByTestId("tracker-github").click();
   await expect(page.getByTestId("tracker-gate-hint")).toBeVisible();
+  await expect(page.getByTestId("confirm-save")).toBeDisabled();
   await scheme(page, "light");
   await page.setViewportSize({ width: 1440, height: 900 });
   await shot(page, "save-gated-light-1440", false);

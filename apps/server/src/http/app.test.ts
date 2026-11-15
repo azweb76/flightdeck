@@ -105,7 +105,9 @@ describe("http", () => {
       body: JSON.stringify({ repoSlug: "acme/web", idea: "CSV export" }),
     });
     expect(blocked.status).toBe(409);
-    expect(((await blocked.json()) as { error: string }).error).toMatch(/git|Claude|GitHub/i);
+    const blockedBody = (await blocked.json()) as { error: string };
+    expect(blockedBody.error).toMatch(/git|Claude|GitHub/i);
+    expect(blockedBody.error).toMatch(/\.\nFix:/);
     const githubOnly = await app.request("http://127.0.0.1/api/demo/preflight", {
       method: "POST",
       headers: { "content-type": "application/json" },

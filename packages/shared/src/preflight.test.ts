@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blockedBy, stayOffCopy, type PreflightReport } from "./preflight.ts";
+import { bannerTitle, blockedBy, stayOffCopy, type PreflightReport } from "./preflight.ts";
 
 const github = (ok: boolean): PreflightReport["checks"][number] => ({
   id: "github",
@@ -45,10 +45,9 @@ describe("blockedBy", () => {
     expect(stayOffCopy(report({ github: false, jira: true }))).toBe(
       "Flightdeck can still run, but Start and GitHub save stay off until the required tools are ready.",
     );
-    expect(stayOffCopy(report({ github: false, jira: true }))).not.toMatch(/Refine/);
-    expect(stayOffCopy(report({ github: false, jira: false }))).toBe(
-      "Flightdeck can still run, but Start, GitHub save, and Jira save stay off until the required tools are ready.",
-    );
-    expect(stayOffCopy(report({ github: true, jira: true }))).toBe("Flightdeck can still run.");
+    expect(stayOffCopy(report({ github: false, jira: false }))).not.toMatch(/Jira/);
+    expect(stayOffCopy(report({ github: false, jira: false }))).not.toMatch(/Refine/);
+    expect(bannerTitle(report({ github: false, jira: false }))).toBe("Fix these before Start and GitHub save");
+    expect(stayOffCopy(report({ github: true, jira: false }))).toBe("Flightdeck can still run.");
   });
 });

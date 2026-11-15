@@ -14,6 +14,7 @@ export function assertPreflightGate(gate: PreflightGate): void {
   if (!report) throw new PreflightBlockedError("Preflight has not run yet");
   const blocked = blockedBy(report, gate);
   if (!blocked) return;
-  const fix = blocked.fix ? ` Fix: ${blocked.fix}` : "";
-  throw new PreflightBlockedError(`${blocked.label}: ${blocked.detail}${fix}`);
+  const base = `${blocked.label}: ${blocked.detail}`.replace(/\.$/, "");
+  const message = blocked.fix ? `${base}.\nFix: ${blocked.fix}` : `${base}.`;
+  throw new PreflightBlockedError(message);
 }
