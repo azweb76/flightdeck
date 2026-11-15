@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { answerFirstQuestion, pickRepo, resetDemo, seedHome, startNewIdea } from "./helpers.ts";
+import { answerFirstQuestion, openRepoPicker, pickRepo, resetDemo, seedHome, startNewIdea } from "./helpers.ts";
 
 test("empty issues home", async ({ page }) => {
   await resetDemo(page, false);
@@ -37,6 +37,7 @@ test("repo picker searches cache and stars favorites", async ({ page }) => {
   await seedHome(page);
   await page.getByTestId("refine-PROJ-150").click();
   await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await openRepoPicker(page);
   await page.getByTestId("repo-star-acme/web").first().click();
   await expect(page.getByTestId("repo-favorites")).toContainText("acme/web");
   await expect(page.getByTestId("repo-all")).not.toContainText("acme/web");
@@ -48,6 +49,7 @@ test("repo picker searches cache and stars favorites", async ({ page }) => {
   await expect(page.getByTestId("chat-pane")).toBeVisible();
   await page.goto("/");
   await page.getByTestId("new-idea").click();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-favorites")).toContainText("acme/web");
   await expect(page.getByTestId("repo-recent")).toContainText("acme/mobile");
 });
@@ -72,7 +74,7 @@ test("save to GitHub then Start is enabled", async ({ page }) => {
   await page.getByTestId("save-issue").click();
   await page.getByTestId("tracker-github").click();
   await expect(page.getByTestId("repo-picker")).toBeVisible();
-  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
+  await expect(page.getByTestId("repo-search")).toHaveValue("acme/web");
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toContainText(/Saved as acme\/web#/);
   await expect(page.getByTestId("start-run")).toBeEnabled();
@@ -85,9 +87,18 @@ test("save to Jira", async ({ page }) => {
   await page.getByTestId("save-issue").click();
   await page.getByTestId("tracker-jira").click();
   await expect(page.getByTestId("repo-picker")).toBeVisible();
-  await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
+  await expect(page.getByTestId("repo-search")).toHaveValue("acme/web");
   await page.getByTestId("confirm-save").click();
   await expect(page.getByTestId("saved-banner")).toContainText(/PROJ-200/);
+});
+
+test("repo picker combobox shows the selected slug when closed", async ({ page }) => {
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await pickRepo(page);
+  await expect(page.getByTestId("repo-dropdown")).toHaveCount(0);
+  await expect(page.getByTestId("repo-search")).toHaveValue("acme/web");
+  await expect(page.getByTestId("repo-favorites")).toHaveCount(0);
 });
 
 test("repo picker keyboard selects a repo from New idea", async ({ page }) => {

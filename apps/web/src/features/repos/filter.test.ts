@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterCatalog, nextActive } from "./filter.ts";
+import { ALL_CAP, catalogOptions, filterCatalog, nextActive } from "./filter.ts";
 
 const catalog = {
   favorites: ["acme/web"],
@@ -25,6 +25,18 @@ describe("filterCatalog", () => {
     expect(sections.favorites).toEqual([]);
     expect(sections.recent).toEqual([]);
     expect(sections.all.map((r) => r.name)).toEqual(["mobile"]);
+  });
+});
+
+describe("catalogOptions", () => {
+  it("caps All for long catalogs", () => {
+    const repos = Array.from({ length: ALL_CAP + 5 }, (_, i) => ({
+      owner: "acme",
+      name: `r${i}`,
+      localPath: "",
+    }));
+    const opts = catalogOptions({ favorites: [], recent: [], repos }, "");
+    expect(opts.filter((o) => o.group === "All")).toHaveLength(ALL_CAP);
   });
 });
 

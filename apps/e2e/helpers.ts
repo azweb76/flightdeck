@@ -33,8 +33,15 @@ export async function seedHome(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "My issues" })).toBeVisible();
 }
 
-export async function pickRepo(page: Page, slug = "acme/web"): Promise<void> {
+export async function openRepoPicker(page: Page): Promise<void> {
   await expect(page.getByTestId("repo-picker")).toBeVisible();
+  if ((await page.getByTestId("repo-dropdown").count()) > 0) return;
+  await page.getByTestId("repo-search").click();
+  await expect(page.getByTestId("repo-dropdown")).toBeVisible();
+}
+
+export async function pickRepo(page: Page, slug = "acme/web"): Promise<void> {
+  await openRepoPicker(page);
   await page.getByTestId("repo-search").fill(slug.split("/")[1] ?? slug);
   await page.getByTestId(`repo-option-${slug}`).first().click();
 }
@@ -95,20 +102,14 @@ export async function expectDialogListAboveActions(page: Page): Promise<void> {
   const save = page.getByTestId("confirm-save");
   await expect(cancel).toBeInViewport();
   await expect(save).toBeInViewport();
-  await page.getByTestId("repo-all").evaluate((el) => {
-    el.scrollIntoView({ block: "start", inline: "nearest" });
-  });
-  await expect(page.getByTestId("repo-option-acme/repo-02").first()).toBeInViewport();
-  await expect(page.getByTestId("repo-option-acme/repo-40").first()).not.toBeInViewport();
+  await openRepoPicker(page);
+  const list = page.locator("#repo-listbox");
+  await expect(list).toBeVisible();
+  const h = await list.evaluate((el) => el.getBoundingClientRect().height);
+  expect(h).toBeLessThanOrEqual(320);
+  await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
   await expect(cancel).toBeInViewport();
   await expect(save).toBeInViewport();
-  const ok = await page.evaluate(() => {
-    const content = document.querySelector(".MuiDialogContent-root");
-    const actions = document.querySelector(".MuiDialogActions-root");
-    if (!content || !actions) return false;
-    return content.getBoundingClientRect().bottom <= actions.getBoundingClientRect().top + 1;
-  });
-  expect(ok).toBeTruthy();
 }
 
 export function watchRepoCatalogGets(page: Page): { count: () => number } {

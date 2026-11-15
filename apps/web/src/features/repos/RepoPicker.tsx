@@ -1,135 +1,110 @@
-import Refresh from "@mui/icons-material/Refresh";
-import { Button, IconButton, Stack, TextField, Tooltip, Typography } from "@mui/material";
-import { useMemo, useState, type KeyboardEvent } from "react";
-import { filterCatalog, nextActive } from "./filter.ts";
-import { RepoList } from "./RepoList.tsx";
+import { Autocomplete, Box, TextField } from "@mui/material";
+import { useMemo, useState, type HTMLAttributes, type Key, type ReactNode } from "react";
+import { DropdownPaper, DropdownUi } from "./Dropdown.tsx";
+import { catalogOptions, type RepoOption } from "./filter.ts";
+import { OptionRow } from "./OptionRow.tsx";
 import { useRepoCatalog } from "./useRepoCatalog.ts";
 
 export function RepoPicker(props: { value: string; onChange: (slug: string) => void }) {
   const catalog = useRepoCatalog();
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState(props.value);
-  const sections = useMemo(() => filterCatalog(catalog.catalog, query), [catalog.catalog, query]);
+  const options = useMemo(() => catalogOptions(catalog.catalog, query), [catalog.catalog, query]);
   const starred = useMemo(() => new Set(catalog.catalog?.favorites ?? []), [catalog.catalog?.favorites]);
-
-  function onKeyDown(event: KeyboardEvent) {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActive((cur) => nextActive(sections.slugs, cur || props.value, 1));
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActive((cur) => nextActive(sections.slugs, cur || props.value, -1));
-    } else if (event.key === "Enter") {
-      const slug = active || sections.slugs[0];
-      if (slug) {
-        event.preventDefault();
-        props.onChange(slug);
-      }
-    }
-  }
+  const value = options.find((o) => o.slug === props.value) ?? (props.value ? { slug: props.value, group: "All" as const } : null);
 
   return (
-    <Stack spacing={1.5} data-testid="repo-picker" onKeyDown={onKeyDown}>
-      <SearchBar
-        query={query}
-        refreshing={catalog.refreshing}
-        onQuery={setQuery}
-        onRefresh={() => void catalog.refresh()}
-      />
-      <PickerStatus
-        loading={catalog.loading}
-        error={catalog.error}
-        detail={catalog.catalog?.detail}
-        empty={!catalog.loading && sections.slugs.length === 0}
-        onRefresh={() => void catalog.refresh()}
-      />
-      <RepoList
-        sections={sections}
-        value={props.value}
-        active={active || props.value}
-        starred={starred}
-        onPick={props.onChange}
-        onStar={(slug, on) => {
-          const [owner, name] = slug.split("/");
-          if (owner && name) void catalog.favorite(owner, name, on);
-        }}
-      />
-    </Stack>
+    <DropdownUi
+      value={{
+        loading: catalog.loading,
+        refreshing: catalog.refreshing,
+        error: catalog.error,
+        detail: catalog.catalog?.detail,
+        empty: !catalog.loading && options.length === 0,
+        onRefresh: () => void catalog.refresh(),
+      }}
+    >
+      <Box data-testid="repo-picker">
+        <Autocomplete
+          open={open}
+          onOpen={() => setOpen(true)}
+          onClose={() => {
+            setOpen(false);
+            setQuery("");
+          }}
+          options={options}
+          value={value}
+          inputValue={open && query ? query : props.value}
+          onInputChange={(_, next, reason) => {
+            if (reason === "input" || reason === "clear") setQuery(next);
+          }}
+          onChange={(_, next) => {
+            if (next) props.onChange(next.slug);
+          }}
+          filterOptions={(opts) => opts}
+          groupBy={(o) => o.group}
+          getOptionLabel={(o) => o.slug}
+          isOptionEqualToValue={(a, b) => a.slug === b.slug}
+          openOnFocus
+          autoHighlight
+          noOptionsText=""
+          slots={{ paper: DropdownPaper }}
+          slotProps={{
+            popper: { sx: { zIndex: 1500 } },
+            listbox: { sx: { maxHeight: 280, overflow: "auto" }, id: "repo-listbox" },
+          }}
+          renderGroup={renderGroup}
+          renderOption={(li, option, state) =>
+            renderRow(li, option, state.selected, starred, (slug, on) => {
+              const [owner, name] = slug.split("/");
+              if (owner && name) void catalog.favorite(owner, name, on);
+            })
+          }
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder="Find a repository"
+              inputProps={{
+                ...params.inputProps,
+                "data-testid": "repo-search",
+                "aria-label": "Repository",
+              }}
+            />
+          )}
+        />
+      </Box>
+    </DropdownUi>
   );
 }
 
-function SearchBar(props: {
-  query: string;
-  refreshing: boolean;
-  onQuery: (next: string) => void;
-  onRefresh: () => void;
-}) {
+function renderGroup(params: { key: number; group: string; children?: ReactNode }) {
+  const id = params.group === "Favorites" ? "repo-favorites" : params.group === "Recent" ? "repo-recent" : "repo-all";
   return (
-    <Stack direction="row" gap={1} alignItems="center">
-      <TextField
-        value={props.query}
-        onChange={(e) => props.onQuery(e.target.value)}
-        placeholder="Find a repository"
-        inputProps={{
-          "data-testid": "repo-search",
-          role: "combobox",
-          "aria-expanded": true,
-          "aria-label": "Find a repository",
-        }}
-      />
-      <Tooltip title="Refresh repositories">
-        <span>
-          <IconButton
-            onClick={props.onRefresh}
-            disabled={props.refreshing}
-            aria-label="Refresh repositories"
-            data-testid="repo-refresh"
-          >
-            <Refresh />
-          </IconButton>
-        </span>
-      </Tooltip>
-    </Stack>
+    <li key={params.key} data-testid={id}>
+      <Box component="div" sx={{ px: 1.5, pt: 1, typography: "subtitle2" }}>
+        {params.group}
+      </Box>
+      <ul style={{ padding: 0, margin: 0 }}>{params.children}</ul>
+    </li>
   );
 }
 
-function PickerStatus(props: {
-  loading: boolean;
-  error?: string;
-  detail?: string;
-  empty: boolean;
-  onRefresh: () => void;
-}) {
-  if (props.loading) {
-    return (
-      <Typography color="text.secondary" data-testid="repo-picker-loading">
-        Loading repositories…
-      </Typography>
-    );
-  }
-  if (props.error) {
-    return (
-      <Stack direction="row" gap={1} alignItems="center" data-testid="repo-picker-error">
-        <Typography color="error">{props.error}</Typography>
-        <Button size="small" onClick={props.onRefresh} data-testid="repo-picker-error-refresh">
-          Refresh
-        </Button>
-      </Stack>
-    );
-  }
-  if (props.detail) {
-    return (
-      <Typography color="text.secondary" data-testid="repo-picker-detail">
-        {props.detail}
-      </Typography>
-    );
-  }
-  if (props.empty) {
-    return (
-      <Typography color="text.secondary" data-testid="repo-picker-empty">
-        No matching repositories.
-      </Typography>
-    );
-  }
-  return null;
+function renderRow(
+  li: HTMLAttributes<HTMLLIElement> & { key?: Key },
+  option: RepoOption,
+  selected: boolean,
+  starred: Set<string>,
+  onStar: (slug: string, on: boolean) => void,
+) {
+  const { key, ...rest } = li;
+  return (
+    <OptionRow
+      key={key}
+      {...rest}
+      option={option}
+      selected={selected}
+      starred={starred.has(option.slug)}
+      onStar={onStar}
+    />
+  );
 }

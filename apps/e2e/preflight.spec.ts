@@ -4,6 +4,7 @@ import {
   expectDialogListAboveActions,
   expectDisabledNotPrimary,
   mockRepoCatalog,
+  openRepoPicker,
   pickRepo,
   scheme,
   seedHome,
@@ -32,6 +33,7 @@ test("github-only failure still opens the repo picker empty state", async ({ pag
   await expect(page.getByTestId("preflight-banner-title")).toContainText("Start and GitHub save");
   await expect(page.getByTestId("preflight-banner-title")).not.toContainText("refining");
   await page.getByTestId("new-idea").click();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-picker-detail")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("repo-all")).toHaveCount(0);
 });
@@ -115,11 +117,13 @@ test("disabled contained buttons match disabledBackground on pages", async ({ pa
 test("picker refetches after github fixture without reload", async ({ page }) => {
   await seedHome(page);
   await page.getByTestId("new-idea").click();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
   await setPreflight(page, "github");
   await expect(page.getByTestId("preflight-banner")).toBeVisible();
   await page.getByTestId("new-idea").click();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-picker-detail")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("repo-all")).toHaveCount(0);
 });
@@ -129,6 +133,7 @@ test("token save invalidates the repo catalog for the next open", async ({ page 
   const gets = watchRepoCatalogGets(page);
   await page.getByTestId("new-idea").click();
   await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
   const before = gets.count();
@@ -140,6 +145,7 @@ test("token save invalidates the repo catalog for the next open", async ({ page 
   await page.goto("/");
   await page.getByTestId("new-idea").click();
   await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-option-acme/web").first()).toBeVisible();
   expect(gets.count()).toBeGreaterThan(before);
 });
@@ -154,6 +160,7 @@ test("save dialog with 40 repos keeps actions below the list", async ({ page }) 
   await expect(page.getByTestId("chat-pane")).toBeVisible();
   await page.getByTestId("save-issue").click();
   await page.getByTestId("tracker-jira").click();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
   await expect(page.getByTestId("repo-all")).toBeVisible();
   await page.setViewportSize({ width: 1024, height: 720 });

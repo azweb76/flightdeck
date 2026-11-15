@@ -5,6 +5,7 @@ import {
   expectDialogListAboveActions,
   expectDisabledNotPrimary,
   mockRepoCatalog,
+  openRepoPicker,
   pickRepo,
   scheme,
   seedHome,
@@ -44,6 +45,7 @@ test("no-token picker empty state", async ({ page }) => {
   await setPreflight(page, "github");
   await scheme(page, "light");
   await page.getByTestId("new-idea").click();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-picker-detail")).toContainText("Add a GitHub token in Settings");
   await shot(page, "picker-no-token-light");
   await scheme(page, "dark");
@@ -175,6 +177,7 @@ test("save dialog list does not overlap actions", async ({ page }) => {
   await expect(page.getByTestId("chat-pane")).toBeVisible();
   await page.getByTestId("save-issue").click();
   await page.getByTestId("tracker-jira").click();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
   await page.setViewportSize({ width: 1024, height: 720 });
   await expectDialogListAboveActions(page);

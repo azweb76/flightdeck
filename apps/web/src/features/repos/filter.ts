@@ -26,6 +26,19 @@ export function filterCatalog(catalog: CatalogView | undefined, query: string): 
   return { favorites, recent, all, slugs };
 }
 
+export const ALL_CAP = 80;
+
+export type RepoOption = { slug: string; group: "Favorites" | "Recent" | "All" };
+
+export function catalogOptions(catalog: CatalogView | undefined, query: string, cap = ALL_CAP): RepoOption[] {
+  const sections = filterCatalog(catalog, query);
+  return [
+    ...sections.favorites.map((slug) => ({ slug, group: "Favorites" as const })),
+    ...sections.recent.map((slug) => ({ slug, group: "Recent" as const })),
+    ...sections.all.slice(0, cap).map((repo) => ({ slug: `${repo.owner}/${repo.name}`, group: "All" as const })),
+  ];
+}
+
 export function nextActive(slugs: string[], current: string, delta: number): string {
   if (!slugs.length) return "";
   const i = slugs.indexOf(current);

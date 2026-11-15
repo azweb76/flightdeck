@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { answerFirstQuestion, pickRepo, resetDemo, seedHome } from "./helpers.ts";
+import { answerFirstQuestion, openRepoPicker, pickRepo, resetDemo, seedHome } from "./helpers.ts";
 
 const DIR = "/opt/cursor/artifacts/phase1";
 
@@ -46,6 +46,7 @@ test("repo picker and refine screenshots", async ({ page }) => {
   await page.getByTestId("refine-PROJ-150").click();
   await expect(page.getByRole("dialog")).toContainText("Pick a repo");
   await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await openRepoPicker(page);
   await page.getByTestId("repo-star-acme/api").first().click();
   await expect(page.getByTestId("repo-favorites")).toContainText("acme/api");
   await expect(page.getByTestId("repo-all")).not.toContainText("acme/api");
@@ -66,6 +67,7 @@ test("repo picker and refine screenshots", async ({ page }) => {
   await scheme(page, "light");
   await page.goto("/");
   await page.getByTestId("new-idea").click();
+  await openRepoPicker(page);
   await expect(page.getByTestId("repo-favorites")).toBeVisible();
   await expect(page.getByTestId("repo-recent")).toBeVisible();
   await shot(page, "pick-repo-recent-light");

@@ -83,7 +83,6 @@ export const theme = createTheme({
           backgroundImage: "none",
           padding: 8,
           minWidth: 380,
-          height: "calc(100vh - 64px)",
           maxHeight: "calc(100vh - 64px)",
           display: "flex",
           flexDirection: "column",
