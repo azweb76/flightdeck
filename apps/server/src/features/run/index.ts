@@ -15,6 +15,8 @@ import { pumpQueue, setQueueStarter } from "./queue.ts";
 import { isInterrupted, presentChange } from "./view.ts";
 import { addWorktree, pruneAllClones, removeWorktree } from "./worktree.ts";
 import { abortCiWatch } from "./ci.ts";
+import { setParkedCiDeps, startParkedCiWatch } from "./ci-slot.ts";
+import { resolveGithubToken } from "../github/token.ts";
 
 export { dailySpendUsd, getChange, listChanges } from "./store.ts";
 export { bumpRunEpoch, dropJobs } from "./jobs.ts";
@@ -29,6 +31,11 @@ export function waitForChange(id: string): Promise<void> {
 
 export async function startRunQueue(): Promise<void> {
   await pruneAllClones();
+  if (process.env.FLIGHTDECK_DEMO !== "1") {
+    const tok = await resolveGithubToken();
+    if (tok?.token) setParkedCiDeps({ token: tok.token });
+    startParkedCiWatch();
+  }
   pumpQueue();
 }
 

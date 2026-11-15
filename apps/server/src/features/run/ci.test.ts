@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, resetDbForTests } from "../db/index.ts";
 import { patchSettings } from "../settings/index.ts";
 import { watchLiveCi } from "./ci.ts";
-import { archiveChange } from "./index.ts";
+import { setParkedCiDeps, stopParkedCiWatch } from "./ci-slot.ts";
+import { archiveChange, startRunQueue } from "./index.ts";
+import { dropJobs } from "./jobs.ts";
 import { getChange, insertChange, saveChange } from "./store.ts";
 
 const issue = {
@@ -29,6 +31,7 @@ describe("live CI poll", () => {
   });
 
   afterEach(() => {
+    stopParkedCiWatch();
     closeDb();
     delete process.env.GITHUB_TOKEN;
     delete process.env.FLIGHTDECK_DATA_DIR;
@@ -116,4 +119,55 @@ describe("live CI poll", () => {
     expect(getChange(change.id)?.events.some((e) => e.detail === "Pull request closed.")).toBe(true);
     expect(getChange(change.id)?.events.some((e) => e.title === "ci fix")).toBe(false);
   });
+
+  it("marks a parked CI fix done on merge after restart with a full cap", async () => {
+    const occupying = parkBehindFullCap();
+    dropJobs();
+    setParkedCiDeps({
+      token: "t",
+      pollMs: 5,
+      pullState: async () => ({ state: "closed", merged: true }),
+    });
+    await startRunQueue();
+    await waitForStatus(occupying.parked.id, "done");
+    expect(getChange(occupying.blocker.id)?.status).toBe("planning");
+    expect(getChange(occupying.parked.id)?.events.some((e) => e.detail === "Pull request merged.")).toBe(true);
+    expect(getChange(occupying.parked.id)?.events.some((e) => e.title === "ci fix")).toBe(false);
+  });
+
+  it("marks a parked CI fix done on close after restart with a full cap", async () => {
+    const occupying = parkBehindFullCap();
+    dropJobs();
+    setParkedCiDeps({
+      token: "t",
+      pollMs: 5,
+      pullState: async () => ({ state: "closed", merged: false }),
+    });
+    await startRunQueue();
+    await waitForStatus(occupying.parked.id, "done");
+    expect(getChange(occupying.blocker.id)?.status).toBe("planning");
+    expect(getChange(occupying.parked.id)?.events.some((e) => e.detail === "Pull request closed.")).toBe(true);
+    expect(getChange(occupying.parked.id)?.events.some((e) => e.title === "ci fix")).toBe(false);
+  });
 });
+
+function parkBehindFullCap(): { blocker: ReturnType<typeof insertChange>; parked: ReturnType<typeof insertChange> } {
+  patchSettings({ maxConcurrentAgents: 1 });
+  const blocker = insertChange({ ...issue, id: "github:acme/web#2", key: "acme/web#2" }, "live", "", "flightdeck/block", "planning");
+  const parked = insertChange(issue, "live", "", "flightdeck/ci", "watching_ci");
+  parked.stage = "ci";
+  parked.prNumber = 9;
+  parked.ciPhase = "queued";
+  parked.ciRound = 1;
+  saveChange(parked);
+  return { blocker, parked };
+}
+
+async function waitForStatus(id: string, status: string): Promise<void> {
+  const deadline = Date.now() + 1_000;
+  while (Date.now() < deadline) {
+    if (getChange(id)?.status === status) return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error(`timed out waiting for ${id} to be ${status} (got ${getChange(id)?.status})`);
+}

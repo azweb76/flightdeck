@@ -4,7 +4,7 @@ import type { FetchFn } from "../github/octokit.ts";
 import { emitChange, log } from "./emit.ts";
 import { occupiesSlot } from "./machine.ts";
 import { pumpQueue } from "./queue.ts";
-import { getChange } from "./store.ts";
+import { getChange, listChanges } from "./store.ts";
 
 export type SlotWaitDeps = {
   token?: string;
@@ -12,6 +12,39 @@ export type SlotWaitDeps = {
   pullState?: typeof getPullState;
   pollMs?: number;
 };
+
+let parkedDeps: SlotWaitDeps = {};
+let parkedLoop = false;
+let parkedTimer: ReturnType<typeof setTimeout> | undefined;
+
+export function setParkedCiDeps(deps: SlotWaitDeps): void {
+  parkedDeps = { ...parkedDeps, ...deps };
+}
+
+export function stopParkedCiWatch(): void {
+  parkedLoop = false;
+  if (parkedTimer) clearTimeout(parkedTimer);
+  parkedTimer = undefined;
+  parkedDeps = {};
+}
+
+export function startParkedCiWatch(): void {
+  if (parkedLoop) return;
+  parkedLoop = true;
+  void tickParked();
+}
+
+export async function pollParkedFixes(): Promise<void> {
+  for (const change of listChanges()) {
+    if (change.ciPhase !== "queued") continue;
+    if (change.status === "archived" || change.status === "done") continue;
+    try {
+      await prEnded(change, parkedDeps);
+    } catch {
+      /* keep polling other parked fixes */
+    }
+  }
+}
 
 export async function waitForFixSlot(change: Change, deps: SlotWaitDeps = {}): Promise<boolean> {
   const current = getChange(change.id);
@@ -39,6 +72,17 @@ export async function waitForFixSlot(change: Change, deps: SlotWaitDeps = {}): P
       return true;
     }
     await new Promise((r) => setTimeout(r, process.env.FLIGHTDECK_RUN_FAST === "1" ? 5 : 250));
+  }
+}
+
+async function tickParked(): Promise<void> {
+  while (parkedLoop) {
+    await pollParkedFixes();
+    if (!parkedLoop) return;
+    const wait = parkedDeps.pollMs ?? (process.env.FLIGHTDECK_RUN_FAST === "1" ? 5 : 15_000);
+    await new Promise<void>((resolve) => {
+      parkedTimer = setTimeout(resolve, wait);
+    });
   }
 }
 
