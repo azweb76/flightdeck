@@ -1,5 +1,6 @@
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
+import { Markdown } from "../markdown/index.ts";
 import type { ChatEntry } from "./entries.ts";
 
 export function Thread(props: {
@@ -72,7 +73,7 @@ function Bubble(props: {
       <Typography variant="caption" sx={{ opacity: 0.8 }}>
         {entry.caption}
       </Typography>
-      {entry.body ? <Typography sx={{ whiteSpace: "pre-wrap" }}>{entry.body}</Typography> : null}
+      {entry.body ? <Markdown text={entry.body} /> : null}
       {entry.options?.length ? (
         <Stack direction="row" gap={1} sx={{ mt: 1 }} flexWrap="wrap">
           {entry.options.map((o) => (

@@ -8,5 +8,5 @@ export function Markdown(props: { text: string; empty?: string }) {
       </Typography>
     );
   }
-  return <Typography sx={{ whiteSpace: "pre-wrap", color: "text.primary" }}>{props.text}</Typography>;
+  return <Typography sx={{ whiteSpace: "pre-wrap" }}>{props.text}</Typography>;
 }
