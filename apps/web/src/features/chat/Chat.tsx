@@ -20,7 +20,7 @@ export function Chat(props: {
   entries: ChatEntry[];
   reply: string;
   onReply: (v: string) => void;
-  onSend: (text: string) => void;
+  onSend: (text: string, optionId?: string) => void;
   canSend: boolean;
   disabled: boolean;
   placeholder: string;

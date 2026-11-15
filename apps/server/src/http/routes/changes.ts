@@ -23,9 +23,9 @@ export function mountChanges(app: Hono): void {
     return c.json(presentChange(change));
   });
   app.post("/api/changes/:id/reply", async (c) => {
-    const body = await c.req.json<{ text?: string }>();
+    const body = await c.req.json<{ text?: string; optionId?: string }>();
     if (!body.text?.trim()) fail("Write a reply");
-    return c.json(await replyChange(c.req.param("id"), body.text.trim()));
+    return c.json(await replyChange(c.req.param("id"), body.text.trim(), body.optionId));
   });
   app.post("/api/changes/:id/resume", async (c) => c.json(await resumeChange(c.req.param("id"))));
   app.post("/api/changes/:id/archive", async (c) => c.json(await archiveChange(c.req.param("id"))));

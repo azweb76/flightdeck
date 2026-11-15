@@ -67,8 +67,8 @@ export const api = {
   startChange: (issueId: string) =>
     req<Change>("/api/changes", { method: "POST", body: JSON.stringify({ issueId }) }),
   getChange: (id: string) => req<Change>(`/api/changes/${id}`),
-  replyChange: (id: string, text: string) =>
-    req<Change>(`/api/changes/${id}/reply`, { method: "POST", body: JSON.stringify({ text }) }),
+  replyChange: (id: string, text: string, optionId?: string) =>
+    req<Change>(`/api/changes/${id}/reply`, { method: "POST", body: JSON.stringify({ text, optionId }) }),
   archiveChange: (id: string) => req<Change>(`/api/changes/${id}/archive`, { method: "POST" }),
   resumeChange: (id: string) => req<Change>(`/api/changes/${id}/resume`, { method: "POST" }),
   myPrs: (filter: PrFilter = "all") => req<{ prs: OwnPr[] }>(`/api/prs?filter=${filter}`),

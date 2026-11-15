@@ -50,7 +50,7 @@ export async function startChange(issueId: string): Promise<Change> {
   return presentChange(getChange(change.id) ?? change);
 }
 
-export async function replyChange(id: string, text: string): Promise<Change> {
+export async function replyChange(id: string, text: string, optionId?: string): Promise<Change> {
   const change = getChange(id);
   if (!change) throw new Error("Change not found");
   if (!canReply(change.status)) throw new Error("This run is not waiting for a reply");
@@ -59,7 +59,7 @@ export async function replyChange(id: string, text: string): Promise<Change> {
   const fromDan = change.status === "needs_dan";
   change.ask = undefined;
   if (fromDan && change.stage === "ci") {
-    if (/leave/i.test(text)) {
+    if (optionId === "leave") {
       change.status = "done";
       log(change, { kind: "system", title: "resume", detail: "Left the failing checks for you." });
       saveChange(change);

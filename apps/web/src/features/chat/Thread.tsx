@@ -8,7 +8,7 @@ const NEAR_BOTTOM = 48;
 export function Thread(props: {
   entries: ChatEntry[];
   disabled: boolean;
-  onPick: (label: string) => void;
+  onPick: (label: string, optionId?: string) => void;
   spacing: number;
   compact: boolean;
   autoScroll?: boolean;
@@ -42,7 +42,12 @@ export function Thread(props: {
   );
 }
 
-function Entry(props: { entry: ChatEntry; disabled: boolean; compact: boolean; onPick: (label: string) => void }) {
+function Entry(props: {
+  entry: ChatEntry;
+  disabled: boolean;
+  compact: boolean;
+  onPick: (label: string, optionId?: string) => void;
+}) {
   const { entry } = props;
   if (entry.type === "stage") {
     return (
@@ -68,7 +73,7 @@ function Bubble(props: {
   entry: Extract<ChatEntry, { type: "bubble" }>;
   disabled: boolean;
   compact: boolean;
-  onPick: (label: string) => void;
+  onPick: (label: string, optionId?: string) => void;
 }) {
   const { entry } = props;
   const [picked, setPicked] = useState(false);
@@ -102,7 +107,7 @@ function Bubble(props: {
               onClick={() => {
                 if (locked) return;
                 setPicked(true);
-                props.onPick(o.label);
+                props.onPick(o.label, o.id);
               }}
               data-testid={entry.optionTestId(o.id)}
               variant="outlined"

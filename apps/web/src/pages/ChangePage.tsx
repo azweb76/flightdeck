@@ -97,13 +97,13 @@ function useChange(id: string | undefined) {
     reply,
     busy,
     setReply,
-    send: async (text: string) => {
+    send: async (text: string, optionId?: string) => {
       if (!id || !text.trim() || sending.current) return;
       sending.current = true;
       setBusy(true);
       setError("");
       try {
-        setChange(await api.replyChange(id, text.trim()));
+        setChange(await api.replyChange(id, text.trim(), optionId));
         setReply("");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Reply failed");
@@ -136,7 +136,7 @@ function RunChat(props: {
   reply: string;
   busy: boolean;
   onReply: (v: string) => void;
-  onSend: (text: string) => void;
+  onSend: (text: string, optionId?: string) => void;
 }) {
   const waiting = props.change.status === "asking" || props.change.status === "needs_dan";
   return (

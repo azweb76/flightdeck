@@ -167,6 +167,17 @@ describe("run engine (demo)", () => {
     expect(resumed.events.some((e) => e.detail === "Follow-up after Dan answered")).toBe(true);
   });
 
+  it("Leave it ends the CI run without another auto-fix", async () => {
+    const started = await startChange("github:acme/web#70");
+    await waitForChange(started.id);
+    expect(getChange(started.id)?.status).toBe("needs_dan");
+    await replyChange(started.id, "Leave it for me", "leave");
+    const left = getChange(started.id)!;
+    expect(left.status).toBe("done");
+    expect(left.ciRound).toBe(3);
+    expect(left.events.some((e) => e.detail === "Left the failing checks for you.")).toBe(true);
+  });
+
   it("Resume continues the in-flight CI attempt after dropJobs", async () => {
     const issue = loadIssue("github:acme/web#71");
     expect(issue).toBeTruthy();
