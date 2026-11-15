@@ -116,3 +116,14 @@ test("chat and markdown draft look unchanged", async ({ page }) => {
   await scheme(page, "dark");
   await pair(page, "markdown-dark");
 });
+
+test("change-detail last ask stays visible at 1280", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await seedHome(page);
+  await page.getByTestId("start-acme/web#15").click();
+  await expect(page.getByTestId("run-option-paid")).toBeVisible({ timeout: 20_000 });
+  await scheme(page, "light");
+  await shot1280(page, "change-chat-light");
+  await scheme(page, "dark");
+  await shot1280(page, "change-chat-dark");
+});

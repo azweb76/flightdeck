@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { seedHome } from "./helpers.ts";
+import { expectLastAboveComposer, seedHome } from "./helpers.ts";
 
 test("successful run opens a draft PR", async ({ page }) => {
   await seedHome(page);
@@ -15,9 +15,11 @@ test("successful run opens a draft PR", async ({ page }) => {
 });
 
 test("run can pause for a question and continue after a reply", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
   await seedHome(page);
   await page.getByTestId("start-acme/web#15").click();
   await expect(page.getByTestId("run-option-paid")).toBeVisible({ timeout: 20_000 });
+  await expectLastAboveComposer(page, "run-option-paid", "run-reply");
   await expect(page.getByTestId("stage-plan")).toContainText("Paused for your answer");
   await expect(page.getByTestId("change-status")).toContainText("Needs you");
   await page.getByTestId("run-option-paid").click();

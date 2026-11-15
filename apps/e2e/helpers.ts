@@ -40,6 +40,11 @@ export async function openRepoPicker(page: Page): Promise<void> {
   await expect(page.getByTestId("repo-dropdown")).toBeVisible();
 }
 
+export async function clearRepo(page: Page): Promise<void> {
+  await page.getByTestId("repo-search").hover();
+  await page.locator(".MuiAutocomplete-clearIndicator").click();
+}
+
 export async function pickRepo(page: Page, slug = "acme/web"): Promise<void> {
   await openRepoPicker(page);
   await page.getByTestId("repo-search").fill(slug.split("/")[1] ?? slug);
@@ -97,6 +102,18 @@ export async function mockRepoCatalog(page: Page, count: number): Promise<void> 
   });
 }
 
+async function clipToContent(
+  page: Page,
+  list: ReturnType<Page["locator"]>,
+): Promise<{ x: number; y: number; width: number; height: number } | null> {
+  return list.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const content = el.closest(".MuiDialogContent-root")?.getBoundingClientRect();
+    const bottom = content ? Math.min(r.bottom, content.bottom) : r.bottom;
+    return { x: r.x, y: r.y, width: r.width, height: Math.max(0, bottom - r.y) };
+  });
+}
+
 function overlap(
   a: { x: number; y: number; width: number; height: number },
   b: { x: number; y: number; width: number; height: number },
@@ -107,17 +124,44 @@ function overlap(
 export async function expectPickerNotOverActions(page: Page): Promise<void> {
   await openRepoPicker(page);
   const list = page.locator("#repo-listbox");
-  const actions = page.locator(".MuiDialogActions-root");
   await expect(list).toBeVisible();
   await expect(page.getByTestId("repo-option-acme/repo-40").first()).toBeAttached();
-  const listBox = await list.boundingBox();
-  const actionBox = await actions.boundingBox();
-  expect(listBox).toBeTruthy();
-  expect(actionBox).toBeTruthy();
+  const listBox = await clipToContent(page, list);
+  const actionBox = await page.locator(".MuiDialogActions-root").boundingBox();
+  expect(listBox && actionBox).toBeTruthy();
   expect(overlap(listBox!, actionBox!)).toBe(false);
+  expect(listBox!.height).toBeGreaterThanOrEqual(120);
+  const idea = page.locator("#idea-input");
+  if ((await idea.count()) > 0) {
+    const ideaBox = await idea.boundingBox();
+    if (ideaBox) expect(overlap(listBox!, ideaBox)).toBe(false);
+  }
+  expect(await listTopmostIsInside(page)).toBe(true);
   const cancel = page.getByRole("dialog").getByRole("button", { name: "Cancel" });
   await expect(cancel).toBeVisible();
   await cancel.click({ trial: true });
+}
+
+async function listTopmostIsInside(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const el = document.getElementById("repo-listbox");
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    const content = el.closest(".MuiDialogContent-root")?.getBoundingClientRect();
+    const bottom = content ? Math.min(r.bottom, content.bottom) : r.bottom;
+    const hit = document.elementFromPoint(r.left + r.width / 2, bottom - 6);
+    return Boolean(hit && el.contains(hit));
+  });
+}
+
+export async function expectLastAboveComposer(page: Page, lastTestId: string, inputTestId: string): Promise<void> {
+  const last = page.getByTestId(lastTestId).last();
+  const input = page.getByTestId(inputTestId);
+  await expect(last).toBeVisible();
+  const a = await last.boundingBox();
+  const b = await input.boundingBox();
+  expect(a && b).toBeTruthy();
+  expect(a!.y + a!.height).toBeLessThanOrEqual(b!.y + 1);
 }
 
 export async function dismissDialog(page: Page): Promise<void> {

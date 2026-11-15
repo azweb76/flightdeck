@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { answerFirstQuestion, openRepoPicker, pickRepo, resetDemo, seedHome, startNewIdea } from "./helpers.ts";
+import {
+  answerFirstQuestion,
+  expectLastAboveComposer,
+  openRepoPicker,
+  clearRepo,
+  pickRepo,
+  resetDemo,
+  seedHome,
+  startNewIdea,
+} from "./helpers.ts";
 
 test("empty issues home", async ({ page }) => {
   await resetDemo(page, false);
@@ -92,15 +101,56 @@ test("save to Jira", async ({ page }) => {
   await expect(page.getByTestId("saved-banner")).toContainText(/PROJ-200/);
 });
 
-test("repo picker clear empties the value and gates Refine", async ({ page }) => {
+test("repo picker clear empties the value and gates Refine Continue and Save", async ({ page }) => {
   await seedHome(page);
   await page.getByTestId("new-idea").click();
   await pickRepo(page);
   await expect(page.getByTestId("repo-search")).toHaveValue("acme/web");
-  await page.getByRole("button", { name: "Clear" }).click();
+  await clearRepo(page);
   await expect(page.getByTestId("repo-search")).toHaveValue("");
   await page.getByTestId("idea-input").fill("Export invoices as CSV");
   await expect(page.getByTestId("start-idea")).toBeDisabled();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
+
+  await page.getByTestId("refine-PROJ-150").click();
+  await pickRepo(page);
+  await clearRepo(page);
+  await expect(page.getByTestId("confirm-repo")).toBeDisabled();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
+
+  await startNewIdea(page);
+  await page.getByTestId("save-issue").click();
+  await page.getByTestId("tracker-github").click();
+  await expect(page.getByTestId("repo-search")).toHaveValue("acme/web");
+  await clearRepo(page);
+  await expect(page.getByTestId("confirm-save")).toBeDisabled();
+});
+
+test("Cancel Enter closes the dialog while the menu is open", async ({ page }) => {
+  await seedHome(page);
+  await page.getByTestId("new-idea").click();
+  await openRepoPicker(page);
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).press("Enter");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await page.getByTestId("refine-PROJ-150").click();
+  await openRepoPicker(page);
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).press("Enter");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await startNewIdea(page);
+  await page.getByTestId("save-issue").click();
+  await page.getByTestId("tracker-jira").click();
+  await openRepoPicker(page);
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).press("Enter");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("last refine question stays above the composer at 1280", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await seedHome(page);
+  await startNewIdea(page);
+  await expectLastAboveComposer(page, "option-api", "chat-input");
 });
 
 test("repo picker combobox shows the selected slug when closed", async ({ page }) => {
