@@ -30,16 +30,25 @@ export const interruptedChipSx: SxProps<Theme> = {
   fontWeight: 600,
 };
 
+export const archivedChipSx: SxProps<Theme> = {
+  bgcolor: "#3a3a3c",
+  color: "#fff",
+  fontWeight: 600,
+};
+
 export function chipSx(status: ChangeStatus, interrupted = false): SxProps<Theme> | undefined {
   if (interrupted) return interruptedChipSx;
   if (status === "asking" || status === "needs_dan") return askingChipSx;
   if (status === "queued") return queuedChipSx;
+  if (status === "archived") return archivedChipSx;
   return undefined;
 }
 
 export function archiveDisabled(status: ChangeStatus, interrupted = false): boolean {
   if (interrupted || status === "queued") return false;
-  return ["planning", "implementing", "reviewing", "opening_pr", "archived"].includes(status);
+  return ["planning", "implementing", "reviewing", "opening_pr", "watching_ci", "fixing_ci", "archived"].includes(
+    status,
+  );
 }
 
 export function statusChip(status: ChangeStatus, interrupted = false): string {
@@ -50,6 +59,8 @@ export function statusChip(status: ChangeStatus, interrupted = false): string {
   if (status === "reviewing") return "Review";
   if (status === "asking") return "Needs you";
   if (status === "opening_pr") return "Draft PR";
+  if (status === "watching_ci") return "CI";
+  if (status === "fixing_ci") return "Fixing CI";
   if (status === "done") return "Done";
   if (status === "needs_dan") return "Needs you";
   if (status === "cap_hit") return "Cap hit";
@@ -65,6 +76,8 @@ export function stageLabel(status: ChangeStatus, interrupted = false): string {
   if (status === "reviewing") return "Review";
   if (status === "asking" || status === "needs_dan") return "Waiting";
   if (status === "opening_pr") return "Draft PR";
+  if (status === "watching_ci") return "CI";
+  if (status === "fixing_ci") return "Fixing CI";
   if (status === "done") return "Done";
   if (status === "cap_hit") return "Cap";
   if (status === "archived") return "Archived";

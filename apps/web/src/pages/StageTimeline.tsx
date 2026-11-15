@@ -1,5 +1,5 @@
 import { Box, Paper, Stack, Typography } from "@mui/material";
-import { reviewRoundCaption, type Change, type ChangeStage } from "@flightdeck/shared";
+import { ciRoundCaption, reviewRoundCaption, type Change, type ChangeStage } from "@flightdeck/shared";
 
 const STAGES: { id: ChangeStage; label: string }[] = [
   { id: "plan", label: "Plan" },
@@ -30,7 +30,7 @@ export function StageTimeline(props: { change: Change }) {
             />
             <Box>
               <Typography fontWeight={600}>{stage.label}</Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" data-testid={`stage-caption-${stage.id}`}>
                 {caption(props.change, stage.id)}
               </Typography>
             </Box>
@@ -46,12 +46,12 @@ function order(stage: ChangeStage): number {
 }
 
 function dotColor(change: Change, stage: ChangeStage): string {
-  if (stage === "ci") return "action.disabled";
   const here = order(change.stage);
   const want = order(stage);
-  if (change.status === "needs_dan" && stage === "review") return "error.main";
+  if (change.status === "needs_dan" && want === here) return "error.main";
   if (change.status === "cap_hit" && want <= here) return "error.main";
   if (want < here) return "success.main";
+  if (want === here && change.status === "done") return "success.main";
   if (want === here) return "primary.main";
   return "action.disabled";
 }
@@ -59,20 +59,23 @@ function dotColor(change: Change, stage: ChangeStage): string {
 function caption(change: Change, stage: ChangeStage): string {
   if (stage === "review") return reviewRoundCaption(change.reviewRound);
   if (stage === "pr") return change.prUrl ? "Draft PR opened" : "Opens after review";
-  if (stage === "ci") return "Phase 4 placeholder";
+  if (stage === "ci") return ciRoundCaption(change.ciRound, change.status);
   if (stage === "plan") {
     if (change.status === "asking") return "Paused for your answer";
     if (change.status === "cap_hit") return "Stopped on the dollar cap";
     return change.planText ? "Kept in the app only" : "Not started";
   }
-  if (change.stage === stage) return statusWord(change.status);
+  if (change.stage === stage) return statusWord(change);
   return order(stage) < order(change.stage) ? "Done" : "Waiting";
 }
 
-function statusWord(status: Change["status"]): string {
-  if (status === "queued") return "Waiting for a free slot";
-  if (status === "asking") return "Paused for your answer";
-  if (status === "cap_hit") return "Stopped on the dollar cap";
-  if (status === "needs_dan") return "Stopped after 3 review rounds";
+function statusWord(change: Change): string {
+  if (change.status === "queued") return "Waiting for a free slot";
+  if (change.status === "asking") return "Paused for your answer";
+  if (change.status === "cap_hit") return "Stopped on the dollar cap";
+  if (change.status === "needs_dan" && change.stage === "ci") return "Stopped after 3 CI attempts";
+  if (change.status === "needs_dan") return "Stopped after 3 review rounds";
+  if (change.status === "watching_ci") return "Watching GitHub checks";
+  if (change.status === "fixing_ci") return "Fixing failed checks";
   return "In progress";
 }

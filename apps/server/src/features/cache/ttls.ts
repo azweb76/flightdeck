@@ -7,6 +7,8 @@ export const TTL = {
   jiraConnect: 120_000,
   claudeConfig: 120_000,
   cloneFetch: 60_000,
+  githubPulls: 60_000,
+  githubChecks: 20_000,
 } as const;
 
 export const CACHE_KEYS = {
@@ -18,6 +20,8 @@ export const CACHE_KEYS = {
   jiraAll: "jira:*",
   jiraSearchAll: "jira:search:*",
   cloneFetch: (owner: string, name: string) => `clone:fetch:${owner}/${name}`,
+  githubPulls: "gh:pulls",
+  githubChecks: (owner: string, name: string, ref: string) => `gh:checks:${owner}/${name}:${ref}`,
   jiraSearch: (site: string, email: string, jql: string) => `jira:search:${site}:${email}:${jql}`,
   jiraTest: (site: string, email: string) => `jira:test:${site}:${email}`,
 } as const;

@@ -26,6 +26,8 @@ export function seedIssues(): Issue[] {
     capApi(),
     doneWeb(),
     sortCsv(),
+    ciAsk(),
+    ciFix(),
   ];
 }
 
@@ -252,6 +254,44 @@ function sortCsv(): Issue {
       testPlan: "Start after another agent is busy.",
     }),
     url: "https://github.com/acme/web/issues/50",
+    repoSlug: "acme/web",
+  });
+}
+
+function ciAsk(): Issue {
+  return issue({
+    id: "github:acme/web#70",
+    source: "github",
+    key: "acme/web#70",
+    title: "CI keep failing after three auto-fixes",
+    body: shaped("CI keep failing after three auto-fixes", {
+      goal: "Watch CI and stop after three failed auto-fixes so Dan can decide.",
+      acceptance: "- Three CI attempts then ask.\n- Timeline shows each round.",
+      files: "apps/server/src/features/run/ci.ts",
+      approach: "Watch checks, patch, push, then ask.",
+      outOfScope: "Opening extra PRs.",
+      testPlan: "Start this issue in demo and wait for the ask.",
+    }),
+    url: "https://github.com/acme/web/issues/70",
+    repoSlug: "acme/web",
+  });
+}
+
+function ciFix(): Issue {
+  return issue({
+    id: "github:acme/web#71",
+    source: "github",
+    key: "acme/web#71",
+    title: "CI auto-fix lint on the invoices page",
+    body: shaped("CI auto-fix lint on the invoices page", {
+      goal: "Fail once, then pass on the second CI attempt.",
+      acceptance: "- Attempt 1 fails.\n- Attempt 2 passes.",
+      files: "apps/server/src/features/run/ci.ts",
+      approach: "Patch the failing check in the same worktree.",
+      outOfScope: "A third attempt.",
+      testPlan: "Start this issue in demo and watch the timeline.",
+    }),
+    url: "https://github.com/acme/web/issues/71",
     repoSlug: "acme/web",
   });
 }

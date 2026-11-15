@@ -14,7 +14,13 @@ export function AppShell() {
   const shaping = loc.pathname.startsWith("/refine") || loc.pathname.startsWith("/shape");
   const running = /^\/runs\/.+/.test(loc.pathname);
   const wide = shaping || running;
-  const value = shaping ? "/" : loc.pathname.startsWith("/runs") ? "/runs" : (NAV.find((n) => n.match.includes(loc.pathname))?.to ?? "/");
+  const value = shaping
+    ? "/"
+    : loc.pathname.startsWith("/runs")
+      ? "/runs"
+      : loc.pathname.startsWith("/prs")
+        ? "/prs"
+        : (NAV.find((n) => n.match.includes(loc.pathname))?.to ?? "/");
 
   return (
     <Box

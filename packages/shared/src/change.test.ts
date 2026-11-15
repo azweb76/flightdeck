@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extraRoundLabel, reviewRoundCaption } from "./change.ts";
+import { ciRoundCaption, extraRoundLabel, reviewRoundCaption } from "./change.ts";
 import { githubEnvFailDetail } from "./meta.ts";
 
 describe("review round captions", () => {
@@ -10,6 +10,15 @@ describe("review round captions", () => {
     expect(reviewRoundCaption(4)).not.toContain("of 3");
     expect(extraRoundLabel(4)).toBe("Follow-up after Dan answered");
     expect(extraRoundLabel(1)).toBe("Round 1");
+  });
+});
+
+describe("ci round captions", () => {
+  it("names each attempt then the give-up", () => {
+    expect(ciRoundCaption(0)).toBe("Waiting for checks");
+    expect(ciRoundCaption(2)).toBe("Attempt 2 of 3");
+    expect(ciRoundCaption(3, "needs_dan")).toBe("Stopped after 3 failed attempts");
+    expect(ciRoundCaption(4)).toBe("Follow-up after Dan answered");
   });
 });
 

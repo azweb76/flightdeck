@@ -8,7 +8,7 @@ import { log } from "./emit.ts";
 import { runLive } from "./live-run.ts";
 import { demoScenarioFor } from "./script.ts";
 import { assertPreflightGate } from "../preflight/gate.ts";
-import { currentRunEpoch, getJob, isRunCurrent, setJob } from "./jobs.ts";
+import { currentRunEpoch, getJob, isHeld, isRunCurrent, setJob } from "./jobs.ts";
 import { getChange, saveChange } from "./store.ts";
 import { insertAndClaim } from "./claim.ts";
 import { pumpQueue, setQueueStarter } from "./queue.ts";
@@ -26,8 +26,8 @@ export function waitForChange(id: string): Promise<void> {
   return getJob(id) ?? Promise.resolve();
 }
 
-export function startRunQueue(): void {
-  void pruneAllClones();
+export async function startRunQueue(): Promise<void> {
+  await pruneAllClones();
   pumpQueue();
 }
 
@@ -57,6 +57,20 @@ export async function replyChange(id: string, text: string): Promise<Change> {
   const asking = change.status === "asking";
   const fromDan = change.status === "needs_dan";
   change.ask = undefined;
+  if (fromDan && change.stage === "ci") {
+    if (/leave/i.test(text)) {
+      change.status = "done";
+      log(change, { kind: "system", title: "resume", detail: "Left the failing checks for you." });
+      saveChange(change);
+      pumpQueue();
+      return presentChange(getChange(id) ?? change);
+    }
+    log(change, { kind: "system", title: "resume", detail: "One more CI fix with your guidance." });
+    change.status = "watching_ci";
+    saveChange(change);
+    kick(id, text);
+    return presentChange(getChange(id) ?? change);
+  }
   if (fromDan) {
     log(change, {
       kind: "system",
@@ -83,7 +97,7 @@ export async function archiveChange(id: string): Promise<Change> {
   const change = getChange(id);
   if (!change) throw new Error("Change not found");
   if (change.status === "archived") return presentChange(change);
-  if (!canArchive(change.status, isInterrupted(change))) {
+  if (!canArchive(change.status, isInterrupted(change) || isHeld(change.id))) {
     throw new Error("Wait until this run pauses or finishes before archiving");
   }
   change.status = "archived";
@@ -111,12 +125,12 @@ function kick(id: string, answer?: string): void {
 
 async function drive(id: string, answer?: string, epoch = currentRunEpoch()): Promise<void> {
   if (!isRunCurrent(epoch)) return;
-  await prepareWorktree(id, epoch);
-  const change = getChange(id);
-  if (!change || !isRunCurrent(epoch)) return;
-  if (change.status === "archived" || change.status === "queued") return;
-  if (!isAgentRunning(change.status)) return;
   try {
+    await prepareWorktree(id, epoch);
+    const change = getChange(id);
+    if (!change || !isRunCurrent(epoch)) return;
+    if (change.status === "archived" || change.status === "queued") return;
+    if (!isAgentRunning(change.status)) return;
     if (process.env.FLIGHTDECK_DEMO === "1") await runDemo(change, answer, epoch);
     else await runLive(change, answer);
   } catch (err) {
@@ -138,6 +152,10 @@ async function prepareWorktree(id: string, epoch = currentRunEpoch()): Promise<v
   if (!change || change.status === "archived" || change.status === "queued") return;
   const [owner, name] = change.repoSlug.split("/");
   if (!owner || !name) return;
+  if (process.env.FLIGHTDECK_FAIL_WORKTREE === "1") {
+    process.env.FLIGHTDECK_FAIL_WORKTREE = "0";
+    throw new Error("clone or worktree failed after the slot was claimed");
+  }
   await ensureClone(owner, name);
   if (!isRunCurrent(epoch)) return;
   const fresh = getChange(id);

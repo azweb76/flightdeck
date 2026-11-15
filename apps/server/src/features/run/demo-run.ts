@@ -31,6 +31,11 @@ async function play(
 export async function runDemo(change: Change, answer?: string, epoch = currentRunEpoch()): Promise<void> {
   if (!isRunCurrent(epoch)) return;
   if (change.status === "archived" || change.status === "queued") return;
+  if (change.stage === "ci" && change.prNumber) {
+    const { watchDemoCi } = await import("./ci.ts");
+    await watchDemoCi(change, answer, epoch);
+    return;
+  }
   if (change.scenario === "cap") {
     setStage(change, "planning", "plan", "Plan");
     const halt = await play(change, capEvents(), epoch);
@@ -114,8 +119,8 @@ async function finishPr(change: Change, epoch: number): Promise<void> {
     title: "issue comment",
     detail: `Demo: would comment ${pr.url} on ${change.issueKey}.`,
   });
-  change.status = "done";
-  change.stage = "ci";
-  log(change, { kind: "system", title: "ci", detail: "CI watch is a Phase 4 placeholder." });
+  log(change, { kind: "system", title: "ci", detail: "Watching GitHub checks on the draft PR." });
   emitChange(change);
+  const { watchDemoCi } = await import("./ci.ts");
+  await watchDemoCi(change, undefined, epoch);
 }

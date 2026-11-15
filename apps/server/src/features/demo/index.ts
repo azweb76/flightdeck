@@ -10,6 +10,7 @@ import { resetDemoGithubMode } from "../github/index.ts";
 import { purgeLiveDemoRows } from "./purge.ts";
 import { seedIssues } from "./seed-issues.ts";
 import { seedDemoRuns } from "./seed-runs.ts";
+import { seedDemoPulls } from "../prs/index.ts";
 
 export { purgeLiveDemoRows };
 
@@ -25,11 +26,15 @@ export function applyDemoLifecycle(): void {
 
 export function seedDemo(): void {
   const count = (getDb().prepare("SELECT COUNT(*) AS n FROM issues").get() as { n: number }).n;
-  if (count > 0) return;
+  if (count > 0) {
+    seedDemoRuns();
+    return;
+  }
   rememberRepo("acme", "web", "/tmp/flightdeck-demo/acme/web", true);
   rememberRepo("acme", "api", "/tmp/flightdeck-demo/acme/api", true);
   for (const issue of seedIssues()) upsertIssue({ ...issue, demo: true });
   seedDemoRuns();
+  seedDemoPulls();
   pumpQueue();
 }
 
@@ -40,7 +45,7 @@ export async function resetDemo(opts: { seed: boolean }): Promise<void> {
   resetPreflightStore();
   getCache().invalidate("*");
   getDb().exec(
-    "DELETE FROM issues; DELETE FROM repos; DELETE FROM repo_favorites; DELETE FROM repo_recent; DELETE FROM shape_sessions; DELETE FROM settings; DELETE FROM change_events; DELETE FROM changes;",
+    "DELETE FROM issues; DELETE FROM repos; DELETE FROM repo_favorites; DELETE FROM repo_recent; DELETE FROM shape_sessions; DELETE FROM settings; DELETE FROM change_events; DELETE FROM changes; DELETE FROM pull_requests;",
   );
   if (opts.seed) {
     process.env.FLIGHTDECK_SEED = "1";

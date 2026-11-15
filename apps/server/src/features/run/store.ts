@@ -28,6 +28,7 @@ type ChangeRow = {
   created_at: string;
   updated_at: string;
   demo?: number;
+  ci_round?: number;
 };
 
 type EventRow = {
@@ -65,6 +66,7 @@ export function insertChange(
     branch,
     planText: "",
     costUsd: 0,
+    ciRound: 0,
     scenario,
     events: [],
     createdAt: now,
@@ -74,8 +76,8 @@ export function insertChange(
   getDb()
     .prepare(
       `INSERT INTO changes (id, issue_id, issue_key, issue_source, issue_url, repo_slug, title, issue_body, status, stage,
-        review_round, worktree_path, branch, plan_text, cost_usd, pr_url, pr_number, scenario, ask_json, created_at, updated_at, demo)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        review_round, worktree_path, branch, plan_text, cost_usd, pr_url, pr_number, scenario, ask_json, created_at, updated_at, demo, ci_round)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
       change.id,
@@ -100,6 +102,7 @@ export function insertChange(
       change.createdAt,
       change.updatedAt,
       change.demo ? 1 : 0,
+      change.ciRound,
     );
   return change;
 }
@@ -139,7 +142,7 @@ export function saveChange(change: Change): void {
   getDb()
     .prepare(
       `UPDATE changes SET status=?, stage=?, review_round=?, worktree_path=?, branch=?, plan_text=?, cost_usd=?,
-        pr_url=?, pr_number=?, scenario=?, ask_json=?, issue_body=?, updated_at=? WHERE id=?`,
+        pr_url=?, pr_number=?, scenario=?, ask_json=?, issue_body=?, updated_at=?, ci_round=? WHERE id=?`,
     )
     .run(
       change.status,
@@ -155,6 +158,7 @@ export function saveChange(change: Change): void {
       change.ask ? JSON.stringify(change.ask) : null,
       change.issueBody,
       change.updatedAt,
+      change.ciRound,
       change.id,
     );
 }
@@ -233,6 +237,7 @@ function fromRow(row: ChangeRow, events: ChangeEvent[]): Change {
     status: row.status,
     stage: row.stage,
     reviewRound: row.review_round,
+    ciRound: row.ci_round ?? 0,
     worktreePath: row.worktree_path,
     branch: row.branch,
     planText: row.plan_text,

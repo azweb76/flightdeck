@@ -45,6 +45,26 @@ describe("worktrees", () => {
     expect(branches.stdout).not.toContain(a.branch);
     expect(branches.stdout).not.toContain(b.branch);
   });
+
+  it("retries worktree remove after prune when the first remove fails", async () => {
+    delete process.env.FLIGHTDECK_DEMO;
+    const repo = mkdtempSync(join(tmpdir(), "fd-wt-retry-"));
+    await gitInit(repo);
+    const wt = nestedWorktree(repo, "change-retry");
+    await addWorktree(repo, wt.path, wt.branch);
+    let removes = 0;
+    const exec = async (cmd: string, args: string[], opts?: { cwd?: string; timeoutMs?: number }) => {
+      if (cmd === "git" && args[0] === "worktree" && args[1] === "remove") {
+        removes += 1;
+        if (removes === 1) return { code: 1, stdout: "", stderr: "locked" };
+      }
+      return defaultExec(cmd, args, opts);
+    };
+    await removeWorktree(repo, wt.path, wt.branch, exec);
+    expect(removes).toBe(2);
+    const after = await defaultExec("git", ["worktree", "list"], { cwd: repo });
+    expect(after.stdout).not.toContain(wt.path);
+  });
 });
 
 async function gitInit(repo: string): Promise<void> {

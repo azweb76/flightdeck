@@ -14,5 +14,5 @@ const app = createApp();
 
 serve({ fetch: app.fetch, hostname, port }, (info) => {
   console.info(`Flightdeck API http://${info.address}:${info.port}`);
-  startRunQueue();
+  void startRunQueue();
 });

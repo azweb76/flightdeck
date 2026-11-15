@@ -23,6 +23,14 @@ Plan (app only): ${change.planText}${guidance}
 Do not commit the plan file.`;
 }
 
+export function ciFixPrompt(change: Change, summary: string, answer?: string): string {
+  const guidance = answer ? `\nDan answered: ${answer}` : "";
+  return `CI failed on the draft PR. Fix the failures in this worktree and keep tests, lint, typecheck, and build passing.
+${issueContext(change)}
+CI: ${summary}${guidance}
+Do not commit the plan file.`;
+}
+
 export function reviewPrompt(change: Change): string {
   return `You are a fresh reviewer. You did not write this code. Check the diff against every acceptance criterion.
 ${issueContext(change)}

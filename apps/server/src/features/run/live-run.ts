@@ -24,6 +24,11 @@ export async function runLive(change: Change, answer?: string): Promise<void> {
   }
 
   if (!answer && change.status === "asking") return;
+  if (change.stage === "ci" && change.prNumber) {
+    const { watchLiveCi } = await import("./ci.ts");
+    await watchLiveCi(change, answer);
+    return;
+  }
 
   let guidance = answer;
   const extra = Boolean(answer) && change.reviewRound >= MAX_REVIEW_ROUNDS;
@@ -57,10 +62,9 @@ export async function runLive(change: Change, answer?: string): Promise<void> {
       await commentPrLink(change, pr.url);
       log(change, { kind: "system", title: "draft pr", detail: `Opened draft PR ${pr.url}` });
       log(change, { kind: "system", title: "issue comment", detail: `Commented ${pr.url} on ${change.issueKey}.` });
-      change.status = "done";
-      change.stage = "ci";
-      log(change, { kind: "system", title: "ci", detail: "CI watch is a Phase 4 placeholder." });
       emitChange(change);
+      const { watchLiveCi } = await import("./ci.ts");
+      await watchLiveCi(change);
       return;
     }
     if (next === "needs_dan") {

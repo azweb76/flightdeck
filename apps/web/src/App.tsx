@@ -3,6 +3,8 @@ import { AppShell } from "./layout/AppShell.tsx";
 import { ChangePage } from "./pages/ChangePage.tsx";
 import { IssuesPage } from "./pages/IssuesPage.tsx";
 import { PlaceholderPage } from "./pages/PlaceholderPage.tsx";
+import { MyPrsPage } from "./pages/MyPrsPage.tsx";
+import { PrDetailPage } from "./pages/PrDetailPage.tsx";
 import { RunsPage } from "./pages/RunsPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { ShapePage } from "./pages/ShapePage.tsx";
@@ -17,16 +19,8 @@ export function App() {
           <Route path="/issues" element={<IssuesPage />} />
           <Route path="/runs" element={<RunsPage />} />
           <Route path="/runs/:id" element={<ChangePage />} />
-          <Route
-            path="/prs"
-            element={
-              <PlaceholderPage
-                title="My PRs"
-                phase="Phase 4"
-                detail="Draft PRs, CI watch, and auto-fix land in Phase 4."
-              />
-            }
-          />
+          <Route path="/prs" element={<MyPrsPage />} />
+          <Route path="/prs/:owner/:name/:number" element={<PrDetailPage />} />
           <Route
             path="/reviews"
             element={

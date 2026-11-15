@@ -40,7 +40,9 @@ export function ChangePage() {
       ) : null}
       {state.change.status === "needs_dan" ? (
         <ContrastAlert severity="warning" data-testid="needs-dan">
-          Review failed 3 times. Tell me how to proceed, or archive this run.
+          {state.change.stage === "ci"
+            ? "CI still fails after 3 automatic fixes. Tell me how to proceed, or archive this run."
+            : "Review failed 3 times. Tell me how to proceed, or archive this run."}
         </ContrastAlert>
       ) : null}
       {state.change.status === "cap_hit" ? (

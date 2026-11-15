@@ -1,9 +1,11 @@
 const jobs = new Map<string, Promise<void>>();
+const held = new Set<string>();
 let epoch = 0;
 
 export function bumpRunEpoch(): void {
   epoch += 1;
   jobs.clear();
+  held.clear();
 }
 
 export function currentRunEpoch(): number {
@@ -24,6 +26,14 @@ export function hasJob(id: string): boolean {
 
 export function setJob(id: string, job: Promise<void>): void {
   jobs.set(id, job);
+}
+
+export function holdSlot(id: string): void {
+  held.add(id);
+}
+
+export function isHeld(id: string): boolean {
+  return held.has(id);
 }
 
 /** Drop in-memory jobs without bumping epoch (simulates an app restart). */

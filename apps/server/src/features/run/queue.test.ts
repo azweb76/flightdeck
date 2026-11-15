@@ -95,6 +95,12 @@ describe("run queue and resume", () => {
     expect(countActive()).toBe(getSettings().maxConcurrentAgents);
   });
 
+  it("startRunQueue awaits prune then still leaves the queued seed queued", async () => {
+    const { startRunQueue } = await import("./index.ts");
+    await startRunQueue();
+    expect(listChanges().find((c) => c.issueKey === "acme/web#40")?.status).toBe("queued");
+  });
+
   it("archiving a queued run is not undone by setStage or pump", async () => {
     await clearSeededRuns();
     patchSettings({ maxConcurrentAgents: 1 });

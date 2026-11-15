@@ -9,7 +9,7 @@ test("successful run opens a draft PR", async ({ page }) => {
   await expect(page.getByTestId("transcript")).toBeVisible();
   await expect(page.getByTestId("pr-link")).toContainText("/pull/42", { timeout: 20_000 });
   await expect(page.getByTestId("change-status")).toContainText("Done");
-  await expect(page.getByTestId("stage-ci")).toContainText("Phase 4");
+  await expect(page.getByTestId("stage-caption-ci")).toContainText("Attempt 1 of 3");
   await expect(page.getByTestId("stage-pr")).toContainText("Draft PR opened");
   await expect(page.getByTestId("transcript")).toContainText("Review · Round 1");
   await expect(page.getByTestId("event-usage").first()).toBeVisible();
@@ -58,7 +58,7 @@ test("failed review rounds ask Dan", async ({ page }) => {
   await page.getByTestId("run-send").click();
   await expect(page.getByTestId("pr-link")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId("stage-review")).toContainText("Follow-up after Dan answered");
-  await expect(page.getByTestId("stage-timeline")).not.toContainText("of 3");
+  await expect(page.getByTestId("stage-caption-review")).not.toContainText("of 3");
 });
 
 test("dollar cap stops the run", async ({ page }) => {

@@ -2,6 +2,8 @@ import type {
   CatalogView,
   Change,
   Issue,
+  OwnPr,
+  PrFilter,
   SettingsView,
   SettingsPatch,
   ShapeSession,
@@ -69,4 +71,7 @@ export const api = {
     req<Change>(`/api/changes/${id}/reply`, { method: "POST", body: JSON.stringify({ text }) }),
   archiveChange: (id: string) => req<Change>(`/api/changes/${id}/archive`, { method: "POST" }),
   resumeChange: (id: string) => req<Change>(`/api/changes/${id}/resume`, { method: "POST" }),
+  myPrs: (filter: PrFilter = "all") => req<{ prs: OwnPr[] }>(`/api/prs?filter=${filter}`),
+  getPr: (owner: string, name: string, number: number) =>
+    req<OwnPr>(`/api/prs/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/${number}`),
 };

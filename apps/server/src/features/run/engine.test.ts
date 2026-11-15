@@ -31,6 +31,7 @@ describe("run engine (demo)", () => {
     delete process.env.FLIGHTDECK_DEMO;
     delete process.env.FLIGHTDECK_RUN_FAST;
     delete process.env.FLIGHTDECK_DATA_DIR;
+    delete process.env.FLIGHTDECK_FAIL_WORKTREE;
   });
 
   it("runs a successful change through review and a draft PR", async () => {
@@ -39,6 +40,8 @@ describe("run engine (demo)", () => {
     const done = getChange(started.id)!;
     expect(done.status).toBe("done");
     expect(done.prUrl).toMatch(/\/pull\/42$/);
+    expect(done.ciRound).toBe(1);
+    expect(done.events.some((e) => e.title === "ci" && /passed/i.test(e.detail ?? ""))).toBe(true);
     expect(done.reviewRound).toBe(1);
     expect(done.events.some((e) => e.title === "draft pr")).toBe(true);
     expect(done.events.some((e) => e.detail?.startsWith("Demo: would comment"))).toBe(true);
@@ -84,7 +87,9 @@ describe("run engine (demo)", () => {
     expect(resumed.events.filter((e) => e.title === "implement" && /Using your answer/.test(e.detail ?? "")).length).toBe(1);
     expect(resumed.reviewRound).toBe(4);
     expect(resumed.events.some((e) => e.kind === "stage" && e.detail === "Follow-up after Dan answered")).toBe(true);
-    expect(resumed.events.filter((e) => e.kind === "stage").every((e) => !/\bof 3\b/.test(e.detail ?? ""))).toBe(true);
+    expect(
+      resumed.events.filter((e) => e.kind === "stage" && e.title === "Review").every((e) => !/\bof 3\b/.test(e.detail ?? "")),
+    ).toBe(true);
   });
 
   it("stops when the per-run dollar cap is hit", async () => {
@@ -129,6 +134,47 @@ describe("run engine (demo)", () => {
     bumpRunEpoch();
     expect(isRunCurrent(started)).toBe(false);
     expect(isRunCurrent(currentRunEpoch())).toBe(true);
+  });
+
+  it("auto-fixes one CI failure then passes", async () => {
+    const started = await startChange("github:acme/web#71");
+    await waitForChange(started.id);
+    const done = getChange(started.id)!;
+    expect(done.status).toBe("done");
+    expect(done.ciRound).toBe(2);
+    expect(
+      done.events.filter((e) => e.kind === "stage" && /^Attempt /.test(e.detail ?? "")).map((e) => e.detail),
+    ).toEqual(["Attempt 1 of 3", "Attempt 2 of 3"]);
+    expect(done.events.some((e) => e.title === "ci fix")).toBe(true);
+  });
+
+  it("stops after 3 CI fixes and asks Dan, then one extra attempt", async () => {
+    const started = await startChange("github:acme/web#70");
+    await waitForChange(started.id);
+    const stuck = getChange(started.id)!;
+    expect(stuck.status).toBe("needs_dan");
+    expect(stuck.stage).toBe("ci");
+    expect(stuck.ciRound).toBe(3);
+    expect(stuck.ask?.prompt).toMatch(/CI still fails after 3/);
+    expect(stuck.events.filter((e) => e.kind === "stage" && /^Attempt /.test(e.detail ?? ""))).toHaveLength(3);
+    await replyChange(started.id, "Try one more fix");
+    await waitForChange(started.id);
+    const resumed = getChange(started.id)!;
+    expect(resumed.status).toBe("done");
+    expect(resumed.ciRound).toBe(4);
+    expect(resumed.events.some((e) => e.detail === "Follow-up after Dan answered")).toBe(true);
+  });
+
+  it("frees the slot when clone or worktree fails after a claim", async () => {
+    process.env.FLIGHTDECK_FAIL_WORKTREE = "1";
+    const { patchSettings } = await import("../settings/index.ts");
+    patchSettings({ maxConcurrentAgents: 1 });
+    const [a, b] = await Promise.all([startChange("github:acme/web#12"), startChange("github:acme/web#50")]);
+    await waitForChange(a.id);
+    await waitForChange(b.id);
+    const statuses = [getChange(a.id)?.status, getChange(b.id)?.status].sort();
+    expect(statuses).toEqual(["done", "error"]);
+    delete process.env.FLIGHTDECK_FAIL_WORKTREE;
   });
 
   it("resetDemo stops leftover demo writes for the old change id", async () => {

@@ -1,4 +1,5 @@
 import type { Change, ChangeAsk, Issue } from "@flightdeck/shared";
+import { holdSlot } from "../run/jobs.ts";
 import { addEvent, insertChange, listChanges, saveChange } from "../run/store.ts";
 import { nestedWorktree } from "../run/worktree.ts";
 import { demoRepoPath } from "../clone/index.ts";
@@ -6,7 +7,12 @@ import { seedIssues } from "./seed-issues.ts";
 
 export function seedDemoRuns(): void {
   if (process.env.FLIGHTDECK_DEMO !== "1") return;
-  if (listChanges().length > 0) return;
+  if (listChanges().length > 0) {
+    for (const change of listChanges()) {
+      if (change.status === "reviewing") holdSlot(change.id);
+    }
+    return;
+  }
   const byKey = new Map(seedIssues().map((issue) => [issue.key, issue]));
   seedInterrupted(byKey.get("acme/web#41"));
   seedAsking(byKey.get("acme/web#42"));
@@ -40,6 +46,7 @@ function seedReviewing(issue: Issue | undefined): void {
   change.planText = "Third worktree on acme/web holding a slot.";
   saveChange(change);
   addEvent(change, { kind: "stage", title: "review", detail: "Round 1" });
+  holdSlot(change.id);
 }
 
 function seedAsking(issue: Issue | undefined): void {
@@ -76,12 +83,18 @@ function seedDone(issue: Issue | undefined): void {
   if (!change) return;
   change.stage = "ci";
   change.reviewRound = 1;
+  change.ciRound = 2;
   change.costUsd = 0.65;
   change.prUrl = "https://github.com/acme/web/pull/44";
   change.prNumber = 44;
   change.planText = "CSV export shipped.";
   saveChange(change);
   addEvent(change, { kind: "system", title: "draft pr", detail: "Opened draft PR https://github.com/acme/web/pull/44" });
+  addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 1 of 3" });
+  addEvent(change, { kind: "system", title: "ci", detail: "CI failed on attempt 1." });
+  addEvent(change, { kind: "text", title: "ci fix", detail: "Patching the failing check in this worktree." });
+  addEvent(change, { kind: "stage", title: "CI", detail: "Attempt 2 of 3" });
+  addEvent(change, { kind: "system", title: "ci", detail: "All checks passed." });
 }
 
 function base(issue: Issue | undefined, scenario: string, status: Change["status"]): Change | undefined {

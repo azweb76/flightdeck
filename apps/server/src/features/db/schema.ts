@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export const CREATE_SQL = `
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -66,6 +66,22 @@ export const CREATE_SQL = `
     scenario TEXT,
     ask_json TEXT,
     created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    demo INTEGER NOT NULL DEFAULT 0,
+    ci_round INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS pull_requests (
+    id TEXT PRIMARY KEY,
+    repo_slug TEXT NOT NULL,
+    number INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL DEFAULT '',
+    draft INTEGER NOT NULL DEFAULT 1,
+    ci TEXT NOT NULL DEFAULT 'unknown',
+    review TEXT NOT NULL DEFAULT 'none',
+    ci_round INTEGER NOT NULL DEFAULT 0,
+    needs_you INTEGER NOT NULL DEFAULT 0,
+    change_id TEXT,
     updated_at TEXT NOT NULL,
     demo INTEGER NOT NULL DEFAULT 0
   );
@@ -149,6 +165,22 @@ export const TABLE_COLUMNS: Record<string, { name: string; addSql: string }[]> =
     { name: "scenario", addSql: "scenario TEXT" },
     { name: "ask_json", addSql: "ask_json TEXT" },
     { name: "created_at", addSql: "created_at TEXT NOT NULL DEFAULT ''" },
+    { name: "updated_at", addSql: "updated_at TEXT NOT NULL DEFAULT ''" },
+    { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
+    { name: "ci_round", addSql: "ci_round INTEGER NOT NULL DEFAULT 0" },
+  ],
+  pull_requests: [
+    { name: "id", addSql: "id TEXT" },
+    { name: "repo_slug", addSql: "repo_slug TEXT NOT NULL DEFAULT ''" },
+    { name: "number", addSql: "number INTEGER NOT NULL DEFAULT 0" },
+    { name: "title", addSql: "title TEXT NOT NULL DEFAULT ''" },
+    { name: "url", addSql: "url TEXT NOT NULL DEFAULT ''" },
+    { name: "draft", addSql: "draft INTEGER NOT NULL DEFAULT 1" },
+    { name: "ci", addSql: "ci TEXT NOT NULL DEFAULT 'unknown'" },
+    { name: "review", addSql: "review TEXT NOT NULL DEFAULT 'none'" },
+    { name: "ci_round", addSql: "ci_round INTEGER NOT NULL DEFAULT 0" },
+    { name: "needs_you", addSql: "needs_you INTEGER NOT NULL DEFAULT 0" },
+    { name: "change_id", addSql: "change_id TEXT" },
     { name: "updated_at", addSql: "updated_at TEXT NOT NULL DEFAULT ''" },
     { name: "demo", addSql: "demo INTEGER NOT NULL DEFAULT 0" },
   ],

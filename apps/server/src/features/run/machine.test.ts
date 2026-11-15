@@ -24,6 +24,8 @@ describe("run state machine", () => {
     expect(canArchive("implementing", true)).toBe(true);
     expect(occupiesSlot("asking")).toBe(true);
     expect(occupiesSlot("needs_dan")).toBe(true);
+    expect(occupiesSlot("watching_ci")).toBe(true);
+    expect(occupiesSlot("fixing_ci")).toBe(true);
     expect(occupiesSlot("queued")).toBe(false);
   });
 
@@ -43,6 +45,8 @@ describe("run state machine", () => {
     expect(demoScenarioFor({ key: "acme/web#15", title: "Clarify CSV refund rows" })).toBe("ask");
     expect(demoScenarioFor({ key: "acme/web#21", title: "Add retry to webhook handler" })).toBe("fail-review");
     expect(demoScenarioFor({ key: "acme/api#8", title: "Spend-cap sensitive refactor" })).toBe("cap");
+    expect(demoScenarioFor({ key: "acme/web#70", title: "CI keep failing after three auto-fixes" })).toBe("ci-ask");
+    expect(demoScenarioFor({ key: "acme/web#71", title: "CI auto-fix lint on the invoices page" })).toBe("ci-fix");
   });
 
   it("uses fail-review notes that match the demo issue", () => {

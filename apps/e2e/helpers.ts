@@ -44,15 +44,25 @@ export async function raiseConcurrent(page: Page, n = 10): Promise<void> {
 export async function archiveAllChanges(page: Page): Promise<void> {
   const apiPort = process.env.FLIGHTDECK_PORT ?? "47421";
   const api = `http://127.0.0.1:${apiPort}`;
-  const body = (await (await page.request.get(`${api}/api/changes`)).json()) as {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const body = (await (await page.request.get(`${api}/api/changes`)).json()) as {
+      changes: { id: string; status: string }[];
+    };
+    const open = body.changes.filter((c) => c.status !== "archived");
+    if (open.length === 0) return;
+    const queued = open.filter((c) => c.status === "queued");
+    const rest = open.filter((c) => c.status !== "queued");
+    let archived = 0;
+    for (const change of [...queued, ...rest]) {
+      const res = await page.request.post(`${api}/api/changes/${change.id}/archive`);
+      if (res.ok()) archived += 1;
+    }
+    if (archived === 0) await page.waitForTimeout(50);
+  }
+  const left = (await (await page.request.get(`${api}/api/changes`)).json()) as {
     changes: { id: string; status: string }[];
   };
-  const queued = body.changes.filter((c) => c.status === "queued");
-  const rest = body.changes.filter((c) => c.status !== "queued");
-  for (const change of [...queued, ...rest]) {
-    const res = await page.request.post(`${api}/api/changes/${change.id}/archive`);
-    expect(res.ok()).toBeTruthy();
-  }
+  expect(left.changes.every((c) => c.status === "archived")).toBeTruthy();
 }
 
 export async function openRepoPicker(page: Page): Promise<void> {
