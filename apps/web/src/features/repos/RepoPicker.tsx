@@ -1,5 +1,5 @@
 import Refresh from "@mui/icons-material/Refresh";
-import { IconButton, Stack, TextField, Tooltip, Typography } from "@mui/material";
+import { Button, IconButton, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { filterCatalog, nextActive } from "./filter.ts";
 import { RepoList } from "./RepoList.tsx";
@@ -41,6 +41,7 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
         error={catalog.error}
         detail={catalog.catalog?.detail}
         empty={!catalog.loading && sections.slugs.length === 0}
+        onRefresh={() => void catalog.refresh()}
       />
       <RepoList
         sections={sections}
@@ -92,7 +93,13 @@ function SearchBar(props: {
   );
 }
 
-function PickerStatus(props: { loading: boolean; error?: string; detail?: string; empty: boolean }) {
+function PickerStatus(props: {
+  loading: boolean;
+  error?: string;
+  detail?: string;
+  empty: boolean;
+  onRefresh: () => void;
+}) {
   if (props.loading) {
     return (
       <Typography color="text.secondary" data-testid="repo-picker-loading">
@@ -102,9 +109,12 @@ function PickerStatus(props: { loading: boolean; error?: string; detail?: string
   }
   if (props.error) {
     return (
-      <Typography color="error" data-testid="repo-picker-error">
-        {props.error}
-      </Typography>
+      <Stack direction="row" gap={1} alignItems="center" data-testid="repo-picker-error">
+        <Typography color="error">{props.error}</Typography>
+        <Button size="small" onClick={props.onRefresh} data-testid="repo-picker-error-refresh">
+          Refresh
+        </Button>
+      </Stack>
     );
   }
   if (props.detail) {
