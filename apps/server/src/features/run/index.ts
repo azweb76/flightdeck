@@ -14,6 +14,7 @@ import { insertAndClaim } from "./claim.ts";
 import { pumpQueue, setQueueStarter } from "./queue.ts";
 import { isInterrupted, presentChange } from "./view.ts";
 import { addWorktree, pruneAllClones, removeWorktree } from "./worktree.ts";
+import { abortCiWatch } from "./ci.ts";
 
 export { dailySpendUsd, getChange, listChanges } from "./store.ts";
 export { bumpRunEpoch, dropJobs } from "./jobs.ts";
@@ -102,6 +103,7 @@ export async function archiveChange(id: string): Promise<Change> {
   }
   change.status = "archived";
   saveChange(change);
+  abortCiWatch(id);
   try {
     await stripWorktree(change);
   } catch (err) {

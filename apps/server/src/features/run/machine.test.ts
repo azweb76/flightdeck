@@ -19,6 +19,7 @@ describe("run state machine", () => {
     expect(canArchive("done")).toBe(true);
     expect(canArchive("cap_hit")).toBe(true);
     expect(canArchive("queued")).toBe(true);
+    expect(canArchive("watching_ci")).toBe(true);
     expect(canArchive("archived")).toBe(false);
     expect(canArchive("implementing")).toBe(false);
     expect(canArchive("implementing", true)).toBe(true);

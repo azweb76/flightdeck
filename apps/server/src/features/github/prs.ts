@@ -22,6 +22,18 @@ export async function createDraftPr(
   return { number: res.data.number, url: res.data.html_url };
 }
 
+export async function getPullState(
+  token: string,
+  fetchFn: FetchFn,
+  owner: string,
+  name: string,
+  number: number,
+): Promise<{ state: string; merged: boolean }> {
+  const octokit = createOctokit(token, fetchFn);
+  const res = await githubCall(() => octokit.rest.pulls.get({ owner, repo: name, pull_number: number }));
+  return { state: String(res.data.state ?? "open"), merged: Boolean(res.data.merged) };
+}
+
 export async function commentIssue(
   token: string,
   fetchFn: FetchFn,

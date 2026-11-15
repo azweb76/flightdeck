@@ -1,6 +1,5 @@
 import { MAX_CI_ROUNDS, ciRoundCaption, extraRoundLabel, type Change } from "@flightdeck/shared";
 import { detectClaudeConfig, claudeSdkEnv } from "../claude/index.ts";
-import { commitChecks } from "../github/checks.ts";
 import { resolveGithubToken } from "../github/token.ts";
 import { getSettings } from "../settings/index.ts";
 import { getAgentDriver, type AgentEvent } from "../agent/index.ts";
@@ -8,7 +7,12 @@ import { applyAgentEvent, emitChange, log, setStage } from "./emit.ts";
 import { ciLimit } from "./machine.ts";
 import { ciFixPrompt } from "./prompts.ts";
 import { currentRunEpoch, isRunCurrent } from "./jobs.ts";
+import { getChange } from "./store.ts";
 import { commitAll, pushBranch, runGates } from "./worktree.ts";
+import { attachCiPoll, detachCiPoll, waitForChecks, type CiPollDeps } from "./ci-poll.ts";
+
+export type { CiPollDeps };
+export { abortCiWatch } from "./ci-poll.ts";
 
 export async function watchDemoCi(change: Change, answer?: string, epoch = currentRunEpoch()): Promise<void> {
   const extra = Boolean(answer) && change.ciRound >= MAX_CI_ROUNDS;
@@ -49,7 +53,7 @@ export async function watchDemoCi(change: Change, answer?: string, epoch = curre
   }
 }
 
-export async function watchLiveCi(change: Change, answer?: string): Promise<void> {
+export async function watchLiveCi(change: Change, answer?: string, deps: CiPollDeps = {}): Promise<void> {
   const extra = Boolean(answer) && change.ciRound >= MAX_CI_ROUNDS;
   const limit = ciLimit(change.ciRound, extra);
   const token = await resolveGithubToken();
@@ -65,33 +69,48 @@ export async function watchLiveCi(change: Change, answer?: string): Promise<void
     emitChange(change);
     return;
   }
-  while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing") {
-    if (change.ciPhase === "fixing") {
-      await fixLiveCi(change, "Resuming the in-flight CI fix.", answer);
+  const ac = attachCiPoll(change.id);
+  try {
+    while (change.ciRound < limit || change.ciPhase === "watching" || change.ciPhase === "fixing") {
+      if (ac.signal.aborted) return;
+      if (change.ciPhase === "fixing") {
+        await fixLiveCi(change, "Resuming the in-flight CI fix.", answer);
+        change.ciPhase = "";
+        emitChange(change);
+        answer = undefined;
+        continue;
+      }
+      beginWatch(change);
+      const result = await waitForChecks(token.token, owner, name, change.branch, change, ac.signal, deps);
+      if (result.state === "stopped") {
+        log(change, { kind: "system", title: "ci", detail: result.summary });
+        const fresh = getChange(change.id);
+        if (fresh?.status === "archived") return;
+        change.ciPhase = "";
+        change.status = "done";
+        emitChange(change);
+        return;
+      }
+      log(change, { kind: "system", title: "ci", detail: result.summary });
+      if (result.state === "passing") {
+        change.ciPhase = "";
+        change.status = "done";
+        emitChange(change);
+        return;
+      }
+      if (change.ciRound >= limit) {
+        askCi(change);
+        return;
+      }
+      change.ciPhase = "fixing";
+      emitChange(change);
+      await fixLiveCi(change, result.summary, answer);
       change.ciPhase = "";
       emitChange(change);
       answer = undefined;
-      continue;
     }
-    beginWatch(change);
-    const result = await waitForChecks(token.token, owner, name, change.branch);
-    log(change, { kind: "system", title: "ci", detail: result.summary });
-    if (result.state === "passing") {
-      change.ciPhase = "";
-      change.status = "done";
-      emitChange(change);
-      return;
-    }
-    if (change.ciRound >= limit) {
-      askCi(change);
-      return;
-    }
-    change.ciPhase = "fixing";
-    emitChange(change);
-    await fixLiveCi(change, result.summary, answer);
-    change.ciPhase = "";
-    emitChange(change);
-    answer = undefined;
+  } finally {
+    detachCiPoll(change.id);
   }
 }
 
@@ -149,16 +168,6 @@ async function fixLiveCi(change: Change, summary: string, answer?: string): Prom
   if (!gates.ok) return;
   await commitAll(cwd, `flightdeck: ${change.issueKey} CI fix ${change.ciRound}`);
   await pushBranch(cwd, change.branch);
-}
-
-async function waitForChecks(token: string, owner: string, name: string, ref: string) {
-  for (let i = 0; i < 40; i += 1) {
-    const result = await commitChecks(token, fetch, owner, name, ref, { fresh: true });
-    if (result.state !== "pending") return result;
-    if (process.env.FLIGHTDECK_RUN_FAST === "1") return result;
-    await new Promise((r) => setTimeout(r, 15_000));
-  }
-  return { state: "failing" as const, sha: ref, summary: "Timed out waiting for CI." };
 }
 
 async function collectFix(change: Change, prompt: string, cwd: string, model: string, env: NodeJS.ProcessEnv): Promise<void> {

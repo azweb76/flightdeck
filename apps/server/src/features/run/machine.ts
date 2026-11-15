@@ -42,7 +42,7 @@ export function occupiesSlot(status: ChangeStatus): boolean {
 
 export function canArchive(status: ChangeStatus, interrupted = false): boolean {
   if (status === "archived") return false;
-  if (interrupted || status === "queued") return true;
+  if (interrupted || status === "queued" || status === "watching_ci") return true;
   return !isAgentRunning(status);
 }
 

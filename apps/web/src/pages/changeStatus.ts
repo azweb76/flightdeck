@@ -46,9 +46,7 @@ export function chipSx(status: ChangeStatus, interrupted = false): SxProps<Theme
 
 export function archiveDisabled(status: ChangeStatus, interrupted = false): boolean {
   if (interrupted || status === "queued") return false;
-  return ["planning", "implementing", "reviewing", "opening_pr", "watching_ci", "fixing_ci", "archived"].includes(
-    status,
-  );
+  return ["planning", "implementing", "reviewing", "opening_pr", "fixing_ci", "archived"].includes(status);
 }
 
 export function statusChip(status: ChangeStatus, interrupted = false): string {
