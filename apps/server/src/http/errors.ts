@@ -2,8 +2,10 @@ import { HTTPException } from "hono/http-exception";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { ZodError } from "zod";
+import { PreflightBlockedError } from "../features/preflight/gate.ts";
 
 export function onError(err: Error, c: Context): Response | Promise<Response> {
+  if (err instanceof PreflightBlockedError) return c.json({ error: err.message }, 409);
   const status = (err instanceof HTTPException ? err.status : 400) as ContentfulStatusCode;
   return c.json({ error: friendly(err) }, status);
 }

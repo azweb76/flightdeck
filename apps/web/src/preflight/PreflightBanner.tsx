@@ -1,3 +1,4 @@
+import { stayOffCopy } from "@flightdeck/shared";
 import { Button, Divider, Paper, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 import { ContrastAlert } from "../ui/ContrastAlert.tsx";
@@ -21,8 +22,8 @@ export function PreflightBanner() {
           Re-check
         </Button>
       </Stack>
-      <ContrastAlert sx={{ mb: 2 }}>
-        Flightdeck can still run, but Refine and GitHub save stay off until the required tools are ready.
+      <ContrastAlert sx={{ mb: 2 }} data-testid="preflight-stay-off">
+        {stayOffCopy(report)}
       </ContrastAlert>
       {failed.map((check, i) => (
         <BoxBlock key={check.id} divider={i > 0}>

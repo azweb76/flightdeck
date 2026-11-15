@@ -15,6 +15,8 @@ test("github-only failure still opens the repo picker empty state", async ({ pag
   await expect(page.getByTestId("new-idea")).toBeEnabled();
   await expect(page.getByTestId("refine-PROJ-150")).toBeEnabled();
   await expect(page.getByTestId("start-PROJ-150")).toBeDisabled();
+  await expect(page.getByTestId("preflight-stay-off")).toContainText("Start and GitHub save stay off");
+  await expect(page.getByTestId("preflight-stay-off")).not.toContainText("Refine");
   await page.getByTestId("new-idea").click();
   await expect(page.getByTestId("repo-picker-detail")).toContainText("Add a GitHub token in Settings");
   await expect(page.getByTestId("repo-all")).toHaveCount(0);

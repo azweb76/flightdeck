@@ -6,6 +6,7 @@ import { rememberRepo } from "../clone/index.ts";
 import { setFavorite, touchRecent } from "../catalog/stars.ts";
 import { closeDb, getDb, resetDbForTests } from "../db/index.ts";
 import { loadIssues, upsertIssue } from "../issues/store.ts";
+import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { startChange, waitForChange } from "../run/index.ts";
 import { listChanges } from "../run/store.ts";
 import { getSettings, patchSettings } from "../settings/index.ts";
@@ -58,6 +59,8 @@ describe("purgeLiveDemoRows", () => {
 
   it("clears demo save, session, run, and clone after leaving demo mode", async () => {
     process.env.FLIGHTDECK_DEMO = "1";
+    resetPreflightStore();
+    await runChecks();
     const session = await startShape({ repoSlug: "acme/web", idea: "CSV export" });
     await replyShape(session.id, "Backend API");
     await saveShapedIssue(session.id, "github", { repoSlug: "acme/web" });

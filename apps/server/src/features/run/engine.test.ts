@@ -5,20 +5,24 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, getDb, resetDbForTests } from "../db/index.ts";
 import { seedDemo } from "../demo/index.ts";
 import { upsertIssue } from "../issues/store.ts";
+import { resetPreflightStore, runChecks } from "../preflight/index.ts";
 import { archiveChange, dailySpendUsd, getChange, startChange, waitForChange, replyChange } from "./index.ts";
 
 describe("run engine (demo)", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.FLIGHTDECK_DEMO = "1";
     process.env.FLIGHTDECK_RUN_FAST = "1";
     const dir = mkdtempSync(join(tmpdir(), "fd-run-"));
     process.env.FLIGHTDECK_DATA_DIR = dir;
     resetDbForTests(join(dir, "app.sqlite"));
     seedDemo();
+    resetPreflightStore();
+    await runChecks();
   });
 
   afterEach(() => {
     closeDb();
+    resetPreflightStore();
     delete process.env.FLIGHTDECK_DEMO;
     delete process.env.FLIGHTDECK_RUN_FAST;
     delete process.env.FLIGHTDECK_DATA_DIR;

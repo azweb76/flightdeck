@@ -8,6 +8,7 @@ import { runDemo } from "./demo-run.ts";
 import { log } from "./emit.ts";
 import { runLive } from "./live-run.ts";
 import { demoScenarioFor } from "./script.ts";
+import { assertPreflightGate } from "../preflight/gate.ts";
 import { countActive, findActiveForIssue, getChange, insertChange, saveChange } from "./store.ts";
 import { addWorktree, demoWorktree, removeWorktree } from "./worktree.ts";
 
@@ -20,6 +21,7 @@ export function waitForChange(id: string): Promise<void> {
 }
 
 export async function startChange(issueId: string): Promise<Change> {
+  assertPreflightGate("start");
   const existing = findActiveForIssue(issueId);
   if (existing) return existing;
   const issue = loadIssue(issueId);

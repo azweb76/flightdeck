@@ -1,4 +1,5 @@
 import { draftToMarkdown, markdownToDraft, type ChatMessage, type ShapeSession } from "@flightdeck/shared";
+import { assertPreflightGate } from "../preflight/gate.ts";
 import { getAgentDriver, type AgentEvent } from "../agent/index.ts";
 import { detectClaudeConfig, claudeSdkEnv } from "../claude/index.ts";
 import { ensureClone } from "../clone/index.ts";
@@ -13,6 +14,7 @@ export { getSession } from "./session.ts";
 export { saveShapedIssue } from "./save.ts";
 
 export async function startShape(input: { repoSlug: string; issueId?: string; idea?: string }): Promise<ShapeSession> {
+  assertPreflightGate("refine");
   const [owner, name] = input.repoSlug.split("/");
   if (!owner || !name) throw new Error("Pick a repo as owner/name");
   if (!input.issueId && !input.idea?.trim()) throw new Error("Write an idea first");

@@ -8,6 +8,7 @@ export {
   toReport,
 } from "./report.ts";
 export { runStartupPreflight } from "./startup.ts";
+export { assertPreflightGate, PreflightBlockedError } from "./gate.ts";
 export { formatPreflight, printPreflight } from "./print.ts";
 export { demoPreflightFixture, setDemoPreflightFixture, resetDemoPreflightFixture } from "./demo.ts";
 export { checkNode, nodeTooOld } from "./check-node.ts";
