@@ -163,6 +163,14 @@ Replaces the flat Issues cards and the separate Refine screen.
 - **Change markers:** sections Claude changed in its last turn show "Changed" with a one-click view of the previous text. Claude's open questions show as a count on the draft.
 - **Build order (small commits):** state chip and repo column; unified issue page with checklist and Start state; editable sections with change markers; locked sections and suggestions.
 
+### Jira options (decided 15 Nov 2026, not built yet)
+- **Listing:** Jira issues assigned to me, same shape as GitHub's assigned-issues list. Same 60s TTL cache and Refresh.
+- **State chip:** comes from Flightdeck's own state, and the Jira status shows as a small secondary label.
+- **Transitions:** Flightdeck also moves the Jira issue as a run advances (for example Start, PR opened, merged). Each Jira project has a mapping in Settings from Flightdeck event to Jira transition. With no mapping for a project, nothing is transitioned. A failed transition (missing permission, workflow guard) shows on the change timeline and never fails or stops the run. Transitions run only for Started Flightdeck changes, never from just viewing or refining.
+- **Saving:** the first save to Jira for a repo asks for project and issue type, then remembers them as that repo's default. Later saves use the default and can be changed in the save dialog.
+- **Fields:** the description holds all six sections as headed content. The issue page can also set labels, priority, components and epic or parent. The repo link stays a `repo:org/repo` label. Acceptance criteria stay in the description, with no custom-field discovery.
+- **Open:** exact set of Flightdeck events that trigger transitions, and whether a status change made in Jira by hand should pause or cancel a queued run.
+
 ## Screens
 - Home: My issues, ready to refine or start.
 - Nav pages: Issues, Runs, My PRs, Reviews, Settings.
