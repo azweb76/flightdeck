@@ -75,18 +75,18 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 | Call | TTL | Invalidation |
 |---|---|---|
 | Issues tracker sync (`GET /api/issues`) | 60s | `POST /api/issues/sync` (Refresh) forces a sync |
-| GitHub `GET /user` (token status) | 2 min | Settings token save/disconnect |
+| GitHub `GET /user` (token status) | 2 min | `POST /api/preflight/recheck` drops `gh:status`; token save invalidates the cache without calling GitHub |
 | GitHub assigned issues search (paginated, 100 per page) | 60s | Refresh; after GitHub issue create/update |
 | GitHub `GET /user/repos` | 5 min | — |
-| Jira JQL search | 60s | Jira settings save/connect; after Jira create/update; Refresh |
-| Jira connect `myself` | 2 min | Jira settings save/connect; after Jira create/update |
-| `detectClaudeConfig` (including apiKeyHelper) | 2 min | Settings save; Settings Re-check |
+| Jira JQL search | 60s | After Jira create/update; Refresh |
+| Jira connect `myself` | 2 min | After Jira create/update (not Settings save) |
+| `detectClaudeConfig` (including apiKeyHelper) | 2 min | `POST /api/preflight/recheck` |
 | `git fetch origin` | 60s | TTL only |
 
 `issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or GitHub 403/429 (`Retry-After`, `x-ratelimit-reset`, secondary rate limit), Octokit throttle plugins do not wait: they throw immediately so `withBackoff` owns every retry, capped at 30s, and the UI gets `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s.
 
 ## Preflight
-Startup and `pnpm preflight` run the same checks. Required failures print a one-line fix and do not crash the server (the UI can show them), except Node itself being below `package.json` `engines`. The server keeps an in-memory snapshot: `runChecks()` on startup (and after demo reset), `GET /api/preflight` returns it and never rebuilds (503 if unset), `POST /api/preflight/recheck` rebuilds after invalidating GitHub and Claude status caches, and saving a GitHub token patches only the GitHub row. `pnpm preflight` is a separate process and still runs the checks. Cache keys and logs never include secrets.
+Startup and `pnpm preflight` run the same checks. Required failures print a one-line fix and do not crash the server (the UI can show them), except Node itself being below `package.json` `engines`. The server keeps an in-memory snapshot: `runChecks()` on startup (and after demo reset), `GET /api/preflight` returns it and never rebuilds (503 if unset), `POST /api/preflight/recheck` rebuilds after dropping the `gh:status` and Claude config caches. Settings save only stores secrets (keychain or `~/.flightdeck/secrets`) — no `GET /user`, scope check, or Jira `myself`. Connectivity runs at startup and when Dan clicks Re-check on the Issues banner. `pnpm preflight` is a separate process and still runs the checks. Cache keys and logs never include secrets.
 
 | Check | Required? | Pass when | Fix if not |
 |---|---|---|---|
@@ -98,7 +98,7 @@ Startup and `pnpm preflight` run the same checks. Required failures print a one-
 | SQLite schema | required | `PRAGMA user_version` matches and columns exist | Pull latest and restart |
 | Jira | optional | skipped if unset; warn if configured without a working token | Add a Jira API token in Settings |
 
-Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report (and matching Claude/GitHub/Jira Settings cards) for screenshots and e2e. The Issues banner lists required failures with a high-contrast error alert and a Re-check button. Settings → Dependencies lists every check and also has Re-check. Shape / Save to GitHub / Start disable only when that dependency failed. Save picks GitHub/Jira from readable cards that explain why a tracker is blocked, not ghosted menu items.
+Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local SQLite file. `FLIGHTDECK_PREFLIGHT=fail` or `POST /api/demo/preflight` `{ "fixture": "fail" }` paints a failing report for screenshots and e2e. The Issues banner lists required failures with a high-contrast error alert and a Re-check button. Settings is save-only (GitHub token + source note, Jira site/email/token, Claude model, caps) with no connectivity cards. Shape / Save to GitHub / Start disable only when that dependency failed. Save picks GitHub/Jira from readable cards that explain why a tracker is blocked, not ghosted menu items.
 
 ## Screens
 - Home: My issues, ready to shape or start.
@@ -109,7 +109,7 @@ Demo mode (`FLIGHTDECK_DEMO=1`) fakes every check passing except the real local 
 
 ## Phases
 Each phase is tested by Dan on his Mac before the next starts.
-1. Goal shaping (**done**): app skeleton, Settings (Claude auth status, GitHub, Jira, repos), clone/fetch a chosen repo into the app's folder for read-only context, full-page chat where Claude reads the repo and asks questions, live issue draft with the six sections, save as a new Jira or GitHub issue (choose each time) or update an existing one, Issues home listing my issues.
+1. Goal shaping (**done**): app skeleton, Settings (GitHub token, Jira fields, Claude model, caps — no live connectivity checks), clone/fetch a chosen repo into the app's folder for read-only context, full-page chat where Claude reads the repo and asks questions, live issue draft with the six sections, save as a new Jira or GitHub issue (choose each time) or update an existing one, Issues home listing my issues.
 2. Run a change (**done in demo; live adapters wired, not live-run here**): Start, worktree, plan, implement with tests/lint/typecheck/build gates, fresh-context reviewer, loop up to 3 rounds then ask, draft PR, PR link on issue; change detail page. Caps, Runs page, and Archive are pulled forward from Phase 3 so a single change is operable. CI on the timeline is a Phase 4 placeholder.
 3. Many at once: concurrency limit across several agents (setting exists; simple guard is in), polish for parallel Runs.
 4. CI and My PRs: watch CI and auto-fix up to 3 attempts then ask; My PRs page.
