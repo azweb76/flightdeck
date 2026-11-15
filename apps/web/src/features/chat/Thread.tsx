@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Markdown } from "../markdown/index.ts";
 import type { ChatEntry } from "./entries.ts";
 
+const NEAR_BOTTOM = 48;
+
 export function Thread(props: {
   entries: ChatEntry[];
   disabled: boolean;
@@ -12,19 +14,35 @@ export function Thread(props: {
   autoScroll?: boolean;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
-  const end = useRef<HTMLDivElement>(null);
+  const stick = useRef(true);
+  const last = props.entries.at(-1);
+  const mine = last?.type === "bubble" && last.mine;
   useEffect(() => {
-    if (!props.autoScroll) return;
     const box = scroller.current;
-    if (box) box.scrollTop = box.scrollHeight;
-    end.current?.scrollIntoView({ block: "nearest" });
-  }, [props.autoScroll, props.entries.length]);
+    if (!box) return;
+    const onScroll = () => {
+      stick.current = box.scrollHeight - box.scrollTop - box.clientHeight <= NEAR_BOTTOM;
+    };
+    box.addEventListener("scroll", onScroll, { passive: true });
+    return () => box.removeEventListener("scroll", onScroll);
+  }, []);
+  useEffect(() => {
+    const box = scroller.current;
+    if (!props.autoScroll || !box) return;
+    if (!stick.current && !mine) return;
+    box.scrollTop = box.scrollHeight;
+    stick.current = true;
+  }, [props.autoScroll, props.entries.length, mine]);
   return (
-    <Stack ref={scroller} spacing={props.spacing} sx={{ flex: 1, minHeight: 0, overflow: "auto", pr: 1, pb: 3 }}>
+    <Stack
+      ref={scroller}
+      data-testid="chat-scroller"
+      spacing={props.spacing}
+      sx={{ flex: 1, minHeight: 0, overflow: "auto", pr: 1, pb: 3 }}
+    >
       {props.entries.map((entry) => (
         <Entry key={entry.id} entry={entry} disabled={props.disabled} compact={props.compact} onPick={props.onPick} />
       ))}
-      {props.autoScroll ? <div ref={end} aria-hidden style={{ height: 8, flexShrink: 0 }} /> : null}
     </Stack>
   );
 }
