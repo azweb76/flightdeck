@@ -49,7 +49,7 @@ Throughout, the agent is hands-off but can pause and ask Dan a question when stu
 - A max number of concurrent agents, set in Settings. Starts beyond the cap are queued and start automatically when a slot frees.
 - A run waiting on Dan for an answer (or after three failed reviews) keeps its slot.
 - Every change runs in its own git worktree, including several on the same repo.
-- The app clones repos into its own folder and manages worktrees.
+- The app clones repos into its own folder and manages worktrees. Live worktrees live at `<clone>/.flightdeck/<changeId>` (gitignored via `.git/info/exclude`). `git worktree prune` runs on startup; archive force-removes the worktree, prunes and retries on failure, then deletes the change branch.
 - One repo per issue.
 - Interrupted runs (process restart) stay in their stage and show one-click Resume. They keep the slot until resumed or archived.
 - An Archive button removes the worktree when done (and for queued or interrupted runs).
@@ -69,7 +69,7 @@ Throughout, the agent is hands-off but can pause and ask Dan a question when stu
 - SQLite at `~/.flightdeck/app.sqlite`. Schema version is `PRAGMA user_version` (currently 5). Startup creates missing tables and `ALTER TABLE`s missing columns (checked with `PRAGMA table_info`). An incompatible v1 database is renamed to `app.sqlite.v1-backup-<timestamp>` and replaced with a fresh v2 file — never deleted silently.
 - Claude auth: use `apiKeyHelper` and the API base URL (ANTHROPIC_BASE_URL) from the user's Claude settings (`~/.claude/settings.json`); fall back to the Claude OAuth login when no `apiKeyHelper` is set.
 - GitHub via `GITHUB_TOKEN` (then `GH_TOKEN`) in the environment, else a personal access token in Settings (Octokit; git CLI still does clone/fetch/worktree/commit/push via `GIT_ASKPASS` with the resolved token). The env token is never logged or written to the keychain. Jira Cloud via email + API token.
-- Per-run and daily dollar caps, plus a max-concurrent-agents setting.
+- Per-run and daily dollar caps (daily spend is the Mac-local calendar day, not UTC), plus a max-concurrent-agents setting. A live cap hit aborts the in-flight Claude query and stops the run with the reason shown.
 
 ## Caching
 Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`features/cache`). Failed loads are not cached. Demo mode never calls the live trackers.
@@ -107,7 +107,7 @@ Jira repo links are labels `repo:org/repo` (other labels ignored). The Issues UI
 ## Screens
 - Home: My issues, ready to refine or start.
 - Nav pages: Issues, Runs, My PRs, Reviews, Settings.
-- Change detail page: stage timeline (plan, implement, review rounds, PR, CI), live transcript, reply box. Queued and interrupted runs explain the wait; Resume continues after a restart.
+- Change detail page: stage timeline (plan, implement, review rounds, PR, CI), live transcript, reply box. Queued and interrupted runs explain the wait; Resume continues after a restart. Cap-hit uses the error banner.
 - Runs: dense live list of stage, repo, cost, elapsed time, and a clear needs-you state. Click a row for detail.
 - Goal refining: full-page chat with the issue draft updating live beside it. Shared `RepoPicker` combobox (Recent, Favorites, All). Shared `Chat` and `Markdown` components.
 - Roomier layout with generous whitespace; follows macOS light/dark. Form inputs use a small static label above the field (GitHub style), never MUI floating/notched labels.
@@ -116,6 +116,6 @@ Jira repo links are labels `repo:org/repo` (other labels ignored). The Issues UI
 Each phase is tested by Dan on his Mac before the next starts.
 1. Goal refining (**done**): app skeleton, Settings (GitHub token, Jira fields, Claude model, caps — no live connectivity checks), clone/fetch a chosen repo into the app's folder for read-only context, full-page chat where Claude reads the repo and asks questions, live issue draft with the six sections, save as a new Jira or GitHub issue (choose each time) or update an existing one, Issues home listing my issues. Schema version 5 adds `demo` on issues, repos, shape_sessions, changes, change_events, `repo_favorites`, and `repo_recent`.
 2. Run a change (**done in demo; live adapters wired, not live-run here**): Start, worktree, plan, implement with tests/lint/typecheck/build gates, fresh-context reviewer, loop up to 3 rounds then ask, draft PR, PR link on issue; change detail page. Caps, Runs page, and Archive are pulled forward from Phase 3 so a single change is operable. CI on the timeline is a Phase 4 placeholder.
-3. Many at once (**done in demo**): max concurrent agents in Settings; extra Starts queue and begin when a slot frees. A run waiting on Dan (asking or needs-Dan) keeps its slot. Each change has its own git worktree, including several on the same repo, under the app clone folder. Per-run and daily dollar caps apply across concurrent runs and stop a run with a visible reason. Runs is a live dense list (stage, repo, cost, elapsed, needs-you); a row opens change detail. Interrupted runs (app restart) show one-click Resume. Archive removes the worktree. Demo seeds queued, interrupted/running, waiting, cap-hit, and done — never outside `FLIGHTDECK_DEMO=1`.
+3. Many at once (**done in demo**): max concurrent agents in Settings; extra Starts queue and begin when a slot frees (slot vs queued is decided in one SQLite transaction at insert; `drive` no-ops unless the run is in an agent-running stage). `pumpQueue` runs after listen and after the demo seed. Demo mixed states occupy the max slots so a queued row survives that pump. A run waiting on Dan (asking or needs-Dan) keeps its slot. Each change has its own git worktree under `<clone>/.flightdeck/<changeId>`, including several on the same repo. Per-run and daily dollar caps (local day) apply across concurrent runs; a cap hit aborts the SDK query and stops with a visible reason. Runs is a live dense list (stage, repo, cost, elapsed, needs-you, Interrupted); a row opens change detail. Interrupted runs (app restart) show one-click Resume. Archive persists `archived` first, skips ids that already have a job, and removes the worktree (prune + retry, then fail visibly). Demo seeds queued, interrupted, waiting, reviewing (slot), cap-hit, and done — never outside `FLIGHTDECK_DEMO=1`.
 4. CI and My PRs: watch CI and auto-fix up to 3 attempts then ask; My PRs page.
 5. Reviews: select PRs to review, Review button, worktree at the PR commit, repo review skill or built-in default, summary plus drafted comments, approve/edit and post as one review with a verdict, chat about the PR.
