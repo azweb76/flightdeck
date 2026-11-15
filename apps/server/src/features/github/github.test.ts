@@ -34,10 +34,17 @@ describe("github octokit adapter", () => {
     expect(seen).toContain("PATCH /repos/acme/web/issues/9");
   });
 
-  it("paginates user repos", async () => {
-    const gh = createGithubClient({ token: "t", fetch: mockFetch() });
+  it("paginates user repos including org and collaborator affiliation", async () => {
+    const seen: string[] = [];
+    const gh = createGithubClient({
+      token: "t",
+      fetch: mockFetch({ onRequest: (_method, url) => seen.push(url.search) }),
+    });
     const repos = await gh.listRepos();
     expect(repos.map((r) => r.name)).toEqual(["web", "api"]);
+    expect(seen.some((q) => q.includes("affiliation=owner%2Ccollaborator%2Corganization_member") || q.includes("affiliation=owner,collaborator,organization_member"))).toBe(
+      true,
+    );
     await gh.listRepos();
   });
 

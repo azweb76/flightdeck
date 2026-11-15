@@ -1,5 +1,5 @@
 import type {
-  CatalogRepo,
+  CatalogView,
   Change,
   Issue,
   SettingsView,
@@ -30,7 +30,9 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ repoSlug }),
     }),
-  repos: () => req<{ repos: CatalogRepo[] }>("/api/repos"),
+  repos: (refresh = false) => req<CatalogView>(refresh ? "/api/repos?refresh=1" : "/api/repos"),
+  favoriteRepo: (owner: string, name: string, on: boolean) =>
+    req<CatalogView>("/api/repos/favorite", { method: "POST", body: JSON.stringify({ owner, name, on }) }),
   startShape: (body: { repoSlug: string; issueId?: string; idea?: string }) =>
     req<ShapeSession>("/api/shape", { method: "POST", body: JSON.stringify(body) }),
   getShape: (id: string) => req<ShapeSession>(`/api/shape/${id}`),

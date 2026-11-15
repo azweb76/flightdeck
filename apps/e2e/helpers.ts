@@ -22,11 +22,16 @@ export async function seedHome(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "My issues" })).toBeVisible();
 }
 
+export async function pickRepo(page: Page, slug = "acme/web"): Promise<void> {
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await page.getByTestId("repo-search").fill(slug.split("/")[1] ?? slug);
+  await page.getByTestId(`repo-option-${slug}`).first().click();
+}
+
 export async function startNewIdea(page: Page, idea = "Export invoices as CSV"): Promise<void> {
   await page.getByTestId("new-idea").click();
   await expect(page.getByRole("dialog")).toContainText("Start from a new idea");
-  await page.getByTestId("repo-select").click();
-  await page.getByRole("option", { name: "acme/web" }).click();
+  await pickRepo(page);
   await page.getByTestId("idea-input").fill(idea);
   await page.getByTestId("start-idea").click();
   await expect(page.getByTestId("chat-pane")).toBeVisible();

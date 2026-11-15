@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { answerFirstQuestion, resetDemo, seedHome, startNewIdea } from "./helpers.ts";
+import { answerFirstQuestion, pickRepo, resetDemo, seedHome, startNewIdea } from "./helpers.ts";
 
 test("empty issues home", async ({ page }) => {
   await resetDemo(page, false);
@@ -33,12 +33,29 @@ test("start from a new idea, chat, and live draft", async ({ page }) => {
   await expect(page.getByTestId("draft-testPlan")).toContainText("Unit test");
 });
 
+test("repo picker searches cache and stars favorites", async ({ page }) => {
+  await seedHome(page);
+  await page.getByTestId("refine-PROJ-150").click();
+  await expect(page.getByTestId("repo-picker")).toBeVisible();
+  await page.getByTestId("repo-star-acme/web").first().click();
+  await expect(page.getByTestId("repo-favorites")).toContainText("acme/web");
+  await page.getByTestId("repo-search").fill("mobile");
+  await expect(page.getByTestId("repo-option-acme/mobile")).toBeVisible();
+  await expect(page.getByTestId("repo-option-acme/api")).toHaveCount(0);
+  await page.getByTestId("repo-option-acme/mobile").click();
+  await page.getByTestId("confirm-repo").click();
+  await expect(page.getByTestId("chat-pane")).toBeVisible();
+  await page.goto("/");
+  await page.getByTestId("new-idea").click();
+  await expect(page.getByTestId("repo-favorites")).toContainText("acme/web");
+  await expect(page.getByTestId("repo-recent")).toContainText("acme/mobile");
+});
+
 test("start from an existing issue", async ({ page }) => {
   await seedHome(page);
-  await page.getByTestId("shape-PROJ-150").click();
+  await page.getByTestId("refine-PROJ-150").click();
   await expect(page.getByRole("dialog")).toContainText("Pick a repo");
-  await page.getByTestId("repo-select").click();
-  await page.getByRole("option", { name: "acme/web" }).click();
+  await pickRepo(page);
   await page.getByTestId("confirm-repo").click();
   await expect(page.getByTestId("chat-pane")).toBeVisible();
   await expect(page.getByTestId("draft-title")).toContainText("Invoice CSV");

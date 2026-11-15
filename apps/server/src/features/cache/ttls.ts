@@ -1,7 +1,7 @@
 export const TTL = {
   issuesSync: 60_000,
   githubStatus: 120_000,
-  githubRepos: 300_000,
+  githubRepos: 3_600_000,
   githubIssues: 60_000,
   jiraSearch: 60_000,
   jiraConnect: 120_000,
