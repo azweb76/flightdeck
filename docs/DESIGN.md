@@ -86,6 +86,7 @@ Live GitHub, Jira and Claude calls are keyed TTL caches with in-flight dedupe (`
 | `git fetch origin` | 60s | TTL only |
 | GitHub authored open PRs (`search` `is:pr is:open author:@me`) | 60s | Token save/disconnect (`gh:pulls`); `If-None-Match` / 304 |
 | GitHub combined status + check-runs for a ref | 20s | Token save/disconnect (`gh:checks:*`); CI watch refetches with `fresh` + ETag |
+| GitHub `pulls.get` (PR state for CI watch / parked slot) | 20s | Token save/disconnect (`gh:pull:*`); `If-None-Match` / 304 |
 
 `issues.updated` is published only when a sync ran and data changed, or after save / setIssueRepo — never on a GET cache hit, so the Issues page can refetch the store without looping into GitHub/Jira. On HTTP 429 (Jira `Retry-After`) or GitHub 403/429 (`Retry-After`, `x-ratelimit-reset`, secondary rate limit), Octokit throttle plugins do not wait: they throw immediately so `withBackoff` owns every retry, capped at 30s, and the UI gets `… is rate limiting, retrying in Ns`. Live GitHub/Jira rate limits were not hit while building this; the behaviour is covered by unit tests with fake 429s.
 

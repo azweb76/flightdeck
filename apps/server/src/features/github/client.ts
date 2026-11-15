@@ -56,6 +56,7 @@ function dropGithubCaches(): void {
   getCache().invalidate(CACHE_KEYS.githubRepos);
   getCache().invalidate(CACHE_KEYS.githubIssues);
   getCache().invalidate(CACHE_KEYS.githubPulls);
+  getCache().invalidate("gh:pull:*");
   getCache().invalidate("gh:checks:*");
   clearRepoCache();
 }
