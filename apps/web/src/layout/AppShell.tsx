@@ -46,9 +46,8 @@ export function AppShell() {
           </Typography>
           <Tabs
             value={value}
-            variant="scrollable"
-            scrollButtons="auto"
-            allowScrollButtonsMobile
+            variant="standard"
+            TabIndicatorProps={{ sx: { transition: "none" } }}
             sx={{ minHeight: 64, flex: 1 }}
           >
             {NAV.map((n) => (
