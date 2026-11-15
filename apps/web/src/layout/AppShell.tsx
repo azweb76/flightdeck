@@ -13,14 +13,17 @@ export function AppShell() {
   const loc = useLocation();
   const shaping = loc.pathname.startsWith("/refine") || loc.pathname.startsWith("/shape");
   const running = /^\/runs\/.+/.test(loc.pathname);
-  const wide = shaping || running;
+  const reviewing = /^\/reviews\/.+/.test(loc.pathname);
+  const wide = shaping || running || reviewing;
   const value = shaping
     ? "/"
     : loc.pathname.startsWith("/runs")
       ? "/runs"
       : loc.pathname.startsWith("/prs")
         ? "/prs"
-        : (NAV.find((n) => n.match.includes(loc.pathname))?.to ?? "/");
+        : loc.pathname.startsWith("/reviews")
+          ? "/reviews"
+          : (NAV.find((n) => n.match.includes(loc.pathname))?.to ?? "/");
 
   return (
     <Box

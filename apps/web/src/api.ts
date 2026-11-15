@@ -4,6 +4,9 @@ import type {
   Issue,
   OwnPr,
   PrFilter,
+  PrReview,
+  ReviewCommentState,
+  ReviewVerdict,
   SettingsView,
   SettingsPatch,
   ShapeSession,
@@ -74,4 +77,19 @@ export const api = {
   myPrs: (filter: PrFilter = "all") => req<{ prs: OwnPr[] }>(`/api/prs?filter=${filter}`),
   getPr: (owner: string, name: string, number: number) =>
     req<OwnPr>(`/api/prs/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/${number}`),
+  reviews: () => req<{ reviews: PrReview[] }>("/api/reviews"),
+  refreshReviews: () => req<{ reviews: PrReview[] }>("/api/reviews/refresh", { method: "POST" }),
+  getReview: (id: string) => req<PrReview>(`/api/reviews/${encodeURIComponent(id)}`),
+  selectReview: (id: string) => req<PrReview>(`/api/reviews/${encodeURIComponent(id)}/select`, { method: "POST" }),
+  startReview: (id: string) => req<PrReview>(`/api/reviews/${encodeURIComponent(id)}/start`, { method: "POST" }),
+  patchReviewComment: (id: string, commentId: string, patch: { body?: string; state?: ReviewCommentState }) =>
+    req<PrReview>(`/api/reviews/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  postReview: (id: string, event: ReviewVerdict) =>
+    req<PrReview>(`/api/reviews/${encodeURIComponent(id)}/post`, { method: "POST", body: JSON.stringify({ event }) }),
+  chatReview: (id: string, text: string) =>
+    req<PrReview>(`/api/reviews/${encodeURIComponent(id)}/chat`, { method: "POST", body: JSON.stringify({ text }) }),
+  archiveReview: (id: string) => req<PrReview>(`/api/reviews/${encodeURIComponent(id)}/archive`, { method: "POST" }),
 };
