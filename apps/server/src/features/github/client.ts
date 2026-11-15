@@ -5,6 +5,7 @@ import { GITHUB_TOKEN_ACCOUNT, createSecretStore } from "../secrets/index.ts";
 import { createDemoGithubClient } from "./demo.ts";
 import { gitClone } from "./git-auth.ts";
 import { createIssue, listAssigned, updateIssue } from "./issues.ts";
+import { clearEtags } from "./etag.ts";
 import { commentIssue, createDraftPr } from "./prs.ts";
 import { listRepos } from "./repos.ts";
 import { githubStatus, loadGithubToken } from "./status.ts";
@@ -58,5 +59,6 @@ function dropGithubCaches(): void {
   getCache().invalidate(CACHE_KEYS.githubPulls);
   getCache().invalidate("gh:pull:*");
   getCache().invalidate("gh:checks:*");
+  clearEtags();
   clearRepoCache();
 }

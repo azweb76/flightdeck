@@ -15,6 +15,10 @@ export function etagHit<T>(key: string): T | undefined {
   return remembered.get(key)?.data as T | undefined;
 }
 
+export function clearEtags(): void {
+  remembered.clear();
+}
+
 export function isNotModified(err: unknown): boolean {
   return (err as { status?: number }).status === 304;
 }
