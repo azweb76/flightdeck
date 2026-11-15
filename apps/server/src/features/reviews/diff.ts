@@ -37,15 +37,14 @@ export function linesFromPatch(path: string, patch: string): DiffLine[] {
 
 export function placeComments<T extends Omit<ReviewComment, "id"> | ReviewComment>(
   comments: T[],
-  files: { filename: string; patch?: string }[],
+  files: { filename: string; patch?: string; previous_filename?: string }[],
 ): T[] {
   const exact = new Map<string, DiffLine>();
   const byPathLine = new Map<string, DiffLine>();
   for (const file of files) {
     for (const line of linesFromPatch(file.filename, file.patch ?? "")) {
-      exact.set(key(line.path, line.line, line.side), line);
-      const pl = `${line.path}:${line.line}`;
-      if (!byPathLine.has(pl) || line.side === "RIGHT") byPathLine.set(pl, line);
+      rememberLine(exact, byPathLine, line);
+      if (file.previous_filename) rememberLine(exact, byPathLine, line, file.previous_filename);
     }
   }
   return comments.map((comment) => {
@@ -62,6 +61,17 @@ export function summaryNotes(comments: { path: string; line: number; body: strin
     "Notes not attached to the diff:",
     ...notes.map((c) => `- ${c.path}:${c.line}: ${c.body}`),
   ].join("\n");
+}
+
+function rememberLine(
+  exact: Map<string, DiffLine>,
+  byPathLine: Map<string, DiffLine>,
+  line: DiffLine,
+  alias = line.path,
+): void {
+  exact.set(key(alias, line.line, line.side), line);
+  const pl = `${alias}:${line.line}`;
+  if (!byPathLine.has(pl) || line.side === "RIGHT") byPathLine.set(pl, line);
 }
 
 function key(path: string, line: number, side: string): string {

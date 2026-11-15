@@ -28,6 +28,23 @@ describe("diff comment placement", () => {
     expect(placed[0]?.side).toBe("LEFT");
   });
 
+  it("maps a rename's previous_filename onto the new path when the line is in the patch", () => {
+    const renamed = [{ filename: "src/b.ts", previous_filename: "src/a.ts", patch: "@@ -1,1 +1,2 @@\n keep\n+added\n" }];
+    const placed = placeComments(
+      [{ path: "src/a.ts", line: 1, side: "RIGHT", body: "Moved.", state: "draft", placement: "inline" }],
+      renamed,
+    );
+    expect(placed[0]).toMatchObject({ placement: "inline", path: "src/b.ts", line: 1 });
+  });
+
+  it("folds comments on binary files with no patch into summary notes", () => {
+    const placed = placeComments(
+      [{ path: "logo.png", line: 1, side: "RIGHT", body: "Binary.", state: "draft", placement: "inline" }],
+      [{ filename: "logo.png" }],
+    );
+    expect(placed[0]?.placement).toBe("summary");
+  });
+
   it("keeps diffable comments inline and folds the rest into summary notes", () => {
     const placed = placeComments(
       [

@@ -48,4 +48,19 @@ describe("listPullFiles", () => {
     expect(files).toHaveLength(101);
     expect(files.at(-1)?.filename).toBe("b.ts");
   });
+
+  it("keeps binary files without a patch and rename previous_filename", async () => {
+    const fetchFn = (async () =>
+      new Response(
+        JSON.stringify([
+          { filename: "logo.png", status: "added" },
+          { filename: "src/b.ts", previous_filename: "src/a.ts", status: "renamed", patch: "@@ -1 +1 @@\n keep\n" },
+        ]),
+        { status: 200, headers: { "content-type": "application/json" } },
+      )) as typeof fetch;
+    const files = await listPullFiles("t", fetchFn, "acme", "web", 3);
+    expect(files[0]).toEqual({ filename: "logo.png", patch: undefined, status: "added", previous_filename: undefined });
+    expect(files[1]?.previous_filename).toBe("src/a.ts");
+    expect(files[1]?.filename).toBe("src/b.ts");
+  });
 });
