@@ -3,6 +3,7 @@ import { useMemo, useState, type HTMLAttributes, type Key, type ReactNode } from
 import { DropdownPaper, DropdownUi } from "./Dropdown.tsx";
 import { catalogOptions, type RepoOption } from "./filter.ts";
 import { OptionRow } from "./OptionRow.tsx";
+import { pickerPopper } from "./popper.ts";
 import { useRepoCatalog } from "./useRepoCatalog.ts";
 
 export function RepoPicker(props: { value: string; onChange: (slug: string) => void }) {
@@ -24,10 +25,13 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
         onRefresh: () => void catalog.refresh(),
       }}
     >
-      <Box data-testid="repo-picker">
+      <Box data-testid="repo-picker" sx={open ? { pb: "220px" } : undefined}>
         <Autocomplete
           open={open}
-          onOpen={() => setOpen(true)}
+          onOpen={() => {
+            setOpen(true);
+            queueMicrotask(() => document.querySelector("[data-testid=repo-picker]")?.scrollIntoView({ block: "start" }));
+          }}
           onClose={() => {
             setOpen(false);
             setQuery("");
@@ -38,20 +42,19 @@ export function RepoPicker(props: { value: string; onChange: (slug: string) => v
           onInputChange={(_, next, reason) => {
             if (reason === "input" || reason === "clear") setQuery(next);
           }}
-          onChange={(_, next) => {
-            if (next) props.onChange(next.slug);
-          }}
+          onChange={(_, next) => props.onChange(next?.slug ?? "")}
           filterOptions={(opts) => opts}
           groupBy={(o) => o.group}
           getOptionLabel={(o) => o.slug}
           isOptionEqualToValue={(a, b) => a.slug === b.slug}
           openOnFocus
           autoHighlight
+          disablePortal
           noOptionsText=""
           slots={{ paper: DropdownPaper }}
           slotProps={{
-            popper: { sx: { zIndex: 1500 } },
-            listbox: { sx: { maxHeight: 280, overflow: "auto" }, id: "repo-listbox" },
+            popper: pickerPopper,
+            listbox: { sx: { maxHeight: 220, overflow: "auto" }, id: "repo-listbox" },
           }}
           renderGroup={renderGroup}
           renderOption={(li, option, state) =>

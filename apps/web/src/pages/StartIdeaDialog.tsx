@@ -57,7 +57,7 @@ export function StartIdeaDialog(props: {
         </FormField>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        <Button onClick={props.onClose}>Cancel</Button>
+        <Button onMouseDown={props.onClose}>Cancel</Button>
         <GatedButton
           gate="refine"
           variant="contained"

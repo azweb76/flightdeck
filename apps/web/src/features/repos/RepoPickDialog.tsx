@@ -19,13 +19,13 @@ export function RepoPickDialog(props: {
   return (
     <Dialog open={props.open} onClose={props.onClose} fullWidth maxWidth="sm">
       <DialogTitle>{props.title ?? "Pick a repository"}</DialogTitle>
-      <DialogContent>
+      <DialogContent sx={{ minHeight: 320 }}>
         <FormField label="Repository" hint="Needed for Claude to read the code. Remembered as a repo:org/repo Jira label.">
           <RepoPicker value={repo} onChange={setRepo} />
         </FormField>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
-        <Button onClick={props.onClose}>Cancel</Button>
+        <Button onMouseDown={props.onClose}>Cancel</Button>
         <ContainedButton disabled={!repo} onClick={() => props.onPicked(repo)} data-testid="confirm-repo">
           Continue
         </ContainedButton>

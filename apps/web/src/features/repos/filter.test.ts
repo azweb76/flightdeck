@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALL_CAP, catalogOptions, filterCatalog, nextActive } from "./filter.ts";
+import { ALL_CAP, catalogOptions, filterCatalog } from "./filter.ts";
 
 const catalog = {
   favorites: ["acme/web"],
@@ -40,12 +40,3 @@ describe("catalogOptions", () => {
   });
 });
 
-describe("nextActive", () => {
-  it("moves keyboard focus through visible slugs", () => {
-    const slugs = ["a/one", "a/two"];
-    expect(nextActive(slugs, "", 1)).toBe("a/one");
-    expect(nextActive(slugs, "a/one", 1)).toBe("a/two");
-    expect(nextActive(slugs, "a/two", 1)).toBe("a/one");
-    expect(nextActive(slugs, "a/one", -1)).toBe("a/two");
-  });
-});

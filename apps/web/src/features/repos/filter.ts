@@ -38,11 +38,3 @@ export function catalogOptions(catalog: CatalogView | undefined, query: string, 
     ...sections.all.slice(0, cap).map((repo) => ({ slug: `${repo.owner}/${repo.name}`, group: "All" as const })),
   ];
 }
-
-export function nextActive(slugs: string[], current: string, delta: number): string {
-  if (!slugs.length) return "";
-  const i = slugs.indexOf(current);
-  const from = i < 0 ? (delta > 0 ? -1 : 0) : i;
-  const next = (from + delta + slugs.length) % slugs.length;
-  return slugs[next] ?? "";
-}

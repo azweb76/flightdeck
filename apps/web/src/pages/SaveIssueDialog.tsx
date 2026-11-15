@@ -77,7 +77,12 @@ export function SaveIssueDialog(props: {
         />
         <TrackerGateHint blocked={blocked} />
       </DialogContent>
-      <SaveActions busy={busy} blocked={Boolean(blocked)} onClose={props.onClose} onSave={() => void save()} />
+        <SaveActions
+          busy={busy}
+          blocked={Boolean(blocked) || !repoSlug.includes("/")}
+          onClose={props.onClose}
+          onSave={() => void save()}
+        />
     </Dialog>
   );
 }
@@ -86,7 +91,7 @@ function SaveActions(props: { busy: boolean; blocked: boolean; onClose: () => vo
   const off = props.busy || props.blocked;
   return (
     <DialogActions sx={{ px: 3, pb: 2.5 }}>
-      <Button onClick={props.onClose}>Cancel</Button>
+      <Button onMouseDown={props.onClose}>Cancel</Button>
       <ContainedButton disabled={off} onClick={props.onSave} data-testid="confirm-save">
         Save
       </ContainedButton>
