@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linesFromPatch, placeComments, summaryNotes } from "./diff.ts";
+import { githubReviewBody, linesFromPatch, placeComments, summaryNotes } from "./diff.ts";
 
 const patch = `@@ -20,4 +20,6 @@
  keep
@@ -57,5 +57,19 @@ describe("diff comment placement", () => {
     expect(placed[1]?.placement).toBe("summary");
     expect(summaryNotes(placed)).toContain("secret.md:9");
     expect(summaryNotes(placed)).not.toContain("On the diff.");
+  });
+
+  it("posts approved off-diff notes once and skips discarded ones", () => {
+    const comments = [
+      { path: "keep.md", line: 2, body: "Keep me", placement: "summary", state: "approved" },
+      { path: "gone.md", line: 1, body: "Discard me", placement: "summary", state: "discarded" },
+      { path: "a.ts", line: 1, body: "Draft", placement: "summary", state: "draft" },
+    ];
+    const baked = "Looks close.\n\nNotes not attached to the diff:\n- keep.md:2: Keep me";
+    const body = githubReviewBody(baked, comments);
+    expect(body.match(/Keep me/g)).toHaveLength(1);
+    expect(body).not.toContain("Discard me");
+    expect(body).not.toContain("Draft");
+    expect(body.startsWith("Looks close.")).toBe(true);
   });
 });

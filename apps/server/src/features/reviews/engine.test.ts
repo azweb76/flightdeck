@@ -9,7 +9,7 @@ import { setAgentDriver } from "../agent/index.ts";
 import { dropJobs, getJob } from "../run/jobs.ts";
 import { patchSettings } from "../settings/index.ts";
 import { countActive } from "../run/store.ts";
-import { countReviewing, saveReview } from "./store.ts";
+import { countReviewing, replaceComments, saveReview } from "./store.ts";
 import { archiveReview, chatReview, getReview, patchComment, postReview, selectReview, startReview } from "./engine.ts";
 import { listReviews } from "./sync.ts";
 
@@ -119,6 +119,46 @@ describe("reviews engine (demo)", () => {
       expect(postedBody.event).toBe("COMMENT");
       expect(postedBody.comments.every((c) => c.path === "src/checkout.ts")).toBe(true);
       expect(postedBody.body).toContain("internal/notes.md:3");
+      expect(postedBody.body.match(/internal\/notes\.md:3/g)).toHaveLength(1);
+    } finally {
+      globalThis.fetch = origFetch;
+      process.env.FLIGHTDECK_DEMO = origDemo;
+      delete process.env.GITHUB_TOKEN;
+    }
+  });
+
+  it("omits discarded summary notes and posts an approved one once", async () => {
+    const origDemo = process.env.FLIGHTDECK_DEMO;
+    const origFetch = globalThis.fetch;
+    process.env.GITHUB_TOKEN = "test-token";
+    delete process.env.FLIGHTDECK_DEMO;
+    const bodies: unknown[] = [];
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
+      if (url.pathname.endsWith("/files")) {
+        return new Response(JSON.stringify([{ filename: "src/checkout.ts", patch: "@@ -0,0 +1,1 @@\n+x\n" }]), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (init?.body) bodies.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify({ id: 9 }), { status: 200, headers: { "content-type": "application/json" } });
+    }) as typeof fetch;
+    try {
+      const review = getReview("github:acme/web#92")!;
+      review.summary = "Looks close.\n\nNotes not attached to the diff:\n- keep.md:2: Keep me";
+      saveReview(review);
+      replaceComments(review.id, [
+        { path: "src/checkout.ts", line: 1, side: "RIGHT", body: "On the diff.", state: "approved", placement: "inline" },
+        { path: "keep.md", line: 2, side: "RIGHT", body: "Keep me", state: "approved", placement: "summary" },
+        { path: "gone.md", line: 1, side: "RIGHT", body: "Discard me", state: "discarded", placement: "summary" },
+      ]);
+      await postReview(review.id, "COMMENT");
+      const postedBody = bodies[0] as { body: string; comments: { path: string }[] };
+      expect(postedBody.comments.map((c) => c.path)).toEqual(["src/checkout.ts"]);
+      expect(postedBody.body.match(/Keep me/g)).toHaveLength(1);
+      expect(postedBody.body).not.toContain("Discard me");
+      expect(postedBody.body).toContain("Looks close.");
     } finally {
       globalThis.fetch = origFetch;
       process.env.FLIGHTDECK_DEMO = origDemo;

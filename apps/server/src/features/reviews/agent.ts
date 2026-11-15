@@ -11,7 +11,7 @@ import { addWorktreeAtCommit, nestedWorktree } from "../run/worktree.ts";
 import { listPullFiles } from "../github/pull-files.ts";
 import { resolveGithubToken } from "../github/token.ts";
 import { parseReviewDraft } from "./parse.ts";
-import { placeComments, summaryNotes } from "./diff.ts";
+import { placeComments } from "./diff.ts";
 import { DEFAULT_REVIEW_PROMPT, detectReviewSkill } from "./skill.ts";
 import { addMessage, addReviewCost, getReview, replaceComments, saveReview } from "./store.ts";
 import { emitReview, mustReview } from "./emit.ts";
@@ -76,9 +76,8 @@ export async function applyDraft(review: PrReview, text: string): Promise<void> 
       comments = placeComments(comments, await listPullFiles(token.token, fetch, owner, name, review.number));
     }
   }
-  const notes = summaryNotes(comments);
   if (getReview(review.id)?.status === "archived") return;
-  review.summary = [parsed.summary, notes].filter(Boolean).join("\n\n");
+  review.summary = parsed.summary;
   review.comments = replaceComments(review.id, comments);
   review.status = "drafts";
   saveReview(review);

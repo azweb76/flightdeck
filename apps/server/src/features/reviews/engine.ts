@@ -5,7 +5,7 @@ import { demoRepoPath, repoPath } from "../clone/index.ts";
 import { postPullReview } from "../github/create-review.ts";
 import { listPullFiles } from "../github/pull-files.ts";
 import { resolveGithubToken } from "../github/token.ts";
-import { placeComments, summaryNotes } from "./diff.ts";
+import { githubReviewBody, placeComments } from "./diff.ts";
 import { assertPreflightGate } from "../preflight/gate.ts";
 import { abortJob, currentRunEpoch, getJob, isRunCurrent, setJob } from "../run/jobs.ts";
 import { pumpQueue, setReviewPump } from "../run/queue.ts";
@@ -82,10 +82,7 @@ export async function postReview(id: string, event: ReviewVerdict): Promise<PrRe
     comments = placeComments(comments, await listPullFiles(token.token, fetch, owner, name, review.number));
     for (const comment of comments) saveComment(id, comment);
     const inline = review.headSha ? comments.filter((c) => c.placement === "inline") : [];
-    const folded = review.headSha ? comments.filter((c) => c.placement === "summary") : comments;
-    const body = [review.summary, summaryNotes(folded.map((c) => ({ ...c, placement: "summary" })))]
-      .filter(Boolean)
-      .join("\n\n");
+    const body = githubReviewBody(review.summary, comments);
     await postPullReview(token.token, fetch, owner, name, review.number, {
       event,
       body,

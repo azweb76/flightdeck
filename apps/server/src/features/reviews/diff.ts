@@ -55,12 +55,24 @@ export function placeComments<T extends Omit<ReviewComment, "id"> | ReviewCommen
 }
 
 export function summaryNotes(comments: { path: string; line: number; body: string; placement?: string; state?: string }[]): string {
-  const notes = comments.filter((c) => c.placement === "summary" && c.state !== "discarded");
+  const notes = comments.filter((c) => c.placement === "summary" && c.state === "approved");
   if (!notes.length) return "";
   return [
     "Notes not attached to the diff:",
     ...notes.map((c) => `- ${c.path}:${c.line}: ${c.body}`),
   ].join("\n");
+}
+
+const NOTES_HEADER = "Notes not attached to the diff:";
+
+/** Claude's summary plus approved off-diff notes. Strips a baked-in notes block from older drafts. */
+export function githubReviewBody(
+  summary: string,
+  comments: { path: string; line: number; body: string; placement?: string; state?: string }[],
+): string {
+  const idx = summary.indexOf(NOTES_HEADER);
+  const claude = (idx === -1 ? summary : summary.slice(0, idx)).trim();
+  return [claude, summaryNotes(comments)].filter(Boolean).join("\n\n");
 }
 
 function rememberLine(
