@@ -6,10 +6,42 @@ describe("commit checks", () => {
   beforeEach(() => resetCacheForTests());
 
   it("summarizes pending, failing, and passing", () => {
-    expect(summarize("abc", "pending", []).state).toBe("pending");
     expect(summarize("abc", "failure", [{ status: "completed", conclusion: "failure" }]).state).toBe("failing");
     expect(summarize("abc", "success", [{ status: "completed", conclusion: "success" }]).state).toBe("passing");
     expect(summarize("abc", "pending", [{ status: "in_progress", conclusion: null }]).state).toBe("pending");
+  });
+
+  it("uses check-runs as source of truth for Actions-only repos", () => {
+    const passing = summarize(
+      "abc",
+      "pending",
+      [
+        { status: "completed", conclusion: "success" },
+        { status: "completed", conclusion: "skipped" },
+        { status: "completed", conclusion: "neutral" },
+      ],
+      [],
+    );
+    expect(passing.state).toBe("passing");
+    expect(summarize("abc", "pending", [], []).state).toBe("passing");
+  });
+
+  it("uses commit statuses when no check-runs exist", () => {
+    expect(summarize("abc", "pending", [], [{ state: "pending" }]).state).toBe("pending");
+    expect(summarize("abc", "failure", [], [{ state: "failure" }]).state).toBe("failing");
+    expect(summarize("abc", "success", [], [{ state: "success" }]).state).toBe("passing");
+  });
+
+  it("combines Actions runs with real commit statuses", () => {
+    expect(
+      summarize("abc", "pending", [{ status: "completed", conclusion: "success" }], [{ state: "pending" }]).state,
+    ).toBe("pending");
+    expect(
+      summarize("abc", "failure", [{ status: "completed", conclusion: "success" }], [{ state: "failure" }]).state,
+    ).toBe("failing");
+    expect(
+      summarize("abc", "success", [{ status: "completed", conclusion: "success" }], [{ state: "success" }]).state,
+    ).toBe("passing");
   });
 
   it("caches checks and sends If-None-Match on a fresh refetch", async () => {

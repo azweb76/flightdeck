@@ -36,7 +36,8 @@ async function loadChecks(
       ]),
     );
     const etag = String(status.headers.etag ?? runs.headers.etag ?? "");
-    const data = summarize(ref, String(status.data.state ?? ""), runs.data.check_runs ?? []);
+    const statuses = (status.data.statuses ?? []) as { state?: string }[];
+    const data = summarize(ref, String(status.data.state ?? ""), runs.data.check_runs ?? [], statuses);
     return rememberEtag(key, etag, data);
   } catch (err) {
     if (isNotModified(err)) {
@@ -47,21 +48,27 @@ async function loadChecks(
   }
 }
 
-export function summarize(
-  sha: string,
-  combined: string,
-  runs: { status?: string; conclusion?: string | null }[],
-): CommitChecks {
-  const pendingRun = runs.some((r) => r.status && r.status !== "completed");
-  const failedRun = runs.some((r) => r.conclusion === "failure" || r.conclusion === "timed_out" || r.conclusion === "cancelled");
-  if (pendingRun || combined === "pending") {
+export type CheckRun = { status?: string; conclusion?: string | null };
+export type CommitStatus = { state?: string };
+
+export function summarize(sha: string, combined: string, runs: CheckRun[], statuses: CommitStatus[] = []): CommitChecks {
+  const hasRuns = runs.length > 0;
+  const hasStatuses = statuses.length > 0;
+  if (hasRuns && runs.some((r) => r.status && r.status !== "completed")) {
     return { state: "pending", sha, summary: "Checks are still running." };
   }
-  if (failedRun || combined === "failure") {
-    const names = runs.filter((r) => r.conclusion === "failure").length;
-    return { state: "failing", sha, summary: names ? `${names} check(s) failed.` : "CI failed." };
+  const failedRuns = runs.filter((r) => r.conclusion === "failure" || r.conclusion === "timed_out" || r.conclusion === "cancelled");
+  if (failedRuns.length) {
+    return { state: "failing", sha, summary: `${failedRuns.length} check(s) failed.` };
   }
-  if (runs.length === 0 && combined !== "success") {
+  if (hasStatuses) {
+    if (combined === "pending" || statuses.some((s) => s.state === "pending")) {
+      return { state: "pending", sha, summary: "Checks are still running." };
+    }
+    if (combined === "failure" || statuses.some((s) => s.state === "failure" || s.state === "error")) {
+      return { state: "failing", sha, summary: "CI failed." };
+    }
+  } else if (!hasRuns) {
     return { state: "passing", sha, summary: "No required checks." };
   }
   return { state: "passing", sha, summary: "All checks passed." };
