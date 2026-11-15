@@ -1,4 +1,5 @@
 import { getCache } from "../cache/index.ts";
+import { bumpRunEpoch } from "../run/jobs.ts";
 import { resetDemoPreflightFixture } from "../preflight/demo.ts";
 import { resetPreflightStore, runChecks } from "../preflight/report.ts";
 import { rememberRepo } from "../clone/index.ts";
@@ -29,6 +30,7 @@ export function seedDemo(): void {
 }
 
 export async function resetDemo(opts: { seed: boolean }): Promise<void> {
+  bumpRunEpoch();
   resetDemoGithubMode();
   resetDemoPreflightFixture();
   resetPreflightStore();

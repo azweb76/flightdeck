@@ -9,15 +9,15 @@ import { log } from "./emit.ts";
 import { runLive } from "./live-run.ts";
 import { demoScenarioFor } from "./script.ts";
 import { assertPreflightGate } from "../preflight/gate.ts";
+import { currentRunEpoch, getJob, isRunCurrent, setJob } from "./jobs.ts";
 import { countActive, findActiveForIssue, getChange, insertChange, saveChange } from "./store.ts";
 import { addWorktree, demoWorktree, removeWorktree } from "./worktree.ts";
 
 export { dailySpendUsd, getChange, listChanges } from "./store.ts";
-
-const jobs = new Map<string, Promise<void>>();
+export { bumpRunEpoch } from "./jobs.ts";
 
 export function waitForChange(id: string): Promise<void> {
-  return jobs.get(id) ?? Promise.resolve();
+  return getJob(id) ?? Promise.resolve();
 }
 
 export async function startChange(issueId: string): Promise<Change> {
@@ -87,18 +87,21 @@ export async function archiveChange(id: string): Promise<Change> {
 }
 
 function kick(id: string, answer?: string): void {
-  const prev = jobs.get(id) ?? Promise.resolve();
-  const job = prev.then(() => drive(id, answer));
-  jobs.set(id, job);
+  const epoch = currentRunEpoch();
+  const prev = getJob(id) ?? Promise.resolve();
+  const job = prev.then(() => drive(id, answer, epoch));
+  setJob(id, job);
 }
 
-async function drive(id: string, answer?: string): Promise<void> {
+async function drive(id: string, answer?: string, epoch = currentRunEpoch()): Promise<void> {
+  if (!isRunCurrent(epoch)) return;
   const change = getChange(id);
   if (!change) return;
   try {
-    if (process.env.FLIGHTDECK_DEMO === "1") await runDemo(change, answer);
+    if (process.env.FLIGHTDECK_DEMO === "1") await runDemo(change, answer, epoch);
     else await runLive(change, answer);
   } catch (err) {
+    if (!isRunCurrent(epoch)) return;
     change.status = "error";
     log(change, { kind: "system", title: "error", detail: err instanceof Error ? err.message : String(err) });
     saveChange(change);
