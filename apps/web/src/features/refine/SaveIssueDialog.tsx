@@ -1,11 +1,11 @@
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from "@mui/material";
 import type { Issue, PreflightCheck, ShapeSession } from "@flightdeck/shared";
 import { useEffect, useState } from "react";
-import { api } from "../api.ts";
-import { RepoPicker } from "../features/repos/index.ts";
-import { TrackerChoice, usePreflight } from "../preflight/index.ts";
-import { ContainedButton } from "../ui/ContainedButton.tsx";
-import { FormField } from "../ui/FormField.tsx";
+import { api } from "../../api.ts";
+import { RepoPicker } from "../repos/index.ts";
+import { TrackerChoice, usePreflight } from "../../preflight/index.ts";
+import { ContainedButton } from "../../ui/ContainedButton.tsx";
+import { FormField } from "../../ui/FormField.tsx";
 
 export function SaveIssueDialog(props: {
   open: boolean;

@@ -1,9 +1,9 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
-import { api } from "../api.ts";
-import { RepoPicker } from "../features/repos/index.ts";
-import { GatedButton } from "../preflight/index.ts";
-import { FormField } from "../ui/FormField.tsx";
+import { api } from "../../api.ts";
+import { RepoPicker } from "../repos/index.ts";
+import { GatedButton } from "../../preflight/index.ts";
+import { FormField } from "../../ui/FormField.tsx";
 
 export function StartIdeaDialog(props: {
   open: boolean;
